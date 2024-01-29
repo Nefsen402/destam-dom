@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Perf</title>
+	</head>
+	<style>
+		body {
+		    padding: 10px 0 0 0;
+		    margin: 0;
+		    overflow-y: scroll;
+		}
+		#duration {
+		    padding-top: 0px;
+		}
+		.jumbotron {
+		    padding-top:10px;
+		    padding-bottom:10px;
+		}
+		.test-data a {
+		    display: block;
+		}
+		.preloadicon {
+		    position: absolute;
+		    top:-20px;
+		    left:-20px;
+		}
+		.col-sm-6.smallpad {
+		    padding: 5px;
+		}
+		.jumbotron .row h1 {
+		    font-size: 40px;
+		}
+	</style>
+	<body>
+		<script type="module">
+			import {Observer, html, mount, OObject, OArray } from '/index.js';
+
+			let idCounter = 1;
+			const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint", "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly", "adorable", "important", "inexpensive", "cheap", "expensive", "fancy"],
+			  colours = ["red", "yellow", "blue", "green", "pink", "brown", "purple", "brown", "white", "black", "orange"],
+			  nouns = ["table", "chair", "house", "bbq", "desk", "car", "pony", "cookie", "sandwich", "burger", "pizza", "mouse", "keyboard"];
+
+			function _random (max) { return Math.round(Math.random() * 1000) % max; };
+
+			function buildData(count) {
+			  let data = new Array(count);
+			  for (let i = 0; i < count; i++) {
+			    data[i] = OObject({
+			      id: idCounter++,
+			      label: `${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`
+			    })
+			  }
+			  return data;
+			}
+
+			const Button = ({ id, text, fn }) => {
+			  return html `<div class='col-sm-6 smallpad'>
+			    <button id=${id} class='btn btn-primary btn-block' type='button' click=${fn}>${text}</button>
+			  </div>`
+			};
+
+			const App = () => {
+				let selected = Observer.mutable(null);
+				let state = Observer.mutable(OArray());
+
+				const
+			    run = () => state.set(OArray(buildData(1000))),
+			    runLots = () => state.set(OArray(buildData(10000))),
+			    add = () => state.get().push(...buildData(1000)),
+			    update = () => () => {
+			    	let arr = state.get();
+			      for(let i = 0, len = arr.length; i < len; i += 10)
+			        arr[i].label = arr[i].label + ' !!!';
+			    },
+			    swapRows = () => () => {
+			    	let arr = state.get();
+			      if (arr.length > 998) {
+			        let tmp = arr[1];
+			        arr[1] = arr[998];
+			        arr[998] = tmp;
+			      }
+			    },
+			    clear = () => {
+			    	state.set(OArray());
+			    },
+			    remove = row => {
+			      const idx = state.get().indexOf(row);
+			      state.get().splice(idx, 1);
+			    };
+
+			  return html`<div class='container'>
+			    <div class='jumbotron'><div class='row'>
+			      <div class='col-md-6'><h1>SolidJS Keyed</h1></div>
+			      <div class='col-md-6'><div class='row'>
+			        <${Button} id='run' text='Create 1,000 rows' fn=${run} />
+			        <${Button} id='runlots' text='Create 10,000 rows' fn=${runLots} />
+			        <${Button} id='add' text='Append 1,000 rows' fn=${add} />
+			        <${Button} id='update' text='Update every 10th row' fn=${update} />
+			        <${Button} id='clear' text='Clear' fn=${clear} />
+			        <${Button} id='swaprows' text='Swap Rows' fn=${swapRows} />
+			      </div></div>
+			    </div></div>
+			    <table class='table table-hover table-striped test-data'><tbody>
+			      <${({each: row}) => {
+			        return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
+			          <td class='col-md-1'>${row.rowId}</td>
+			          <td class='col-md-4'><a click=${() => selected.set(row)}>${row.observer.path('label')}</a></td>
+			          <td class='col-md-1'><a click=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
+			          <td class='col-md-6'/>
+			        </tr>`
+			      }} each=${state} />
+			    </tbody></table>
+			    <span class='preloadicon glyphicon glyphicon-remove' aria-hidden="true" />
+			  </div>`;
+			}
+
+			mount(document.body, App());
+		</script>
+	</body>
+</html>

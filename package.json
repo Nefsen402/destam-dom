@@ -1,0 +1,22 @@
+{
+  "name": "destam-dom",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.6",
+    "@babel/parser": "^7.23.6",
+    "@babel/traverse": "^7.23.6",
+    "@babel/types": "^7.23.6",
+    "@rollup/plugin-terser": "^0.4.4",
+    "vite": "^5.0.0"
+  },
+  "peerDependencies": {
+    "destam": "^0.0.1"
+  }
+}
