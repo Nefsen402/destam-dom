@@ -1,12 +1,19 @@
 {
   "name": "destam-dom",
   "version": "0.0.1",
+  "description": "A dom manipulation library built on destam",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "author": "Alexander Orzechowski",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nefsen402/destam-dom.git"
   },
   "devDependencies": {
     "@babel/core": "^7.23.6",
@@ -17,6 +24,6 @@
     "vite": "^5.0.0"
   },
   "peerDependencies": {
-    "destam": "^0.0.1"
+    "destam": "^0.0.2"
   }
 }
