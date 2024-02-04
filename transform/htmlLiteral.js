@@ -199,9 +199,7 @@ const transformChildren = node => {
 
 const log = stuff => console.log(util.inspect(stuff, {colors: true, depth: null}));
 
-const transform = (source, options) => {
-	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
-
+export const transformBabelAST = (ast) => {
 	let hasHTMLImport = false;
 	let hasHImport = false;
 	let hasObserverImport = false;
@@ -291,6 +289,12 @@ const transform = (source, options) => {
 			},
 		});
 	}
+};
+
+const transform = (source, options) => {
+	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
+
+	transformBabelAST(ast);
 
 	return generate.default(ast, {
 		sourceMaps: true,
