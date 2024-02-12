@@ -256,7 +256,7 @@ const functionElement = (func, props) => {
 		};
 
 		const addMount = (old, item, next) => {
-			let mounted = old?.get(item)?.pop();
+			let mounted = old?.get(item)?.shift();
 
 			if (!mounted) {
 				eachEntry[1] = item;
