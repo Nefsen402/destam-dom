@@ -108,7 +108,13 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 			l.remove_();
 		}
 		first = term;
-		if (cleanup) callAll(cleanup);
+		if (cleanup) for (const c of cleanup) {
+			try {
+				c();
+			} catch (e) {
+				console.log(e.stack);
+			}
+		}
 	};
 
 	return {
@@ -204,13 +210,20 @@ const functionElement = (func, props) => {
 	})(), "'each' property is not iterable");
 
 	const createMount = (elem, props, before, notifyMount) => {
-		let cleanup = [];
-		return mount(
-			elem,
-			func(props, cb => {
+		const cleanup = [];
+		let dom = null;
+		try {
+			dom = func(props, cb => {
 				assert(typeof cb === 'function', "The cleanup function must be passed a function");
 				push(cleanup, cb);
-			}),
+			});
+		} catch (e) {
+			console.log(e.stack);
+		}
+
+		return mount(
+			elem,
+			dom,
 			cleanup,
 			before,
 			notifyMount,
