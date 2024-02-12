@@ -209,11 +209,11 @@ const functionElement = (func, props) => {
 		return true;
 	})(), "'each' property is not iterable");
 
-	const createMount = (elem, props, before, notifyMount) => {
+	const createMount = (elem, before, notifyMount) => {
 		const cleanup = [];
 		let dom = null;
 		try {
-			dom = func(props, cb => {
+			dom = func(Object.fromEntries(props), cb => {
 				assert(typeof cb === 'function', "The cleanup function must be passed a function");
 				push(cleanup, cb);
 			});
@@ -230,12 +230,12 @@ const functionElement = (func, props) => {
 		);
 	};
 
-	const each = props.find(e => e[0] === 'each')?.[1];
-	if (!each) {
-		return (elem, before, notifyMount) => {
-			return createMount(elem, Object.fromEntries(props), before, notifyMount);
-		};
+	const eachEntry = props.find(e => e[0] === 'each');
+	if (!eachEntry) {
+		return createMount;
 	}
+
+	const each = eachEntry[1];
 
 	return (elem, before, notifyMount) => {
 		const linkGetter = Symbol();
@@ -267,12 +267,10 @@ const functionElement = (func, props) => {
 			let mounted = old?.get(item)?.pop();
 
 			if (!mounted) {
-				const thisProps = Object.fromEntries(props);
-				thisProps.each = item;
+				eachEntry[1] = item;
 
 				mounted = createMount(
 					elem,
-					thisProps,
 					() => (mounted?.next_ || next).first_(),
 					notifyMount
 				);
@@ -369,7 +367,7 @@ export const h = (name, props = [], children) => {
 	assert(name != null, "Tag name cannot be null or undefined");
 
 	if (children) {
-		props = props.concat([['children', children]]);
+		push(props, ['children', children]);
 	}
 
 	const type = typeof name;
