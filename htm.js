@@ -180,7 +180,8 @@ export default (h, spread = Object.entries, concatinator = strings => {
 					return true;
 				})(), "Invalid attribute name: " + props.map(p => p[0]).join(", "));
 
-				assert(typeof name !== 'string' || validTags.includes(name.toUpperCase()), "Invalid tag name: " + name);
+				assert(typeof name !== 'string' || validTags.includes(name.toUpperCase()) || name.includes('-'),
+					"Invalid tag name: " + name);
 
 				push(tags, h(name, props, !term && parse(name)));
 				term = 0;
