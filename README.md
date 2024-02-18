@@ -1,7 +1,6 @@
 # destam-dom
 
-This is a dom manipulation library built on destam. This library does not use a virtual dom and its purpose is to provide a binding from mutation events that happen
-through the destam state manager to then manipulate the dom. This library is designed to be simple but power. It does not provide any filtering of events to account for browser differences or any magic regarding node attributes. This is designed to be a base for other libraries to build on top of to provide those creature comforts.
+This is a dom manipulation library built on destam. This library does not use a virtual dom and its purpose is to provide a binding from mutation events that happen through the destam state manager to then manipulate the dom. This library is designed to be simple but power. It does not provide any filtering of events to account for browser differences or any magic regarding node attributes. This is designed to be a base for other libraries to build on top of to provide those creature comforts.
 
 ## Basic counter
 ```js
@@ -11,12 +10,12 @@ mount(document.body, html`
 		Button clicked ${count} times
 	</button>
 	<button click=${() => count.set(0)}>Reset</button>
-`)
+`);
 ```
 
 ## No virtual dom
 Virtual doms were a mistake:
-- they make a lot of garbage for the garbage collector to go then create
+- they make a lot of garbage for the garbage collector to collect
 - they require a lot of magic called "reconciliation" in order to actually work
 - they have horrible performance with lists
 
@@ -37,7 +36,7 @@ mount(document.body, html`
 	<p>
 		<${NumComponent} each=${numbers}/>
 	</p>
-`)
+`);
 ```
 
 ## JSX compatible
