@@ -131,57 +131,86 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 
 const nativeElement = (e, props) => {
 	const elementMount = simpleMount(e);
-	return (parent, before, notifyMount) => {
-		const mounted = elementMount(parent, before, props.map(([name, val]) => {
-			let currentKey = noop;
-			const remove = watch(val, val => {
-				currentKey();
-				currentKey = noop;
 
+	const mountListeners = [];
+	let children = null;
+	const signals = props.flatMap(([name, val]) => {
+		assert(typeof name === 'string', "Property list must have key as a string");
+
+		if (name === 'children') {
+			children = val;
+			return [];
+		}
+
+		if (name[0] === '$') {
+			name = name.substring(1);
+
+			if (isInstance(val, Observer)) {
+				return [[val, val => {
+					e[name] = val;
+				}]];
+			} else {
+				e[name] = val;
+				return [];
+			}
+		}
+
+		if (isInstance(val, Observer)) {
+			return [[val, val => {
 				if (val == null) {
-					e.removeAttribute(name);
-				} else if (name == 'children') {
-					currentKey = mount(e, val, 0, 0, notifyMount).remove_;
-				} else if (name[0] === '$') {
-					e[name.substring(1)] = val;
-				} else {
-					const type = typeof val;
-					if (type === 'function') {
-						if (name == 'mount') {
-							push(notifyMount, val);
-						} else {
-							e.addEventListener(name, val);
-							currentKey = () => e.removeEventListener(name, val);
-						}
-					} else if (type === 'object') {
-						const listeners = Object.entries(val).map(([prop, val]) => {
-							return watch(val, v => {
-								if (v == null) {
-									e[name].removeProperty(prop);
-								} else {
-									e[name].setProperty(prop, v);
-								}
-							});
-						});
+					val = false;
+				}
 
-						currentKey = () => callAll(listeners);
-					} else {
-						if (type === 'boolean') {
-							e.toggleAttribute(name, val);
+				if (typeof val === 'boolean') {
+					e.toggleAttribute(name, val);
+				} else {
+					e.setAttribute(name, val);
+				}
+			}]];
+		}
+
+		const type = typeof val;
+
+		if (type === 'object') {
+			return Object.entries(val).map(([prop, val]) => {
+				if (isInstance(val, Observer)) {
+					return [val, val => {
+						if (val == null) {
+							e[name].removeProperty(prop);
 						} else {
-							e.setAttribute(name, val);
+							e[name].setProperty(prop, val);
 						}
-					}
+					}];
+				} else if (val != null) {
+					e[name].setProperty(prop, val);
 				}
 			});
+		}
 
-			return () => {
-				remove();
-				currentKey();
-			};
-		}));
+		if (type === 'function') {
+			if (name == 'mount') {
+				push(mountListeners, val);
+			} else {
+				e.addEventListener(name, val);
+			}
+		} else if (type === 'boolean') {
+			e.toggleAttribute(name, val);
+		} else if (val != null) {
+			e.setAttribute(name, val);
+		}
 
-		return mounted;
+		return [];
+	});
+
+	return (parent, before, notifyMount) => {
+		notifyMount.push(...mountListeners);
+
+		const remove = signals.map(([val, handler]) => watch(val, handler));
+		if (children != null) {
+			push(remove, mount(e, children, 0, 0, notifyMount).remove_);
+		}
+
+		return elementMount(parent, before, remove);
 	};
 };
 
