@@ -199,16 +199,6 @@ const functionElement = (func, props) => {
 		return !dups.size;
 	})(), "Duplicate tags");
 
-	assert((() => {
-		for (const [name, val] of props) {
-			if (name === 'each' && !isInstance(val, Observer) && val[Symbol.iterator] === 'function') {
-				return false;
-			}
-		}
-
-		return true;
-	})(), "'each' property is not iterable");
-
 	const createMount = (elem, before, notifyMount) => {
 		const cleanup = [];
 		let dom = null;
@@ -236,6 +226,8 @@ const functionElement = (func, props) => {
 	}
 
 	const each = eachEntry[1];
+	assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
+		"'each' property is not iterable");
 
 	return (elem, before, notifyMount) => {
 		const linkGetter = Symbol();
