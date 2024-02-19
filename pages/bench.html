@@ -105,7 +105,6 @@
 			    <table class='table table-hover table-striped test-data'><tbody>
 			      <${({each: row}) => {
 			        return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
-			          <td class='col-md-1'>${row.rowId}</td>
 			          <td class='col-md-4'><a click=${() => selected.set(row)}>${row.observer.path('label')}</a></td>
 			          <td class='col-md-1'><a click=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
 			          <td class='col-md-6'/>
