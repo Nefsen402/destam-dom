@@ -133,30 +133,33 @@ const nativeElement = (e, props) => {
 	const elementMount = simpleMount(e);
 
 	const mountListeners = [];
+	const signals = [];
 	let children = null;
-	const signals = props.flatMap(([name, val]) => {
+
+	for (const [name, val] of props) {
 		assert(typeof name === 'string', "Property list must have key as a string");
 
 		if (name === 'children') {
 			children = val;
-			return [];
+			continue;
 		}
 
 		if (name[0] === '$') {
 			name = name.substring(1);
 
 			if (isInstance(val, Observer)) {
-				return [[val, val => {
+				push(signals, [val, val => {
 					e[name] = val;
-				}]];
+				}]);
 			} else {
 				e[name] = val;
-				return [];
 			}
+
+			continue;
 		}
 
 		if (isInstance(val, Observer)) {
-			return [[val, val => {
+			push(signals, [val, val => {
 				if (val == null) {
 					val = false;
 				}
@@ -166,25 +169,31 @@ const nativeElement = (e, props) => {
 				} else {
 					e.setAttribute(name, val);
 				}
-			}]];
+			}]);
+
+			continue;
 		}
 
 		const type = typeof val;
 
 		if (type === 'object') {
-			return Object.entries(val).map(([prop, val]) => {
-				if (isInstance(val, Observer)) {
-					return [val, val => {
-						if (val == null) {
+			for (const prop in val) {
+				const attr = val[prop];
+
+				if (isInstance(attr, Observer)) {
+					push(signals, [attr, attr => {
+						if (attr == null) {
 							e[name].removeProperty(prop);
 						} else {
-							e[name].setProperty(prop, val);
+							e[name].setProperty(prop, attr);
 						}
-					}];
-				} else if (val != null) {
-					e[name].setProperty(prop, val);
+					}]);
+				} else if (attr != null) {
+					e[name].setProperty(prop, attr);
 				}
-			});
+			}
+
+			continue;
 		}
 
 		if (type === 'function') {
@@ -193,14 +202,16 @@ const nativeElement = (e, props) => {
 			} else {
 				e.addEventListener(name, val);
 			}
-		} else if (type === 'boolean') {
+
+			continue;
+		}
+
+		if (type === 'boolean') {
 			e.toggleAttribute(name, val);
 		} else if (val != null) {
 			e.setAttribute(name, val);
 		}
-
-		return [];
-	});
+	}
 
 	return (parent, before, notifyMount) => {
 		notifyMount.push(...mountListeners);
