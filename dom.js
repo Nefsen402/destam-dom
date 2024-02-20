@@ -112,7 +112,7 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 			try {
 				c();
 			} catch (e) {
-				console.log(e.stack);
+				console.error(e);
 			}
 		}
 	};
@@ -237,7 +237,7 @@ const functionElement = (func, props) => {
 				push(cleanup, cb);
 			});
 		} catch (e) {
-			console.log(e.stack);
+			console.error(e);
 		}
 
 		return mount(
