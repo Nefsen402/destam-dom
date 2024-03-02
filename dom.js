@@ -136,12 +136,12 @@ const nativeElement = (e, props) => {
 	const signals = [];
 	let children = null;
 
-	for (const [name, val] of props) {
+	props.forEach(([name, val]) => {
 		assert(typeof name === 'string', "Property list must have key as a string");
 
 		if (name === 'children') {
 			children = val;
-			continue;
+			return;
 		}
 
 		if (name[0] === '$') {
@@ -155,7 +155,7 @@ const nativeElement = (e, props) => {
 				e[name] = val;
 			}
 
-			continue;
+			return;
 		}
 
 		if (isInstance(val, Observer)) {
@@ -171,7 +171,7 @@ const nativeElement = (e, props) => {
 				}
 			}]);
 
-			continue;
+			return;
 		}
 
 		const type = typeof val;
@@ -193,7 +193,7 @@ const nativeElement = (e, props) => {
 				}
 			}
 
-			continue;
+			return;
 		}
 
 		if (type === 'function') {
@@ -203,7 +203,7 @@ const nativeElement = (e, props) => {
 				e.addEventListener(name, val);
 			}
 
-			continue;
+			return;
 		}
 
 		if (type === 'boolean') {
@@ -211,7 +211,7 @@ const nativeElement = (e, props) => {
 		} else if (val != null) {
 			e.setAttribute(name, val);
 		}
-	}
+	});
 
 	return (parent, before, notifyMount) => {
 		notifyMount.push(...mountListeners);
