@@ -46,6 +46,10 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 		obj.remove_ = watch(item, val => {
 			assert(val !== undefined, "Cannot mount undefined");
 
+			if (val == null) {
+				val = [];
+			}
+
 			let func;
 			if (typeof val == 'function') {
 				prevText = 0;
@@ -53,9 +57,6 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 			} else if (isInstance(val, Node)) {
 				prevText = 0;
 				func = simpleMount(val);
-			} else if (val == null) {
-				prevText = 0;
-				func = (elem, before, notify) => mount(elem, [], 0, before, notify);
 			} else if (isInstance(val, Array)) {
 				prevText = 0;
 				func = (elem, before, notify) => mount(elem, val, 0, before, notify);
