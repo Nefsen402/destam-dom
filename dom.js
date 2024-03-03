@@ -158,38 +158,39 @@ const nativeElement = (e, props) => {
 			return;
 		}
 
+		const setAttribute = val => {
+			if (val == null) {
+				val = false;
+			}
+
+			if (typeof val === 'boolean') {
+				e.toggleAttribute(name, val);
+			} else {
+				e.setAttribute(name, val);
+			}
+		};
+
 		if (isInstance(val, Observer)) {
-			push(signals, [val, val => {
-				if (val == null) {
-					val = false;
-				}
-
-				if (typeof val === 'boolean') {
-					e.toggleAttribute(name, val);
-				} else {
-					e.setAttribute(name, val);
-				}
-			}]);
-
+			push(signals, [val, setAttribute]);
 			return;
 		}
 
 		const type = typeof val;
-
 		if (type === 'object') {
 			for (const prop in val) {
 				const attr = val[prop];
+				const set = (prop => val => {
+					if (val == null) {
+						e[name].removeProperty(prop);
+					} else {
+						e[name].setProperty(prop, val);
+					}
+				})(prop);
 
 				if (isInstance(attr, Observer)) {
-					push(signals, [attr, attr => {
-						if (attr == null) {
-							e[name].removeProperty(prop);
-						} else {
-							e[name].setProperty(prop, attr);
-						}
-					}]);
-				} else if (attr != null) {
-					e[name].setProperty(prop, attr);
+					push(signals, [attr, set]);
+				} else {
+					set(attr);
 				}
 			}
 
@@ -206,11 +207,7 @@ const nativeElement = (e, props) => {
 			return;
 		}
 
-		if (type === 'boolean') {
-			e.toggleAttribute(name, val);
-		} else if (val != null) {
-			e.setAttribute(name, val);
-		}
+		setAttribute(val);
 	});
 
 	return (parent, before, notifyMount) => {
