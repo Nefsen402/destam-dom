@@ -13,7 +13,7 @@ const watch = (obs, cb) => {
 	return noop;
 };
 
-const simpleMount = e => (parent, before, watching) => {
+const simpleMount = (parent, e, before, _, watching) => {
 	parent?.insertBefore(e, before());
 
 	return {
@@ -51,19 +51,20 @@ export const mount = (elem, list, before, notifyMount) => {
 			}
 
 			let func;
-			if (typeof val == 'function') {
+			if (typeof val === 'function') {
 				prevText = 0;
 				func = val;
 			} else if (isInstance(val, Node)) {
 				prevText = 0;
-				func = simpleMount(val);
+				func = simpleMount;
 			} else if (isInstance(val, Array)) {
 				prevText = 0;
-				func = (elem, before, notify) => mount(elem, val, before, notify);
+				func = mount;
 			} else if (prevText) {
 				prevText.textContent = val;
 			} else {
-				func = simpleMount(prevText = document.createTextNode(val));
+				val = prevText = document.createTextNode(val);
+				func = simpleMount;
 			}
 
 			if (func) {
@@ -74,7 +75,7 @@ export const mount = (elem, list, before, notifyMount) => {
 				}
 
 				obj.mount_?.remove_();
-				obj.mount_ = func(elem, () => obj.next_.mount_.first_(), notifyMount);
+				obj.mount_ = func(elem, val, () => obj.next_.mount_.first_(), notifyMount);
 
 				if (notifyMaster) {
 					callAll(notifyMount);
@@ -104,8 +105,6 @@ export const mount = (elem, list, before, notifyMount) => {
 };
 
 const nativeElement = (e, props) => {
-	const elementMount = simpleMount(e);
-
 	const mountListeners = [];
 	const signals = [];
 	let children = null;
@@ -184,7 +183,7 @@ const nativeElement = (e, props) => {
 		setAttribute(val);
 	});
 
-	return (parent, before, notifyMount) => {
+	return (parent, _, before, notifyMount) => {
 		notifyMount.push(...mountListeners);
 
 		const remove = signals.map(([val, handler]) => watch(val, handler));
@@ -192,7 +191,7 @@ const nativeElement = (e, props) => {
 			push(remove, mount(e, children, 0, notifyMount).remove_);
 		}
 
-		return elementMount(parent, before, remove);
+		return simpleMount(parent, e, before, 0, remove);
 	};
 };
 
@@ -210,7 +209,7 @@ const functionElement = (func, props) => {
 		return !dups.size;
 	})(), "Duplicate tags");
 
-	const createMount = (elem, before, notifyMount) => {
+	const createMount = (elem, _, before, notifyMount) => {
 		const cleanup = [];
 		let dom = null;
 		try {
@@ -254,7 +253,7 @@ const functionElement = (func, props) => {
 	assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
 		"'each' property is not iterable");
 
-	return (elem, before, notifyMount) => {
+	return (elem, _, before, notifyMount) => {
 		const linkGetter = Symbol();
 		let mounts;
 		let arrayListener;
@@ -287,7 +286,7 @@ const functionElement = (func, props) => {
 				eachEntry[1] = item;
 
 				mounted = createMount(
-					elem,
+					elem, 0,
 					() => (mounted?.next_ || next).first_(),
 					notifyMount
 				);
