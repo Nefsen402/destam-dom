@@ -108,7 +108,7 @@ const nativeElement = (e, props) => {
 		return assignFirst(() => {
 			parent?.removeChild(e);
 			callAll(remove);
-			m?.();
+			if (m) m();
 		}, () => e);
 	};
 };
