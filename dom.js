@@ -285,24 +285,16 @@ const functionElement = (func, props) => {
 				);
 			} else if (elem && next !== mounted) {
 				const a = document.activeElement;
-				let focus = 0;
 
 				const mountAt = next.first_();
 				const term = mounted.next_.first_();
 				for (let cur = mounted.first_(); cur != term;) {
-					let n = cur;
-					for (; !focus && n; n = n.parentNode) {
-						if (cur === n) {
-							focus = 1;
-						}
-					}
-
-					n = cur.nextSibling;
+					const n = cur.nextSibling;
 					elem.insertBefore(cur, mountAt);
 					cur = n;
 				}
 
-				if (focus) a.focus();
+				if (a) a.focus();
 				mounted.prev_.next_ = mounted.next_;
 				mounted.next_.prev_ = mounted.prev_;
 			} else {
