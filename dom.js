@@ -13,27 +13,22 @@ const watch = (obs, cb) => {
 	return noop;
 };
 
+const assignFirst = (remove, first) => {
+	remove.first_ = first;
+	return remove;
+};
+
 const simpleMount = (parent, e, before, _, watching) => {
 	parent?.insertBefore(e, before());
 
-	return {
-		remove_: () => {
-			parent?.removeChild(e);
-			if (watching) callAll(watching);
-		},
-		first_: () => e,
-	};
+	return assignFirst(() => {
+		parent?.removeChild(e);
+		if (watching) callAll(watching);
+	}, () => e);
 };
 
 export const mount = (elem, list, before, notifyMount) => {
-	const term = {mount_: {first_: before || noop}};
-	let first, prev;
-	const add = obj => {
-		if (!first) first = obj;
-		if (prev) prev.next_ = obj;
-		prev = obj;
-	};
-
+	const arr = [];
 	const iter = item => {
 		if (isInstance(item, Array)) {
 			item.forEach(iter);
@@ -41,9 +36,8 @@ export const mount = (elem, list, before, notifyMount) => {
 		}
 
 		let prevText = 0;
-		const obj = {next_: term};
-		add(obj);
-		obj.remove_ = watch(item, val => {
+		const index = len(arr);
+		push(arr, watch(item, val => {
 			assert(val !== undefined, "Cannot mount undefined");
 
 			if (val == null) {
@@ -70,31 +64,25 @@ export const mount = (elem, list, before, notifyMount) => {
 			if (func) {
 				let notify;
 
-				obj.mount_?.remove_();
-				obj.mount_ = func(elem, val, () => obj.next_.mount_.first_(), notifyMount || (notify = []));
+				arr[index]?.();
+				arr[index] = func(
+					elem, val,
+					() => (arr[index + 2]?.first_ || before || noop)(),
+					notifyMount || (notify = [])
+				);
 
 				if (notify) callAll(notify);
 			}
-		});
+		}));
 	};
 
 	iter(list);
-	add(term);
 	notifyMount = 0;
 
-	const remove = () => {
-		for (let l = first; l.next_; l = l.next_) {
-			l.mount_.remove_();
-			l.remove_();
-		}
-		first = term;
-	};
-
-	return {
-		remove: remove,
-		remove_: remove,
-		first_: () => first.mount_.first_(),
-	};
+	return assignFirst(() => {
+		callAll(arr);
+		arr.length = 0;
+	}, () => (arr[0]?.first_ || before || noop)());
 };
 
 const nativeElement = (e, props) => {
@@ -181,7 +169,7 @@ const nativeElement = (e, props) => {
 
 		const remove = signals.map(([val, handler]) => watch(val, handler));
 		if (children != null) {
-			push(remove, mount(e, children, 0, notifyMount).remove_);
+			push(remove, mount(e, children, 0, notifyMount));
 		}
 
 		return simpleMount(parent, e, before, 0, remove);
@@ -221,20 +209,17 @@ const functionElement = (func, props) => {
 			notifyMount,
 		);
 
-		return {
-			remove_: () => {
-				m.remove_();
+		return assignFirst(() => {
+			m();
 
-				for (const c of cleanup) {
-					try {
-						c();
-					} catch (e) {
-						console.error(e);
-					}
+			for (const c of cleanup) {
+				try {
+					c();
+				} catch (e) {
+					console.error(e);
 				}
-			},
-			first_: m.first_,
-		};
+			}
+		}, m.first_);
 	};
 
 	const eachEntry = props.find(e => e[0] === 'each');
@@ -260,7 +245,7 @@ const functionElement = (func, props) => {
 					mount.prev_.next_ = mount.next_;
 					mount.next_.prev_ = mount.prev_;
 
-					mount.remove_();
+					mount();
 					if (mount.link_) delete mount.link_[linkGetter];
 				}
 			}
@@ -364,14 +349,11 @@ const functionElement = (func, props) => {
 
 		notifyMount = 0;
 
-		return {
-			remove_: () => {
-				listener();
-				cleanup(mounts);
-				arrayListener?.();
-			},
-			first_: () => root.next_.first_(),
-		};
+		return assignFirst(() => {
+			listener();
+			cleanup(mounts);
+			arrayListener?.();
+		}, () => root.next_.first_());
 	}
 };
 
