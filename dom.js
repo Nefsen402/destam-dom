@@ -25,7 +25,7 @@ const simpleMount = e => (parent, before, watching) => {
 	};
 };
 
-export const mount = (elem, list, cleanup, before, notifyMount) => {
+export const mount = (elem, list, before, notifyMount) => {
 	const term = {mount_: {first_: before || noop}};
 	let first, prev;
 	const add = obj => {
@@ -59,7 +59,7 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 				func = simpleMount(val);
 			} else if (isInstance(val, Array)) {
 				prevText = 0;
-				func = (elem, before, notify) => mount(elem, val, 0, before, notify);
+				func = (elem, before, notify) => mount(elem, val, before, notify);
 			} else if (prevText) {
 				prevText.textContent = val;
 			} else {
@@ -94,13 +94,6 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 			l.remove_();
 		}
 		first = term;
-		if (cleanup) for (const c of cleanup) {
-			try {
-				c();
-			} catch (e) {
-				console.error(e);
-			}
-		}
 	};
 
 	return {
@@ -196,7 +189,7 @@ const nativeElement = (e, props) => {
 
 		const remove = signals.map(([val, handler]) => watch(val, handler));
 		if (children != null) {
-			push(remove, mount(e, children, 0, 0, notifyMount).remove_);
+			push(remove, mount(e, children, 0, notifyMount).remove_);
 		}
 
 		return elementMount(parent, before, remove);
@@ -229,13 +222,27 @@ const functionElement = (func, props) => {
 			console.error(e);
 		}
 
-		return mount(
+		const m = mount(
 			elem,
 			dom,
-			cleanup,
 			before,
 			notifyMount,
 		);
+
+		return {
+			remove_: () => {
+				m.remove_();
+
+				for (const c of cleanup) {
+					try {
+						c();
+					} catch (e) {
+						console.error(e);
+					}
+				}
+			},
+			first_: m.first_,
+		};
 	};
 
 	const eachEntry = props.find(e => e[0] === 'each');
