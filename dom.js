@@ -18,79 +18,12 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const simpleMount = (parent, e, before, _, watching) => {
-	parent?.insertBefore(e, before());
-
-	return assignFirst(() => {
-		parent?.removeChild(e);
-		if (watching) callAll(watching);
-	}, () => e);
-};
-
-export const mount = (elem, list, before, notifyMount) => {
-	const arr = [];
-	const iter = item => {
-		if (isInstance(item, Array)) {
-			item.forEach(iter);
-			return;
-		}
-
-		let prevText = 0;
-		const index = len(arr);
-		push(arr, watch(item, val => {
-			assert(val !== undefined, "Cannot mount undefined");
-
-			if (val == null) {
-				val = [];
-			}
-
-			let func;
-			if (typeof val === 'function') {
-				prevText = 0;
-				func = val;
-			} else if (isInstance(val, Node)) {
-				prevText = 0;
-				func = simpleMount;
-			} else if (isInstance(val, Array)) {
-				prevText = 0;
-				func = mount;
-			} else if (prevText) {
-				prevText.textContent = val;
-			} else {
-				val = prevText = document.createTextNode(val);
-				func = simpleMount;
-			}
-
-			if (func) {
-				let notify;
-
-				arr[index]?.();
-				arr[index] = func(
-					elem, val,
-					() => (arr[index + 2]?.first_ || before || noop)(),
-					notifyMount || (notify = [])
-				);
-
-				if (notify) callAll(notify);
-			}
-		}));
-	};
-
-	iter(list);
-	notifyMount = 0;
-
-	return assignFirst(() => {
-		callAll(arr);
-		arr.length = 0;
-	}, () => (arr[0]?.first_ || before || noop)());
-};
-
 const nativeElement = (e, props) => {
 	const mountListeners = [];
 	const signals = [];
 	let children = null;
 
-	props.forEach(([name, val]) => {
+	props?.forEach(([name, val]) => {
 		assert(typeof name === 'string', "Property list must have key as a string");
 
 		if (name === 'children') {
@@ -172,8 +105,70 @@ const nativeElement = (e, props) => {
 			push(remove, mount(e, children, 0, notifyMount));
 		}
 
-		return simpleMount(parent, e, before, 0, remove);
+		parent?.insertBefore(e, before());
+
+		return assignFirst(() => {
+			parent?.removeChild(e);
+			callAll(remove);
+		}, () => e);
 	};
+};
+
+export const mount = (elem, list, before, notifyMount) => {
+	const arr = [];
+	const iter = item => {
+		if (isInstance(item, Array)) {
+			item.forEach(iter);
+			return;
+		}
+
+		let prevText = 0;
+		const index = len(arr);
+		push(arr, watch(item, val => {
+			assert(val !== undefined, "Cannot mount undefined");
+
+			if (val == null) {
+				val = [];
+			}
+
+			let func;
+			if (typeof val === 'function') {
+				prevText = 0;
+				func = val;
+			} else if (isInstance(val, Node)) {
+				prevText = 0;
+				func = nativeElement(val);
+			} else if (isInstance(val, Array)) {
+				prevText = 0;
+				func = mount;
+			} else if (prevText) {
+				prevText.textContent = val;
+			} else {
+				func = nativeElement(prevText = document.createTextNode(val));
+			}
+
+			if (func) {
+				let notify;
+
+				arr[index]?.();
+				arr[index] = func(
+					elem, val,
+					() => (arr[index + 2]?.first_ || before || noop)(),
+					notifyMount || (notify = [])
+				);
+
+				if (notify) callAll(notify);
+			}
+		}));
+	};
+
+	iter(list);
+	notifyMount = 0;
+
+	return assignFirst(() => {
+		callAll(arr);
+		arr.length = 0;
+	}, () => (arr[0]?.first_ || before || noop)());
 };
 
 const functionElement = (func, props) => {
