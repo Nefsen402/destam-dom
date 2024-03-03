@@ -68,12 +68,12 @@ export const mount = (elem, list, before, notifyMount) => {
 			}
 
 			if (func) {
-				let notify = [];
+				let notify;
 
 				obj.mount_?.remove_();
-				obj.mount_ = func(elem, val, () => obj.next_.mount_.first_(), notifyMount || notify);
+				obj.mount_ = func(elem, val, () => obj.next_.mount_.first_(), notifyMount || (notify = []));
 
-				callAll(notify);
+				if (notify) callAll(notify);
 			}
 		});
 	};
