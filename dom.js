@@ -68,19 +68,12 @@ export const mount = (elem, list, before, notifyMount) => {
 			}
 
 			if (func) {
-				let notifyMaster = 0;
-				if (!notifyMount) {
-					notifyMount = [];
-					notifyMaster = 1;
-				}
+				let notify = [];
 
 				obj.mount_?.remove_();
-				obj.mount_ = func(elem, val, () => obj.next_.mount_.first_(), notifyMount);
+				obj.mount_ = func(elem, val, () => obj.next_.mount_.first_(), notifyMount || notify);
 
-				if (notifyMaster) {
-					callAll(notifyMount);
-					notifyMount = 0;
-				}
+				callAll(notify);
 			}
 		});
 	};
