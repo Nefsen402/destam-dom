@@ -21,21 +21,6 @@ const simpleMount = e => (parent, before, watching) => {
 			parent?.removeChild(e);
 			if (watching) callAll(watching);
 		},
-		move_: to => {
-			const a = document.activeElement;
-			let focus = 0;
-			let current = a;
-			while (current) {
-				if (current == e) {
-					focus = 1;
-					current = 0;
-				} else {
-					current = current.parentNode;
-				}
-			}
-			to(e);
-			if (focus) a.focus();
-		},
 		first_: () => e,
 	};
 };
@@ -120,11 +105,6 @@ export const mount = (elem, list, cleanup, before, notifyMount) => {
 	return {
 		remove: remove,
 		remove_: remove,
-		move_: to => {
-			for (let l = first; l.next_; l = l.next_) {
-				l.mount_.move_(to);
-			}
-		},
 		first_: () => first.mount_.first_(),
 	};
 };
@@ -304,11 +284,27 @@ const functionElement = (func, props) => {
 					notifyMount
 				);
 			} else if (elem && next !== mounted) {
-				mounted.prev_.next_ = mounted.next_;
-				mounted.next_.prev_ = mounted.prev_;
+				const a = document.activeElement;
+				let focus = 0;
 
 				const mountAt = next.first_();
-				mounted.move_(e => elem.insertBefore(e, mountAt));
+				const term = mounted.next_.first_();
+				for (let cur = mounted.first_(); cur != term;) {
+					let n = cur;
+					for (; !focus && n; n = n.parentNode) {
+						if (cur === n) {
+							focus = 1;
+						}
+					}
+
+					n = cur.nextSibling;
+					elem.insertBefore(cur, mountAt);
+					cur = n;
+				}
+
+				if (focus) a.focus();
+				mounted.prev_.next_ = mounted.next_;
+				mounted.next_.prev_ = mounted.prev_;
 			} else {
 				insertMap(mounts, item, mounted);
 				return mounted;
@@ -383,11 +379,6 @@ const functionElement = (func, props) => {
 				arrayListener?.();
 			},
 			first_: () => root.next_.first_(),
-			move_: to => {
-				for (let current = root.next_; current !== root; current = current.next_) {
-					current.move_(to);
-				}
-			},
 		};
 	}
 };
