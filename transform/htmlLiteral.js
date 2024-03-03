@@ -48,7 +48,7 @@ const html = htm((name, props, children) => {
 	]
 
 	if (children) {
-		args.push(t.arrayExpression(children.map(child => {
+		args.push(createArray(children.map(child => {
 			if (typeof child === 'string') {
 				return t.stringLiteral(child);
 			} else {
