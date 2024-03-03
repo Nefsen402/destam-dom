@@ -71,7 +71,7 @@ export default defineConfig({
 			lib: {
 				...libs[lib],
 				name: lib,
-				formats: ['es', 'iife'],
+				formats: ['es', 'iife', 'umd'],
 			},
 			sourcemap: true,
 			rollupOptions: {
