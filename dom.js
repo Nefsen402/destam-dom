@@ -101,15 +101,14 @@ const nativeElement = (e, props) => {
 		notifyMount.push(...mountListeners);
 
 		const remove = signals.map(([val, handler]) => watch(val, handler));
-		if (children != null) {
-			push(remove, mount(e, children, 0, notifyMount));
-		}
+		const m = children != null && mount(e, children, 0, notifyMount);
 
 		parent?.insertBefore(e, before());
 
 		return assignFirst(() => {
 			parent?.removeChild(e);
 			callAll(remove);
+			m?.();
 		}, () => e);
 	};
 };
