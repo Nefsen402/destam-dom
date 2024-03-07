@@ -1,6 +1,6 @@
 # destam-dom
 
-This is a dom manipulation library built on destam. This library does not use a virtual dom and its purpose is to provide a binding from mutation events that happen through the destam state manager to then manipulate the dom. This library is designed to be simple but power. It does not provide any filtering of events to account for browser differences or any magic regarding node attributes. This is designed to be a base for other libraries to build on top of to provide those creature comforts.
+This is a dom manipulation library built on destam. This library does not use a virtual dom and its purpose is to provide a binding from mutation events that happen through the destam state manager to then manipulate the dom. This library is designed to be as simple as possible. It does not provide any filtering of events to account for browser differences or any magic regarding node attributes. This is designed to be a base for other libraries to build on top of to provide those creature comforts.
 
 ## Basic counter
 ```js
