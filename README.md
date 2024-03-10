@@ -19,7 +19,7 @@ Virtual doms were a mistake:
 - they require a lot of magic called "reconciliation" in order to actually work
 - they have horrible performance with lists
 
-destam-dom relies on the idea of signals, but destam-dom does not attempt to re-invent another state library, it's built on the existing destam library. Destam provides primitives that generate deltas whenever they are mutated, and destam-dom takes those deltas and interprets them as dom manipluations. This approach achieves true constant time insertion, deletion and modification to dom children.
+destam-dom relies on the idea of signals, but destam-dom does not attempt to re-invent another state library, it's built on the existing [destam library](https://github.com/equator-studios/destam). Destam provides primitives that generate deltas whenever they are mutated, and destam-dom takes those deltas and interprets them as dom manipluations. This approach achieves true constant time insertion, deletion and modification to dom children.
 
 ## List example
 ```js
