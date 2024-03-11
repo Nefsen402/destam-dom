@@ -40,7 +40,7 @@ mount(document.body, html`
 ```
 
 ## JSX compatible
-destam-dom provides source passes under transform/ that will take the `html\`\`` syntax and jsx and turn it into simple calls that destam-dom directly understands so that no parsing has to happen at runtime.
+destam-dom provides source passes under transform/ that will take the ```html`` ``` syntax and jsx and turn it into simple calls that destam-dom directly understands so that no parsing has to happen at runtime.
 
 ## More examples
 The pages directory provides many simple examples for how to use this library.
