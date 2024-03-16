@@ -227,32 +227,13 @@ const functionElement = (func, props) => {
 
 	return (elem, _, before, notifyMount) => {
 		const linkGetter = Symbol();
-		let mounts;
 		let arrayListener;
 
 		const root = {first_: before};
 		root.next_ = root.prev_ = root;
-
-		const cleanup = (mounts) => {
-			for (const arr of mounts.values()) {
-				for (const mount of arr) {
-					mount.prev_.next_ = mount.next_;
-					mount.next_.prev_ = mount.prev_;
-
-					mount();
-					if (mount.link_) delete mount.link_[linkGetter];
-				}
-			}
-		};
-
-		const insertMap = (map, item, prop) => {
-			let a = map.get(item);
-			if (!a) map.set(item, a = []);
-			push(a, prop);
-		};
-
 		const addMount = (old, item, next) => {
-			let mounted = old?.get(item)?.shift();
+			let mounted = old?.get(item)?.pop();
+			if (mounted === next) return mounted;
 
 			if (!mounted) {
 				eachEntry[1] = item;
@@ -262,30 +243,45 @@ const functionElement = (func, props) => {
 					() => (mounted?.next_ || next).first_(),
 					notifyMount
 				);
-			} else if (elem && next !== mounted) {
-				const a = document.activeElement;
+				mounted.item_ = item;
+			} else {
+				let mountAt, term;
+				if (elem && (mountAt = next.first_()) !== (term = mounted.next_.first_())) {
+					const a = document.activeElement;
 
-				const mountAt = next.first_();
-				const term = mounted.next_.first_();
-				for (let cur = mounted.first_(); cur != term;) {
-					const n = cur.nextSibling;
-					elem.insertBefore(cur, mountAt);
-					cur = n;
+					for (let cur = mounted.first_(); cur != term;) {
+						const n = cur.nextSibling;
+						elem.insertBefore(cur, mountAt);
+						cur = n;
+					}
+
+					if (a) a.focus();
 				}
 
-				if (a) a.focus();
 				mounted.prev_.next_ = mounted.next_;
 				mounted.next_.prev_ = mounted.prev_;
-			} else {
-				insertMap(mounts, item, mounted);
-				return mounted;
 			}
 
 			mounted.prev_ = next.prev_;
 			mounted.next_ = next;
 			mounted.prev_.next_ = next.prev_ = mounted;
-			insertMap(mounts, item, mounted);
 			return mounted;
+		};
+
+		const insertMap = (map, item) => {
+			let a = map.get(item.item_);
+			if (!a) map.set(item.item_, a = []);
+			push(a, item);
+		};
+
+		const cleanup = (mounts) => {
+			for (const arr of mounts.values()) {
+				for (const mount of arr) {
+					mount.prev_.next_ = mount.next_;
+					mount.next_.prev_ = mount.prev_;
+					mount();
+				}
+			}
 		};
 
 		const listener = watch(each, each => {
@@ -301,7 +297,7 @@ const functionElement = (func, props) => {
 					const link = delta.network_.link_;
 
 					if (isModify || isInstance(delta, Delete)) {
-						insertMap(orphaned, delta.prev, link[linkGetter]);
+						insertMap(orphaned, link[linkGetter]);
 						link[linkGetter] = null;
 					}
 
@@ -326,27 +322,33 @@ const functionElement = (func, props) => {
 				cleanup(orphaned);
 			});
 
-			const oldMounts = mounts;
-			mounts = new Map();
+			const orphaned = new Map();
+			for (let cur = root.prev_; cur != root; cur = cur.prev_) {
+				insertMap(orphaned, cur);
+			}
 
 			let link = observer?.linkNext_;
 			let mounted = root;
 			for (const item of each) {
-				mounted = addMount(oldMounts, item, mounted.next_);
+				mounted = addMount(orphaned, item, mounted.next_);
 				if (link) {
 					link[linkGetter] = mounted;
 					link = link.linkNext_;
 				}
 			}
-			if (oldMounts) cleanup(oldMounts);
+
+			cleanup(orphaned);
 		});
 
 		notifyMount = 0;
 
 		return assignFirst(() => {
 			listener();
-			cleanup(mounts);
 			arrayListener?.();
+
+			for (let cur = root.next_; cur != root; cur = cur.next_) {
+				cur();
+			}
 		}, () => root.next_.first_());
 	}
 };
