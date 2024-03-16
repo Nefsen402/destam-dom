@@ -30,7 +30,7 @@ export default defineConfig({
 				{
 					name: 'transform-literal-html',
 					transform(code, id) {
-						if (id.endsWith('.js')) {
+						if (id.endsWith('.js') || id.endsWith('.jsx')) {
 							const transform = compileHTMLLiteral(code, {
 								sourceFileName: id,
 								plugins: ['jsx'],
