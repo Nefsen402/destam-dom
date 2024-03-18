@@ -284,14 +284,20 @@ const functionElement = (func, props) => {
 			}
 		};
 
+		const destroy = orphaned => {
+			for (link = link.linkNext_; link?.reg_; link = link.linkNext_) {
+				delete link[linkGetter];
+			}
+
+			for (let cur = root.prev_; cur != root; cur = cur.prev_) {
+				(orphaned ? insertMap : cur)(orphaned, cur);
+			}
+		};
+
 		let link = 0;
 		const listener = watch(each, each => {
 			arrayListener?.();
 			const observer = each[observerGetter];
-
-			for (link = link.linkNext_; link?.reg_; link = link.linkNext_) {
-				delete link[linkGetter];
-			}
 
 			arrayListener = observer && shallowListener(observer, commit => {
 				const orphaned = new Map();
@@ -328,9 +334,7 @@ const functionElement = (func, props) => {
 			});
 
 			const orphaned = new Map();
-			for (let cur = root.prev_; cur != root; cur = cur.prev_) {
-				insertMap(orphaned, cur);
-			}
+			destroy(orphaned);
 
 			link = observer?.linkNext_;
 			let mounted = root;
@@ -350,10 +354,7 @@ const functionElement = (func, props) => {
 		return assignFirst(() => {
 			listener();
 			arrayListener?.();
-
-			for (let cur = root.next_; cur != root; cur = cur.next_) {
-				cur();
-			}
+			destroy();
 		}, () => root.next_.first_());
 	}
 };
