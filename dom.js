@@ -289,7 +289,7 @@ const functionElement = (func, props) => {
 			arrayListener?.();
 			const observer = each[observerGetter];
 
-			for (; link?.reg_; link = link.linkNext_) {
+			for (link = link.linkNext_; link?.reg_; link = link.linkNext_) {
 				delete link[linkGetter];
 			}
 
