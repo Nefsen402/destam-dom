@@ -284,9 +284,14 @@ const functionElement = (func, props) => {
 			}
 		};
 
+		let link = 0;
 		const listener = watch(each, each => {
 			arrayListener?.();
 			const observer = each[observerGetter];
+
+			for (; link?.reg_; link = link.linkNext_) {
+				delete link[linkGetter];
+			}
 
 			arrayListener = observer && shallowListener(observer, commit => {
 				const orphaned = new Map();
@@ -298,7 +303,7 @@ const functionElement = (func, props) => {
 
 					if (isModify || isInstance(delta, Delete)) {
 						insertMap(orphaned, link[linkGetter]);
-						link[linkGetter] = null;
+						delete link[linkGetter];
 					}
 
 					if (isModify || isInstance(delta, Insert)) {
@@ -327,7 +332,7 @@ const functionElement = (func, props) => {
 				insertMap(orphaned, cur);
 			}
 
-			let link = observer?.linkNext_;
+			link = observer?.linkNext_;
 			let mounted = root;
 			for (const item of each) {
 				mounted = addMount(orphaned, item, mounted.next_);
