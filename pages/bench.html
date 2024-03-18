@@ -69,12 +69,12 @@
 			    run = () => state.set(OArray(buildData(1000))),
 			    runLots = () => state.set(OArray(buildData(10000))),
 			    add = () => state.get().push(...buildData(1000)),
-			    update = () => () => {
+			    update = () => {
 			    	let arr = state.get();
 			      for(let i = 0, len = arr.length; i < len; i += 10)
 			        arr[i].label = arr[i].label + ' !!!';
 			    },
-			    swapRows = () => () => {
+			    swapRows = () => {
 			    	let arr = state.get();
 			      if (arr.length > 998) {
 			        let tmp = arr[1];
