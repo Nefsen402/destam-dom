@@ -87,9 +87,9 @@ const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
 	};
 
 	const watcher = watch(each, each => {
-		arrayListener?.();
 		const observer = each[observerGetter];
 
+		arrayListener?.();
 		arrayListener = observer && shallowListener(observer, commit => {
 			const orphaned = new Map();
 			const inserts = [];
@@ -244,6 +244,16 @@ const nativeElement = (e, props) => {
 	};
 };
 
+const callAllSafe = list => {
+	for (const c of list) {
+		try {
+			c();
+		} catch (e) {
+			console.error(e);
+		}
+	}
+};
+
 export const mount = (elem, item, before, notifyMount) => {
 	let mounted = null;
 	let prevText = 0;
@@ -279,7 +289,7 @@ export const mount = (elem, item, before, notifyMount) => {
 				notifyMount || (notify = [])
 			);
 
-			if (notify) callAll(notify);
+			if (notify) callAllSafe(notify);
 		}
 	});
 
@@ -327,14 +337,7 @@ const functionElement = (func, props) => {
 
 		return assignFirst(() => {
 			m();
-
-			for (const c of cleanup) {
-				try {
-					c();
-				} catch (e) {
-					console.error(e);
-				}
-			}
+			callAllSafe(cleanup);
 		}, m.first_);
 	};
 
