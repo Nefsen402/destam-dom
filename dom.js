@@ -277,6 +277,7 @@ export const mount = (elem, item, before, notifyMount) => {
 	return assignFirst(() => {
 		watcher();
 		mounted?.();
+		mounted = null;
 	}, () => (mounted?.first_ || before || noop)());
 };
 
