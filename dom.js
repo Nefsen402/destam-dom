@@ -18,102 +18,7 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const nativeElement = (e, props) => {
-	const mountListeners = [];
-	const signals = [];
-	let children = null;
-
-	props?.forEach(([name, val]) => {
-		assert(typeof name === 'string', "Property list must have key as a string");
-
-		if (name === 'children') {
-			children = val;
-			return;
-		}
-
-		if (name[0] === '$') {
-			name = name.substring(1);
-
-			if (isInstance(val, Observer)) {
-				push(signals, [val, val => {
-					e[name] = val;
-				}]);
-			} else {
-				e[name] = val;
-			}
-
-			return;
-		}
-
-		const setAttribute = val => {
-			if (val == null) {
-				val = false;
-			}
-
-			if (typeof val === 'boolean') {
-				e.toggleAttribute(name, val);
-			} else {
-				e.setAttribute(name, val);
-			}
-		};
-
-		if (isInstance(val, Observer)) {
-			push(signals, [val, setAttribute]);
-			return;
-		}
-
-		const type = typeof val;
-		if (type === 'object') {
-			for (const prop in val) {
-				const attr = val[prop];
-				const set = (prop => val => {
-					if (val == null) {
-						e[name].removeProperty(prop);
-					} else {
-						e[name].setProperty(prop, val);
-					}
-				})(prop);
-
-				if (isInstance(attr, Observer)) {
-					push(signals, [attr, set]);
-				} else {
-					set(attr);
-				}
-			}
-
-			return;
-		}
-
-		if (type === 'function') {
-			if (name == 'mount') {
-				push(mountListeners, val);
-			} else {
-				e.addEventListener(name, val);
-			}
-
-			return;
-		}
-
-		setAttribute(val);
-	});
-
-	return (parent, _, before, notifyMount) => {
-		notifyMount.push(...mountListeners);
-
-		const remove = signals.map(([val, handler]) => watch(val, handler));
-		const m = children != null && mount(e, children, 0, notifyMount);
-
-		parent?.insertBefore(e, before());
-
-		return assignFirst(() => {
-			parent?.removeChild(e);
-			callAll(remove);
-			if (m) m();
-		}, () => e);
-	};
-};
-
-export const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
+const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
 	const linkGetter = Symbol();
 	let arrayListener;
 
@@ -242,6 +147,101 @@ export const arrayElement = (createMount, each) => (elem, _, before, notifyMount
 		arrayListener?.();
 		destroy();
 	}, () => root.next_.first_());
+};
+
+const nativeElement = (e, props) => {
+	const mountListeners = [];
+	const signals = [];
+	let children = null;
+
+	props?.forEach(([name, val]) => {
+		assert(typeof name === 'string', "Property list must have key as a string");
+
+		if (name === 'children') {
+			children = val;
+			return;
+		}
+
+		if (name[0] === '$') {
+			name = name.substring(1);
+
+			if (isInstance(val, Observer)) {
+				push(signals, [val, val => {
+					e[name] = val;
+				}]);
+			} else {
+				e[name] = val;
+			}
+
+			return;
+		}
+
+		const setAttribute = val => {
+			if (val == null) {
+				val = false;
+			}
+
+			if (typeof val === 'boolean') {
+				e.toggleAttribute(name, val);
+			} else {
+				e.setAttribute(name, val);
+			}
+		};
+
+		if (isInstance(val, Observer)) {
+			push(signals, [val, setAttribute]);
+			return;
+		}
+
+		const type = typeof val;
+		if (type === 'object') {
+			for (const prop in val) {
+				const attr = val[prop];
+				const set = (prop => val => {
+					if (val == null) {
+						e[name].removeProperty(prop);
+					} else {
+						e[name].setProperty(prop, val);
+					}
+				})(prop);
+
+				if (isInstance(attr, Observer)) {
+					push(signals, [attr, set]);
+				} else {
+					set(attr);
+				}
+			}
+
+			return;
+		}
+
+		if (type === 'function') {
+			if (name == 'mount') {
+				push(mountListeners, val);
+			} else {
+				e.addEventListener(name, val);
+			}
+
+			return;
+		}
+
+		setAttribute(val);
+	});
+
+	return (parent, _, before, notifyMount) => {
+		notifyMount.push(...mountListeners);
+
+		const remove = signals.map(([val, handler]) => watch(val, handler));
+		const m = children != null && arrayElement(mount, children)(e, 0, noop, notifyMount);
+
+		parent?.insertBefore(e, before());
+
+		return assignFirst(() => {
+			parent?.removeChild(e);
+			callAll(remove);
+			if (m) m();
+		}, () => e);
+	};
 };
 
 export const mount = (elem, item, before, notifyMount) => {
