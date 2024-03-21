@@ -16,7 +16,7 @@ export const validTags = ['BASE', 'LINK', 'META', 'STYLE', 'TITLE', 'ADDRESS', '
 	'OPTGROUP', 'OPTION', 'OUTPUT', 'PROGRESS', 'SELECT', 'TEXTAREA',
 	'DETAILS', 'DIALOG', 'SUMMARY', 'SLOT', 'TEMPLATE'];
 
-export default (h, spread = Object.entries, concatinator = strings => {
+export default (h, assign = Object.assign, concatinator = strings => {
 	if (len(strings) === 1) {
 		return strings[0]
 	} else {
@@ -126,7 +126,7 @@ export default (h, spread = Object.entries, concatinator = strings => {
 				i++;
 			}
 
-			const props = [];
+			const props = {};
 			let prevTag;
 			for (; tokens[i] !== special['>']; i++) {
 				assert(i < len(tokens), "Unexpected end of input");
@@ -140,14 +140,14 @@ export default (h, spread = Object.entries, concatinator = strings => {
 					token = tokens[++i];
 					if (prevTag) {
 						assert(!Object.values(special).includes(token), "Unexpected special char near attribute value");
-						prevTag[1] = token;
+						props[prevTag] = token;
 						prevTag = 0;
 					} else {
-						props.push(...spread(token));
+						assign(props, token);
 					}
 				} else {
 					assert(!Object.values(special).includes(token), "Unexpected special char near attribute name");
-					push(props, prevTag = [token, true]);
+					props[prevTag = token] = true;
 				}
 			}
 
@@ -164,7 +164,7 @@ export default (h, spread = Object.entries, concatinator = strings => {
 						return 1;
 					};
 
-					for (const prop of props) {
+					for (const prop in props) {
 						if (!isInstance(prop, Array)) {
 							continue;
 						}
@@ -178,7 +178,7 @@ export default (h, spread = Object.entries, concatinator = strings => {
 					}
 
 					return true;
-				})(), "Invalid attribute name: " + props.map(p => p[0]).join(", "));
+				})(), "Invalid attribute name: " + Object.keys(props).join(", "));
 
 				assert(typeof name !== 'string' || validTags.includes(name.toUpperCase()) || name.includes('-'),
 					"Invalid tag name: " + name);

@@ -57,7 +57,7 @@
 
 			const Button = ({ id, text, fn }) => {
 			  return html `<div class='col-sm-6 smallpad'>
-			    <button id=${id} class='btn btn-primary btn-block' type='button' click=${fn}>${text}</button>
+			    <button id=${id} class='btn btn-primary btn-block' type='button' $onclick=${fn}>${text}</button>
 			  </div>`
 			};
 
@@ -105,8 +105,8 @@
 			    <table class='table table-hover table-striped test-data'><tbody>
 			      <${({each: row}) => {
 			        return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
-			          <td class='col-md-4'><a click=${() => selected.set(row)}>${row.observer.path('label')}</a></td>
-			          <td class='col-md-1'><a click=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
+			          <td class='col-md-4'><a $onclick=${() => selected.set(row)}>${row.observer.path('label')}</a></td>
+			          <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
 			          <td class='col-md-6'/>
 			        </tr>`
 			      }} each=${state} />

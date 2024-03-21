@@ -58,7 +58,7 @@
 					if (type.includes('e')) {style.right = 0; style.width = '10px'}
 
 					return html`
-						<div style=${style} mousedown=${e => {
+						<div $style=${style} $onmousedown=${e => {
 							e.stopPropagation();
 							sendToTop();
 
@@ -88,7 +88,7 @@
 				}
 
 				return html`
-					<div style=${{
+					<div $style=${{
 						position: 'absolute',
 						top: window.observer.path('y').map(v => v + 'px'),
 						left: window.observer.path('x').map(v => v + 'px'),
@@ -101,11 +101,11 @@
 							style="inset: 0; top: 40px; position: absolute; border: none;"
 							width=${window.observer.path('width')}
 							height=${window.observer.path('height').map(h => h - 40)}
-							load=${e => {
+							$onload=${e => {
 								window.name = e.target.title;
 							}}
 						/>
-						<div style="position: absolute; height: 40px; top: 0; left: 0; right: 0" mousedown=${(e) => {
+						<div style="position: absolute; height: 40px; top: 0; left: 0; right: 0" $onmousedown=${(e) => {
 							sendToTop();
 
 							currentInteraction = {
@@ -117,7 +117,7 @@
 							e.stopPropagation();
 						}}>
 							${window.observer.path('name')}
-							<div class=center style="position: absolute; right: 0; width: 40px; top: 0; bottom: 0; font-size: 20px; cursor: pointer;" click=${() => {
+							<div class=center style="position: absolute; right: 0; width: 40px; top: 0; bottom: 0; font-size: 20px; cursor: pointer;" $onclick=${() => {
 								let index = windows.indexOf(window);
 								windows.splice(index, 1);
 							}}>x</div>
@@ -130,7 +130,7 @@
 			};
 
 			mount(document.body, html`
-				<button click=${() => {
+				<button $onclick=${() => {
 					windows.push(OObject({
 						x: 10,
 						y: 10,

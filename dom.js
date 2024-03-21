@@ -150,88 +150,64 @@ const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
 };
 
 const nativeElement = (e, props) => {
-	const mountListeners = [], unmountListeners = [];
 	const signals = [];
-	let children = null;
+	let children = null, onmount = null, onunmount = null;
 
-	props?.forEach(([name, val]) => {
+	const addSignal = (name, val) => {
 		assert(typeof name === 'string', "Property list must have key as a string");
 
 		if (name === 'children') {
 			children = arrayElement(mount, val);
-			return;
-		}
-
-		if (name[0] === '$') {
+		} else if (name[0] === '$') {
 			name = name.substring(1);
 
-			if (isInstance(val, Observer)) {
-				push(signals, [val, val => {
-					e[name] = val;
-				}]);
-			} else {
-				e[name] = val;
-			}
-
-			return;
-		}
-
-		const setAttribute = val => {
-			if (val == null) {
-				val = false;
-			}
-
-			if (typeof val === 'boolean') {
-				e.toggleAttribute(name, val);
-			} else {
-				e.setAttribute(name, val);
-			}
-		};
-
-		if (isInstance(val, Observer)) {
-			push(signals, [val, setAttribute]);
-			return;
-		}
-
-		const type = typeof val;
-		if (type === 'object') {
-			for (const prop in val) {
-				const attr = val[prop];
-				const set = (prop => val => {
-					if (val == null) {
-						e[name].removeProperty(prop);
-					} else {
-						e[name].setProperty(prop, val);
-					}
-				})(prop);
-
-				if (isInstance(attr, Observer)) {
-					push(signals, [attr, set]);
+			const set = (obj, name, val) => {
+				if (isInstance(val, Observer)) {
+					push(signals, [val, val => {
+						obj[name] = val ?? null;
+					}]);
 				} else {
-					set(attr);
+					obj[name] = val ?? null;
 				}
-			}
+			};
 
-			return;
-		}
-
-		if (type === 'function') {
-			if (name == 'mount') {
-				push(mountListeners, val);
-			} else if (name === 'unmount') {
-				push(unmountListeners, val);
+			if (name == 'onmount') {
+				onmount = val;
+			} else if (name === 'onunmount') {
+				onunmount = val;
+			} else if (!isInstance(val, Observer) && typeof val === 'object') {
+				for (const prop in val) {
+					set(e[name], prop, val[prop]);
+				}
 			} else {
-				e.addEventListener(name, val);
+				set(e, name, val);
 			}
+		} else {
+			const set = val => {
+				val = val ?? false;
+				assert(['boolean', 'string', 'number'].includes(typeof val), `type ${typeof val} is used as the attribute: ${name}`);
 
-			return;
+				if (typeof val === 'boolean') {
+					e.toggleAttribute(name, val);
+				} else {
+					e.setAttribute(name, val);
+				}
+			};
+
+			if (isInstance(val, Observer)) {
+				push(signals, [val, set]);
+			} else {
+				set(val);
+			}
 		}
+	};
 
-		setAttribute(val);
-	});
+	for (let o in props) {
+		addSignal(o, props[o]);
+	}
 
 	return (parent, _, before, notifyMount) => {
-		notifyMount.push(...mountListeners);
+		if (onmount) push(notifyMount, onmount);
 
 		const remove = signals.map(([val, handler]) => watch(val, handler));
 		const m = children?.(e, 0, noop, notifyMount);
@@ -242,7 +218,7 @@ const nativeElement = (e, props) => {
 			parent?.removeChild(e);
 			callAll(remove);
 			if (m) m();
-			callAllSafe(unmountListeners);
+			if (onunmount) callAllSafe([onunmount]);
 		}, () => e);
 	};
 };
@@ -305,25 +281,13 @@ export const mount = (elem, item, before, notifyMount) => {
 };
 
 const functionElement = (func, props) => {
-	assert((() => {
-		const seen = new Set(), dups = new Set();
-		for (const [name] of props) {
-			if (seen.has(name)) {
-				dups.add(name);
-			}
-
-			seen.add(name);
-		}
-
-		return !dups.size;
-	})(), "Duplicate tags");
-
+	const each = props.each;
 	const createMount = (elem, item, before, notifyMount) => {
 		const cleanup = [];
 		let dom = null;
 		try {
-			if (eachEntry) eachEntry[1] = item;
-			dom = func(Object.fromEntries(props), cb => {
+			if (each) props.each = item;
+			dom = func(props, cb => {
 				assert(typeof cb === 'function', "The cleanup function must be passed a function");
 				push(cleanup, cb);
 			});
@@ -344,23 +308,21 @@ const functionElement = (func, props) => {
 		}, m.first_);
 	};
 
-	const eachEntry = props.find(e => e[0] === 'each');
-	if (!eachEntry) {
+	if (!each) {
 		return createMount;
 	}
 
-	const each = eachEntry[1];
 	assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
 		"'each' property is not iterable");
 
 	return arrayElement(createMount, each);
 };
 
-export const h = (name, props = [], children) => {
+export const h = (name, props = {}, children) => {
 	assert(name != null, "Tag name cannot be null or undefined");
 
 	if (children) {
-		push(props, ['children', children]);
+		props.children = children;
 	}
 
 	const type = typeof name;

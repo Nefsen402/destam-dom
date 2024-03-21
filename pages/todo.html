@@ -15,7 +15,7 @@
 					style=${{
 						'text-decoration': item.observer.path('completed').map(c => c ? 'line-through' : 'none')
 					}}
-					click=${() => {
+					$onclick=${() => {
 						item.completed = !item.completed;
 					}}
 				>${item.observer.path('name')}</li>`
@@ -34,8 +34,8 @@
 
 				return html`
 					<div>
-						<input $value=${item} change=${e => item.set(e.target.value)} />
-						<button click=${() => {
+						<input $value=${item} $onchange=${e => item.set(e.target.value)} />
+						<button $onclick=${() => {
 							if (!item.get()) return;
 
 							todos.push(OObject({
@@ -52,9 +52,9 @@
 			const TodoFilter = ({filter}) => {
 				return html`<div>
 					Show:
-					<button disabled=${filter.map(f => f === 'all')} click=${() => filter.set('all')}>All</button>
-					<button disabled=${filter.map(f => f === 'active')} click=${() => filter.set('active')}>Active</button>
-					<button disabled=${filter.map(f => f === 'completed')} click=${() => filter.set('completed')}>Completed</button>
+					<button disabled=${filter.map(f => f === 'all')} $onclick=${() => filter.set('all')}>All</button>
+					<button disabled=${filter.map(f => f === 'active')} $onclick=${() => filter.set('active')}>Active</button>
+					<button disabled=${filter.map(f => f === 'completed')} $onclick=${() => filter.set('completed')}>Completed</button>
 				</div>`;
 			};
 
@@ -78,12 +78,12 @@
 				}).remove);
 
 				return html`<div>
-					<button disabled=${historyPos.map(p => p === 0)} click=${() => {
+					<button disabled=${historyPos.map(p => p === 0)} $onclick=${() => {
 						const pos = historyPos.get();
 						network.apply(history.get()[pos - 1].map(delta => delta.invert()), 'is-undo-action');
 						historyPos.set(pos - 1);
 					}}>Undo</button>
-					<button disabled=${Observer.all([historyPos, history]).map(([p, h]) => p === h.length)} click=${() => {
+					<button disabled=${Observer.all([historyPos, history]).map(([p, h]) => p === h.length)} $onclick=${() => {
 						const pos = historyPos.get();
 						network.apply(history.get()[pos], 'is-undo-action');
 						historyPos.set(pos + 1);

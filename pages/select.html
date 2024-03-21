@@ -31,7 +31,7 @@
 				return html`
 					<${shown} value=${item.completed.map(e => !e)}>
 						<button
-							style=${{
+							$style=${{
 								display: "block",
 								width: "200px",
 								height: "45px",
@@ -48,7 +48,7 @@
 									}
 								}),
 							}}
-							click=${() => {
+							$onclick=${() => {
 								let sel = selected.get();
 
 								if (sel.left && sel.right && sel.left !== sel.right) {
@@ -134,7 +134,7 @@
 						<div style="display: inline-block; width: 30px;" />
 						<${List} items=${right} key="right"/>
 					</>
-					<button style="position: absolute; right: 10px; bottom: 10px" click=${() => {
+					<button style="position: absolute; right: 10px; bottom: 10px" $onclick=${() => {
 						left.set(randomize(left.get()));
 						right.set(randomize(right.get()));
 					}}>Randomize</button>

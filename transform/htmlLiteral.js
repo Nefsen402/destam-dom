@@ -13,23 +13,18 @@ const createArray = (items) => {
 	}
 };
 
+const spreadKeys = Symbol();
+
 const html = htm((name, props, children) => {
-	if (typeof name === 'string') {
-		name = t.stringLiteral(name);
-	}
-
-	if (props.length === 0 && !children) {
-		return t.callExpression(t.identifier('h'), [name]);
-	}
-
 	const args = [
-		name,
-		t.arrayExpression(props.map(obj => {
-			if (obj.type === 'SpreadElement') {
-				return obj;
-			}
+		typeof name === 'string' ? t.stringLiteral(name) : name,
+	];
 
-			let [key, val] = obj;
+	if (Object.keys(props).length) {
+		args.push(t.objectExpression(Object.entries(props).filter(e => e[0] !== spreadKeys).map(([key, val]) => {
+			if (props[spreadKeys]?.includes(key)) {
+				return t.spreadElement(val);
+			}
 
 			if (val === true) {
 				val = t.booleanLiteral(val);
@@ -43,9 +38,11 @@ const html = htm((name, props, children) => {
 				val = t.stringLiteral(val);
 			}
 
-			return t.arrayExpression([key, val]);
-		})),
-	]
+			return t.objectProperty(key, val);
+		})));
+	} else if (children) {
+		args.push(t.arrayExpression([]));
+	}
 
 	if (children) {
 		args.push(t.arrayExpression(children.map(child => {
@@ -58,8 +55,13 @@ const html = htm((name, props, children) => {
 	}
 
 	return t.callExpression(t.identifier('h'), args);
-}, obj => {
-	return [t.spreadElement(t.callExpression(t.memberExpression(t.identifier("Object"), t.identifier("entries")), [obj]))];
+}, (props, obj) => {
+	const key = Symbol();
+
+	if (!props[spreadKeys]) props[spreadKeys] = [];
+	props[spreadKeys].push(key);
+
+	props[key] = obj;
 }, strings => {
 	if (strings.length === 1) {
 		return strings[0];
@@ -104,7 +106,7 @@ const parse = node => {
 
 	const args = [
 		name,
-		t.arrayExpression(node.openingElement.attributes.map(attr => {
+		t.objectExpression(node.openingElement.attributes.map(attr => {
 			if (attr.type === 'JSXSpreadAttribute') {
 				return t.spreadElement(t.callExpression(
 					t.memberExpression(t.identifier("Object"), t.identifier("entries")), [
@@ -124,7 +126,7 @@ const parse = node => {
 				throw new Error("Attribute name must be an identifier");
 			}
 
-			return t.arrayExpression([t.stringLiteral(name.name), value]);
+			return t.objectProperty(t.stringLiteral(name.name), value);
 		})),
 	];
 

@@ -38,12 +38,12 @@
 				return html`<input
 					style=${style}
 					$value=${value}
-					input=${e => value.set(e.target.value)}
+					$oninput=${e => value.set(e.target.value)}
 				/>`;
 			};
 
 			mount(document.body, html`
-				<button click=${load}> Load more </button> ${loading.map(loading => loading ? 'Loading...' : null)}
+				<button $onclick=${load}> Load more </button> ${loading.map(loading => loading ? 'Loading...' : null)}
 				<div>
 					${currentAdding.observer.path('error').map(e => !!e).map(error => {
 						if (error) {
@@ -54,7 +54,7 @@
 					})}
 					Title: <${Input} value=${currentAdding.observer.path('title')} /><br/>
 					Body: <${Input} value=${currentAdding.observer.path('body')} /><br/>
-					<button click=${() => {
+					<button $onclick=${() => {
 						if (!currentAdding.title) {
 							if (currentAdding.error) {
 								currentAdding.error += '...';
@@ -81,7 +81,7 @@
 							<h2>${title}</h2>
 							<p>${body}</p>
 							<div style="text-align: center;">
-								<button click=${() => {
+								<button $onclick=${() => {
 									const index = posts.indexOf(post);
 									if (index >= 0) posts.splice(index, 1);
 								}}>Delete</button>

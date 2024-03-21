@@ -18,7 +18,7 @@
 
 			const Input = ({value, ...props}) => {
 				return html`
-					<input $value=${value} input=${e => {
+					<input $value=${value} $oninput=${e => {
 						if (props.type === 'number') {
 							value.set(parseInt(e.target.value));
 						} else {
@@ -42,7 +42,7 @@
 					<div class=player>
 						${each.observer.path('name')}
 						<${Input} value=${each.observer.path('score')} type=number />
-						<button click=${e => {
+						<button $onclick=${e => {
 							let i = scores.indexOf(each);
 							scores.splice(i, 1);
 						}}>x</button>
@@ -61,7 +61,7 @@
 					<div class=edit>
 						<${Input} value=${newPlayerName} placeholder="Player name..." />
 						<${Input} value=${newPlayerScore} type=number />
-						<button click=${() => {
+						<button $onclick=${() => {
 							scores.push(OObject({name: newPlayerName.get(), score: newPlayerScore.get()}))
 							newPlayerName.set("");
 							newPlayerScore.set("");

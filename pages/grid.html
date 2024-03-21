@@ -29,15 +29,15 @@
 			const sizeRepeat = size.map(size => `repeat(${size}, ${blockSize / size}px)`);
 
 			mount(document.body, html`
-				Grid Side Length: <input $value=${size} input=${e => size.set(e.target.value)} type=number /><br />
+				Grid Side Length: <input $value=${size} $oninput=${e => size.set(e.target.value)} type=number /><br />
 
-				<div style=${{display: 'grid', 'grid-template-rows': sizeRepeat, 'grid-template-columns': sizeRepeat}}>
+				<div $style=${{display: 'grid', 'grid-template-rows': sizeRepeat, 'grid-template-columns': sizeRepeat}}>
 					<${(() => {
 						const background = Observer.mutable('initial');
 						background.wait(500).watch(() => background.set('initial'));
 
 						return html`
-							<div class=cell style=${{background}} mouseenter=${() => {
+							<div class=cell $style=${{background}} $onmouseenter=${() => {
 								background.set(randomHexColorString());
 							}} />
 						`;

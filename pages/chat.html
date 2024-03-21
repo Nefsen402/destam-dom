@@ -14,12 +14,12 @@
 
 				return html`
 					<${input}
-						style="height: 35px; width: 90%;"
+						$style="height: 35px; width: 90%;"
 						$value=${value}
-						input=${e => {
+						$oninput=${e => {
 							value.set(e.target.value);
 						}}
-						keydown=${e => {
+						$onkeydown=${e => {
 							if (keydown) keydown(e);
 
 							if (e.key === 'Escape') {
@@ -30,8 +30,8 @@
 								enter(value.get());
 							}
 						}}
-						blur=${cancel}
-						mount=${() => {
+						$onblur=${cancel}
+						$onmount=${() => {
 							input.focus();
 							requestIdleCallback(() => input.setSelectionRange(0, input.value.length));
 						}}
@@ -41,7 +41,7 @@
 
 			const Message = ({each: item}) => {
 				return html `
-					${item.observer.path('editing').map(Boolean).map(editing => {
+					${item.observer.path('editing').map(e => e != null).map(editing => {
 						if (!editing) {
 							return html`${item.observer.path('text')}`;
 						}
@@ -76,14 +76,14 @@
 				`
 			};
 
-			const Center = ({children, style}) => {
+			const Center = ({children, $style}) => {
 				return html`
-					<div style=${{
+					<div $style=${{
 						left: "50%",
 						top: "50%",
 						position: "relative",
 						transform: "translate(-50%, -50%)",
-						...style,
+						...$style,
 					}}>
 						${children}
 					</div>
@@ -105,7 +105,7 @@
 
 				return html`
 					<${Message} each=${messages} />
-					<div style=${{
+					<div $style=${{
 						position: "absolute",
 						bottom: "0px",
 						left: "0px",
