@@ -75,13 +75,13 @@ const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
 		}
 	};
 
-	let link = 0;
+	let link = null;
 	const destroy = orphaned => {
 		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
 			delete link[linkGetter];
 		}
 
-		for (let cur = root.prev_; cur != root; cur = cur.prev_) {
+		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
 			(orphaned ? insertMap : cur)(orphaned, cur);
 		}
 	};
