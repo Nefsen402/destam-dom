@@ -150,7 +150,7 @@ const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
 };
 
 const nativeElement = (e, props) => {
-	const mountListeners = [];
+	const mountListeners = [], unmountListeners = [];
 	const signals = [];
 	let children = null;
 
@@ -218,6 +218,8 @@ const nativeElement = (e, props) => {
 		if (type === 'function') {
 			if (name == 'mount') {
 				push(mountListeners, val);
+			} else if (name === 'unmount') {
+				push(unmountListeners, val);
 			} else {
 				e.addEventListener(name, val);
 			}
@@ -240,6 +242,7 @@ const nativeElement = (e, props) => {
 			parent?.removeChild(e);
 			callAll(remove);
 			if (m) m();
+			callAllSafe(unmountListeners);
 		}, () => e);
 	};
 };
