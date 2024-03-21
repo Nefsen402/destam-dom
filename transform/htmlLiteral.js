@@ -20,8 +20,8 @@ const html = htm((name, props, children) => {
 		typeof name === 'string' ? t.stringLiteral(name) : name,
 	];
 
-	if (Object.keys(props).length) {
-		args.push(t.objectExpression(Object.entries(props).filter(e => e[0] !== spreadKeys).map(([key, val]) => {
+	if (Object.keys(props).length || children) {
+		args.push(t.objectExpression(Object.entries(props).map(([key, val]) => {
 			if (props[spreadKeys]?.includes(key)) {
 				return t.spreadElement(val);
 			}
@@ -40,8 +40,6 @@ const html = htm((name, props, children) => {
 
 			return t.objectProperty(key, val);
 		})));
-	} else if (children) {
-		args.push(t.arrayExpression([]));
 	}
 
 	if (children) {
@@ -56,7 +54,7 @@ const html = htm((name, props, children) => {
 
 	return t.callExpression(t.identifier('h'), args);
 }, (props, obj) => {
-	const key = Symbol();
+	const key = '~spread-' + Math.random();
 
 	if (!props[spreadKeys]) props[spreadKeys] = [];
 	props[spreadKeys].push(key);
