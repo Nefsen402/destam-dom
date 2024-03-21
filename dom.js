@@ -158,7 +158,7 @@ const nativeElement = (e, props) => {
 		assert(typeof name === 'string', "Property list must have key as a string");
 
 		if (name === 'children') {
-			children = val;
+			children = arrayElement(mount, val);
 			return;
 		}
 
@@ -232,7 +232,7 @@ const nativeElement = (e, props) => {
 		notifyMount.push(...mountListeners);
 
 		const remove = signals.map(([val, handler]) => watch(val, handler));
-		const m = children != null && arrayElement(mount, children)(e, 0, noop, notifyMount);
+		const m = children?.(e, 0, noop, notifyMount);
 
 		parent?.insertBefore(e, before());
 
