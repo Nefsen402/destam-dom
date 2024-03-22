@@ -6,10 +6,10 @@ This is a dom manipulation library built on destam. This library does not use a 
 ```js
 const count = Observer.mutable(0);
 mount(document.body, html`
-	<button click=${() => count.set(count.get() + 1)}>
+	<button $onclick=${() => count.set(count.get() + 1)}>
 		Button clicked ${count} times
 	</button>
-	<button click=${() => count.set(0)}>Reset</button>
+	<button $onclick=${() => count.set(0)}>Reset</button>
 `);
 ```
 
@@ -30,7 +30,7 @@ const NumComponent = ({each: num}) => {
 };
 
 mount(document.body, html`
-	<button click=${() => numbers.push(numbers.length + 1)}>
+	<button $onclick=${() => numbers.push(numbers.length + 1)}>
 		Add number
 	</button>
 	<p>
