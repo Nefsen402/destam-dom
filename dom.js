@@ -273,19 +273,25 @@ export const h = (e, props = {}, children) => {
 		assert(isInstance(e, Node) || typeof e === 'string',
 			"Unsupported node type: " + typeof e);
 
-		const signals = [];
-		let onmount = null, onunmount = null;
-
 		if (!isInstance(e, Node)) {
 			e = document.createElement(e);
 		}
 
+		const extract = prop => {
+			const val = props[prop];
+			delete props[prop];
+			return val;
+		};
+
+		const onmount = extract('$onmount');
+		const onunmount = extract('$onunmount');
+		children = extract('children');
+
+		const signals = [];
 		Object.entries(props).map(([name, val]) => {
 			assert(typeof name === 'string', "Property list must have key as a string");
 
-			if (name === 'children') {
-				children = val;
-			} else if (name[0] === '$') {
+			if (name[0] === '$') {
 				name = name.substring(1);
 
 				const set = (obj, name, val) => {
@@ -298,11 +304,7 @@ export const h = (e, props = {}, children) => {
 					}
 				};
 
-				if (name === 'onmount') {
-					onmount = val;
-				} else if (name === 'onunmount') {
-					onunmount = val;
-				} else if (!isInstance(val, Observer) && typeof val === 'object') {
+				if (!isInstance(val, Observer) && typeof val === 'object') {
 					for (const prop in val) {
 						set(e[name], prop, val[prop]);
 					}
