@@ -106,11 +106,7 @@ const parse = node => {
 		name,
 		t.objectExpression(node.openingElement.attributes.map(attr => {
 			if (attr.type === 'JSXSpreadAttribute') {
-				return t.spreadElement(t.callExpression(
-					t.memberExpression(t.identifier("Object"), t.identifier("entries")), [
-						attr.argument,
-					]
-				));
+				return t.spreadElement(attr.argument);
 			}
 
 			let {name, value} = attr;
