@@ -244,13 +244,14 @@ export const mount = (elem, item, before, notifyMount) => {
 		}
 
 		let func;
-		if (typeof val === 'function') {
+		const type = typeof val;
+		if (type === 'function') {
 			prevText = 0;
 			func = val;
 		} else if (isInstance(val, Node)) {
 			prevText = 0;
 			func = nativeElement(val);
-		} else if (isInstance(val, Array)) {
+		} else if (type === 'object') {
 			prevText = 0;
 			func = arrayElement(mount, val);
 		} else if (prevText) {
