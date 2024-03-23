@@ -36,9 +36,9 @@ const nodeMounter = (elem, e, before, _, __, remove) => {
 	elem?.insertBefore(e, before());
 
 	return assignFirst(val => {
-		if (remove) callAllSafe(remove);
 		if (val == null) {
 			elem?.removeChild(e);
+			if (remove) callAllSafe(remove);
 			return 0;
 		}
 
@@ -298,7 +298,7 @@ export const h = (e, props = {}, children) => {
 					}
 				};
 
-				if (name == 'onmount') {
+				if (name === 'onmount') {
 					onmount = val;
 				} else if (name === 'onunmount') {
 					onunmount = val;
