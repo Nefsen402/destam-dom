@@ -209,12 +209,26 @@ const nativeElement = (e, props) => {
 	return (parent, _, before, notifyMount) => {
 		if (onmount) push(notifyMount, onmount);
 
+		const isNode = isInstance(e, Node);
+		if (!isNode) {
+			e = document.createTextNode(e);
+		}
+
 		const remove = signals.map(([val, handler]) => watch(val, handler));
 		const m = children?.(e, 0, noop, notifyMount);
 
 		parent?.insertBefore(e, before());
 
-		return assignFirst(() => {
+		return assignFirst(val => {
+			if (isInstance(val, Node)) {
+				parent?.replaceChild(val, e);
+				e = val;
+				return 1;
+			} else if (val != null) {
+				e.textContent = val;
+				return 1;
+			}
+
 			parent?.removeChild(e);
 			callAll(remove);
 			if (m) m();
@@ -235,42 +249,35 @@ const callAllSafe = list => {
 
 export const mount = (elem, item, before, notifyMount) => {
 	let mounted = null;
-	let prevText = 0;
+	let lastType = 0;
 	const watcher = watch(item, val => {
 		assert(val !== undefined, "Cannot mount undefined");
 
-		if (val == null) {
-			val = [];
-		}
-
 		let func;
-		const type = typeof val;
-		if (type === 'function') {
-			prevText = 0;
+		let type = typeof val;
+		if (val == null) {
+			func = val
+			type = 1;
+		} else if (type === 'function') {
 			func = val;
-		} else if (isInstance(val, Node)) {
-			prevText = 0;
+			type = 2;
+		} else if (isInstance(val, Node) || type !== 'object') {
 			func = nativeElement(val);
-		} else if (type === 'object') {
-			prevText = 0;
-			func = arrayElement(mount, val);
-		} else if (prevText) {
-			prevText.textContent = val;
+			type = 3;
 		} else {
-			func = nativeElement(prevText = document.createTextNode(val));
+			func = arrayElement(mount, val);
+			type = 4;
 		}
 
-		if (func) {
-			let notify;
+		let notify;
 
-			mounted?.();
-			mounted = func(
-				elem, val, before || noop,
-				notifyMount || (notify = [])
-			);
+		if (!mounted?.(lastType === type ? val : null)) mounted = func?.(
+			elem, val, before || noop,
+			notifyMount || (notify = [])
+		);
 
-			if (notify) callAllSafe(notify);
-		}
+		if (notify) callAllSafe(notify);
+		lastType = type;
 	});
 
 	notifyMount = 0;
