@@ -28,7 +28,7 @@ const callAllSafe = list => {
 	}
 };
 
-export const mount = (elem, item, before, notifyMount, mounter) => {
+export const mount = (elem, item, before = noop, notifyMount, mounter = mount) => {
 	let mounted = null;
 	let lastType = 0;
 	const watcher = watch(item, val => {
@@ -77,7 +77,7 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 					if (mounted === next) return mounted;
 
 					if (!mounted) {
-						mounted = (mounter || mount)(
+						mounted = mounter(
 							elem, item,
 							() => (mounted?.next_ || next).first_(),
 							notifyMount
@@ -207,7 +207,7 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 		let notify;
 
 		if (!mounted?.(lastType === type ? val : null)) mounted = func?.(
-			elem, val, before || noop,
+			elem, val, before,
 			notifyMount || (notify = [])
 		);
 
@@ -221,7 +221,7 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 		watcher();
 		mounted?.();
 		mounted = null;
-	}, () => (mounted?.first_ || before || noop)());
+	}, () => (mounted?.first_ || before)());
 };
 
 export const h = (e, props = {}, children) => {
