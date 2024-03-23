@@ -28,195 +28,191 @@ const callAllSafe = list => {
 	}
 };
 
+const nodeMounter = (elem, e, before) => {
+	if (!isInstance(e, Node)) {
+		e = document.createTextNode(e);
+	}
+
+	elem?.insertBefore(e, before());
+
+	return assignFirst(val => {
+		if (val == null) {
+			elem?.removeChild(e);
+			return 0;
+		}
+
+		if (isInstance(val, Node)) {
+			elem?.replaceChild(val, e);
+			e = val;
+		} else {
+			e.textContent = val;
+		}
+
+		return 1;
+	}, () => e);
+};
+
+const arrayMounter = (elem, val, before, notifyMount, mounter) => {
+	const linkGetter = Symbol();
+	let arrayListener;
+
+	const root = {first_: before};
+	root.next_ = root.prev_ = root;
+	const addMount = (old, item, next) => {
+		let mounted = old?.get(item)?.pop();
+		if (mounted === next) return mounted;
+
+		if (!mounted) {
+			mounted = mounter(
+				elem, item,
+				() => (mounted?.next_ || next).first_(),
+				notifyMount
+			);
+			mounted.item_ = item;
+		} else {
+			let mountAt, term;
+			if (elem && (mountAt = next.first_()) !== (term = mounted.next_.first_())) {
+				const a = document.activeElement;
+
+				for (let cur = mounted.first_(); cur != term;) {
+					const n = cur.nextSibling;
+					elem.insertBefore(cur, mountAt);
+					cur = n;
+				}
+
+				if (a) a.focus();
+			}
+
+			mounted.prev_.next_ = mounted.next_;
+			mounted.next_.prev_ = mounted.prev_;
+		}
+
+		mounted.prev_ = next.prev_;
+		mounted.next_ = next;
+		mounted.prev_.next_ = next.prev_ = mounted;
+		return mounted;
+	};
+
+	const insertMap = (map, item) => {
+		let a = map.get(item.item_);
+		if (!a) map.set(item.item_, a = []);
+		push(a, item);
+	};
+
+	const cleanup = mounts => {
+		for (const arr of mounts.values()) {
+			for (const mount of arr) {
+				mount.prev_.next_ = mount.next_;
+				mount.next_.prev_ = mount.prev_;
+				mount();
+			}
+		}
+	};
+
+	let link = null;
+	const destroy = orphaned => {
+		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
+			delete link[linkGetter];
+		}
+
+		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
+			(orphaned ? insertMap : cur)(orphaned, cur);
+		}
+	};
+
+	const mountList = (val, orphaned) => {
+		const observer = val[observerGetter];
+
+		link = observer?.linkNext_;
+		let mounted = root;
+		for (const item of val) {
+			mounted = addMount(orphaned, item, mounted.next_);
+			if (link) {
+				link[linkGetter] = mounted;
+				link = link.linkNext_;
+			}
+		}
+
+		arrayListener?.();
+		arrayListener = observer && shallowListener(observer, commit => {
+			const orphaned = new Map();
+			const inserts = [];
+
+			for (const delta of commit) {
+				const isModify = isInstance(delta, Modify);
+				const link = delta.network_.link_;
+
+				if (isModify || isInstance(delta, Delete)) {
+					insertMap(orphaned, link[linkGetter]);
+					delete link[linkGetter];
+				}
+
+				if (isModify || isInstance(delta, Insert)) {
+					link.dom_val_ = delta.value;
+					const next = link.linkNext_;
+
+					if (next[linkGetter] || !next.reg_) {
+						inserts.push(link);
+					}
+				}
+			}
+
+			for (let link of inserts) {
+				let next = link.linkNext_[linkGetter] || root;
+				for (; link.reg_ && !link[linkGetter]; link = link.linkPrev_) {
+					next = link[linkGetter] = addMount(orphaned, link.dom_val_, next);
+					delete link.dom_val_;
+				}
+			}
+
+			cleanup(orphaned);
+		});
+	};
+
+	mountList(val);
+	notifyMount = 0;
+
+	return assignFirst(val => {
+		if (val) {
+			const orphaned = new Map();
+			destroy(orphaned);
+			mountList(val, orphaned);
+			cleanup(orphaned);
+
+			return 1;
+		}
+
+		arrayListener?.();
+		destroy();
+		return 0;
+	}, () => root.next_.first_());
+};
+
 export const mount = (elem, item, before = noop, notifyMount, mounter = mount) => {
 	let mounted = null;
-	let lastType = 0;
+	let lastFunc;
 	const watcher = watch(item, val => {
 		assert(val !== undefined, "Cannot mount undefined");
 
-		let func;
 		let type = typeof val;
-		if (val == null) {
+		let func;
+		if (val == null || type === 'function') {
 			func = val;
-			type = 1;
-		} else if (type === 'function') {
-			func = val;
-			type = 2;
 		} else if (isInstance(val, Node) || type !== 'object') {
-			func = (elem, e, before) => {
-				if (!isInstance(e, Node)) {
-					e = document.createTextNode(e);
-				}
-
-				elem?.insertBefore(e, before());
-
-				return assignFirst(val => {
-					if (val == null) {
-						elem?.removeChild(e);
-						return 0;
-					}
-
-					if (isInstance(val, Node)) {
-						elem?.replaceChild(val, e);
-						e = val;
-					} else {
-						e.textContent = val;
-					}
-
-					return 1;
-				}, () => e);
-			};
-
-			type = 3;
+			func = nodeMounter;
 		} else {
-			func = (elem, val, before, notifyMount) => {
-				const linkGetter = Symbol();
-				let arrayListener;
-
-				const root = {first_: before};
-				root.next_ = root.prev_ = root;
-				const addMount = (old, item, next) => {
-					let mounted = old?.get(item)?.pop();
-					if (mounted === next) return mounted;
-
-					if (!mounted) {
-						mounted = mounter(
-							elem, item,
-							() => (mounted?.next_ || next).first_(),
-							notifyMount
-						);
-						mounted.item_ = item;
-					} else {
-						let mountAt, term;
-						if (elem && (mountAt = next.first_()) !== (term = mounted.next_.first_())) {
-							const a = document.activeElement;
-
-							for (let cur = mounted.first_(); cur != term;) {
-								const n = cur.nextSibling;
-								elem.insertBefore(cur, mountAt);
-								cur = n;
-							}
-
-							if (a) a.focus();
-						}
-
-						mounted.prev_.next_ = mounted.next_;
-						mounted.next_.prev_ = mounted.prev_;
-					}
-
-					mounted.prev_ = next.prev_;
-					mounted.next_ = next;
-					mounted.prev_.next_ = next.prev_ = mounted;
-					return mounted;
-				};
-
-				const insertMap = (map, item) => {
-					let a = map.get(item.item_);
-					if (!a) map.set(item.item_, a = []);
-					push(a, item);
-				};
-
-				const cleanup = mounts => {
-					for (const arr of mounts.values()) {
-						for (const mount of arr) {
-							mount.prev_.next_ = mount.next_;
-							mount.next_.prev_ = mount.prev_;
-							mount();
-						}
-					}
-				};
-
-				let link = null;
-				const destroy = orphaned => {
-					for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
-						delete link[linkGetter];
-					}
-
-					for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
-						(orphaned ? insertMap : cur)(orphaned, cur);
-					}
-				};
-
-				const mountList = (val, orphaned) => {
-					const observer = val[observerGetter];
-
-					link = observer?.linkNext_;
-					let mounted = root;
-					for (const item of val) {
-						mounted = addMount(orphaned, item, mounted.next_);
-						if (link) {
-							link[linkGetter] = mounted;
-							link = link.linkNext_;
-						}
-					}
-
-					arrayListener?.();
-					arrayListener = observer && shallowListener(observer, commit => {
-						const orphaned = new Map();
-						const inserts = [];
-
-						for (const delta of commit) {
-							const isModify = isInstance(delta, Modify);
-							const link = delta.network_.link_;
-
-							if (isModify || isInstance(delta, Delete)) {
-								insertMap(orphaned, link[linkGetter]);
-								delete link[linkGetter];
-							}
-
-							if (isModify || isInstance(delta, Insert)) {
-								link.dom_val_ = delta.value;
-								const next = link.linkNext_;
-
-								if (next[linkGetter] || !next.reg_) {
-									inserts.push(link);
-								}
-							}
-						}
-
-						for (let link of inserts) {
-							let next = link.linkNext_[linkGetter] || root;
-							for (; link.reg_ && !link[linkGetter]; link = link.linkPrev_) {
-								next = link[linkGetter] = addMount(orphaned, link.dom_val_, next);
-								delete link.dom_val_;
-							}
-						}
-
-						cleanup(orphaned);
-					});
-				};
-
-				mountList(val);
-				notifyMount = 0;
-
-				return assignFirst(val => {
-					if (val) {
-						const orphaned = new Map();
-						destroy(orphaned);
-						mountList(val, orphaned);
-						cleanup(orphaned);
-
-						return 1;
-					}
-
-					arrayListener?.();
-					destroy();
-					return 0;
-				}, () => root.next_.first_());
-			};
-
-			type = 4;
+			func = arrayMounter;
 		}
 
 		let notify;
 
-		if (!mounted?.(lastType === type ? val : null)) mounted = func?.(
+		if (!mounted?.(lastFunc === func ? val : null)) mounted = func?.(
 			elem, val, before,
-			notifyMount || (notify = [])
+			notifyMount || (notify = []), mounter
 		);
 
 		if (notify) callAllSafe(notify);
-		lastType = type;
+		lastFunc = func;
 	});
 
 	notifyMount = 0;
