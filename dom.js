@@ -28,7 +28,7 @@ const callAllSafe = list => {
 	}
 };
 
-const nodeMounter = (elem, e, before) => {
+const nodeMounter = (elem, e, before, _, __, remove) => {
 	if (!isInstance(e, Node)) {
 		e = document.createTextNode(e);
 	}
@@ -36,6 +36,7 @@ const nodeMounter = (elem, e, before) => {
 	elem?.insertBefore(e, before());
 
 	return assignFirst(val => {
+		if (remove) callAllSafe(remove);
 		if (val == null) {
 			elem?.removeChild(e);
 			return 0;
@@ -227,11 +228,11 @@ export const mount = (elem, item, before = noop, notifyMount, mounter = mount) =
 export const h = (e, props = {}, children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
-	if (children) {
-		props.children = children;
-	}
-
 	if (typeof e === 'function') {
+		if (children) {
+			props.children = children;
+		}
+
 		const each = props.each;
 		const createMount = (elem, item, before, notifyMount) => {
 			const cleanup = [];
@@ -273,7 +274,7 @@ export const h = (e, props = {}, children) => {
 			"Unsupported node type: " + typeof e);
 
 		const signals = [];
-		let children = null, onmount = null, onunmount = null;
+		let onmount = null, onunmount = null;
 
 		if (!isInstance(e, Node)) {
 			e = document.createElement(e);
@@ -282,9 +283,7 @@ export const h = (e, props = {}, children) => {
 		Object.entries(props).map(([name, val]) => {
 			assert(typeof name === 'string', "Property list must have key as a string");
 
-			if (name === 'children') {
-				children = val;
-			} else if (name[0] === '$') {
+			if (name[0] === '$') {
 				name = name.substring(1);
 
 				const set = (obj, name, val) => {
@@ -329,18 +328,13 @@ export const h = (e, props = {}, children) => {
 		});
 
 		return (elem, _, before, notifyMount) => {
-			if (onmount) push(notifyMount, onmount);
-
 			const remove = signals.map(([val, handler]) => watch(val, handler));
-			const m = children != null && mount(e, children, noop, notifyMount);
 
-			elem?.insertBefore(e, before());
-			return assignFirst(() => {
-				elem?.removeChild(e);
-				callAll(remove);
-				if (m) m();
-				if (onunmount) callAllSafe([onunmount]);
-			}, () => e);
+			if (onmount) push(notifyMount, onmount);
+			if (onunmount) push(remove, onunmount);
+			if (children != null) push(remove, mount(e, children, noop, notifyMount));
+
+			return nodeMounter(elem, e, before, notifyMount, 0, remove);
 		};
 	}
 };
