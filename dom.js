@@ -279,7 +279,11 @@ export const h = (e, props = {}, children) => {
 		const signals = [];
 		let children = null, onmount = null, onunmount = null;
 
-		const addSignal = (name, val) => {
+		if (!isInstance(e, Node)) {
+			e = document.createElement(e);
+		}
+
+		Object.entries(props).map(([name, val]) => {
 			assert(typeof name === 'string', "Property list must have key as a string");
 
 			if (name === 'children') {
@@ -326,15 +330,7 @@ export const h = (e, props = {}, children) => {
 					set(val);
 				}
 			}
-		};
-
-		if (!isInstance(e, Node)) {
-			e = document.createElement(e);
-		}
-
-		for (let o in props) {
-			addSignal(o, props[o]);
-		}
+		});
 
 		return (elem, _, before, notifyMount) => {
 			if (onmount) push(notifyMount, onmount);
