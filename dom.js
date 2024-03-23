@@ -18,94 +18,6 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const nativeElement = (e, props) => {
-	const signals = [];
-	let children = null, onmount = null, onunmount = null;
-
-	const addSignal = (name, val) => {
-		assert(typeof name === 'string', "Property list must have key as a string");
-
-		if (name === 'children') {
-			children = val;
-		} else if (name[0] === '$') {
-			name = name.substring(1);
-
-			const set = (obj, name, val) => {
-				if (isInstance(val, Observer)) {
-					push(signals, [val, val => {
-						obj[name] = val ?? null;
-					}]);
-				} else {
-					obj[name] = val ?? null;
-				}
-			};
-
-			if (name == 'onmount') {
-				onmount = val;
-			} else if (name === 'onunmount') {
-				onunmount = val;
-			} else if (!isInstance(val, Observer) && typeof val === 'object') {
-				for (const prop in val) {
-					set(e[name], prop, val[prop]);
-				}
-			} else {
-				set(e, name, val);
-			}
-		} else {
-			const set = val => {
-				val = val ?? false;
-				assert(['boolean', 'string', 'number'].includes(typeof val), `type ${typeof val} is used as the attribute: ${name}`);
-
-				if (typeof val === 'boolean') {
-					e.toggleAttribute(name, val);
-				} else {
-					e.setAttribute(name, val);
-				}
-			};
-
-			if (isInstance(val, Observer)) {
-				push(signals, [val, set]);
-			} else {
-				set(val);
-			}
-		}
-	};
-
-	for (let o in props) {
-		addSignal(o, props[o]);
-	}
-
-	return (parent, _, before, notifyMount) => {
-		if (onmount) push(notifyMount, onmount);
-
-		const isNode = isInstance(e, Node);
-		if (!isNode) {
-			e = document.createTextNode(e);
-		}
-
-		const remove = signals.map(([val, handler]) => watch(val, handler));
-		const m = children != null && mount(e, children, noop, notifyMount);
-
-		parent?.insertBefore(e, before());
-
-		return assignFirst(val => {
-			if (isInstance(val, Node)) {
-				parent?.replaceChild(val, e);
-				e = val;
-				return 1;
-			} else if (val != null) {
-				e.textContent = val;
-				return 1;
-			}
-
-			parent?.removeChild(e);
-			callAll(remove);
-			if (m) m();
-			if (onunmount) callAllSafe([onunmount]);
-		}, () => e);
-	};
-};
-
 const callAllSafe = list => {
 	for (const c of list) {
 		try {
@@ -131,10 +43,30 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 			func = val;
 			type = 2;
 		} else if (isInstance(val, Node) || type !== 'object') {
-			func = nativeElement(val);
+			func = (elem, e, before) => {
+				if (!isInstance(e, Node)) {
+					e = document.createTextNode(e);
+				}
+
+				elem?.insertBefore(e, before());
+
+				return assignFirst(val => {
+					if (isInstance(val, Node)) {
+						elem?.replaceChild(val, e);
+						e = val;
+						return 1;
+					} else if (val != null) {
+						e.textContent = val;
+						return 1;
+					}
+
+					elem?.removeChild(e);
+				}, () => e);
+			};
+
 			type = 3;
 		} else {
-			func = (_, val, before, notifyMount) => {
+			func = (elem, val, before, notifyMount) => {
 				const linkGetter = Symbol();
 				let arrayListener;
 
@@ -292,21 +224,21 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 	}, () => (mounted?.first_ || before || noop)());
 };
 
-export const h = (name, props = {}, children) => {
-	assert(name != null, "Tag name cannot be null or undefined");
+export const h = (e, props = {}, children) => {
+	assert(e != null, "Tag name cannot be null or undefined");
 
 	if (children) {
 		props.children = children;
 	}
 
-	if (typeof name === 'function') {
+	if (typeof e === 'function') {
 		const each = props.each;
 		const createMount = (elem, item, before, notifyMount) => {
 			const cleanup = [];
 			let dom = null;
 			try {
 				if (each) props.each = item;
-				dom = name(props, cb => {
+				dom = e(props, cb => {
 					assert(typeof cb === 'function', "The cleanup function must be passed a function");
 					push(cleanup, cb);
 				});
@@ -337,13 +269,82 @@ export const h = (name, props = {}, children) => {
 		return (elem, item, before, notifyMount) =>
 			mount(elem, each, before, notifyMount, createMount);
 	} else {
-		assert(isInstance(name, Node) || typeof name === 'string',
-			"Unsupported node type: " + typeof name);
+		assert(isInstance(e, Node) || typeof e === 'string',
+			"Unsupported node type: " + typeof e);
 
-		if (!isInstance(name, Node)) {
-			name = document.createElement(name);
+		const signals = [];
+		let children = null, onmount = null, onunmount = null;
+
+		const addSignal = (name, val) => {
+			assert(typeof name === 'string', "Property list must have key as a string");
+
+			if (name === 'children') {
+				children = val;
+			} else if (name[0] === '$') {
+				name = name.substring(1);
+
+				const set = (obj, name, val) => {
+					if (isInstance(val, Observer)) {
+						push(signals, [val, val => {
+							obj[name] = val ?? null;
+						}]);
+					} else {
+						obj[name] = val ?? null;
+					}
+				};
+
+				if (name == 'onmount') {
+					onmount = val;
+				} else if (name === 'onunmount') {
+					onunmount = val;
+				} else if (!isInstance(val, Observer) && typeof val === 'object') {
+					for (const prop in val) {
+						set(e[name], prop, val[prop]);
+					}
+				} else {
+					set(e, name, val);
+				}
+			} else {
+				const set = val => {
+					val = val ?? false;
+					assert(['boolean', 'string', 'number'].includes(typeof val), `type ${typeof val} is used as the attribute: ${name}`);
+
+					if (typeof val === 'boolean') {
+						e.toggleAttribute(name, val);
+					} else {
+						e.setAttribute(name, val);
+					}
+				};
+
+				if (isInstance(val, Observer)) {
+					push(signals, [val, set]);
+				} else {
+					set(val);
+				}
+			}
+		};
+
+		if (!isInstance(e, Node)) {
+			e = document.createElement(e);
 		}
 
-		return nativeElement(name, props);
+		for (let o in props) {
+			addSignal(o, props[o]);
+		}
+
+		return (elem, _, before, notifyMount) => {
+			if (onmount) push(notifyMount, onmount);
+
+			const remove = signals.map(([val, handler]) => watch(val, handler));
+			const m = children != null && mount(e, children, noop, notifyMount);
+
+			elem?.insertBefore(e, before());
+			return assignFirst(() => {
+				elem?.removeChild(e);
+				callAll(remove);
+				if (m) m();
+				if (onunmount) callAllSafe([onunmount]);
+			}, () => e);
+		};
 	}
 };
