@@ -228,11 +228,11 @@ export const mount = (elem, item, before = noop, notifyMount, mounter = mount) =
 export const h = (e, props = {}, children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
-	if (typeof e === 'function') {
-		if (children) {
-			props.children = children;
-		}
+	if (children != null) {
+		props.children = children;
+	}
 
+	if (typeof e === 'function') {
 		const each = props.each;
 		const createMount = (elem, item, before, notifyMount) => {
 			const cleanup = [];
@@ -283,7 +283,9 @@ export const h = (e, props = {}, children) => {
 		Object.entries(props).map(([name, val]) => {
 			assert(typeof name === 'string', "Property list must have key as a string");
 
-			if (name[0] === '$') {
+			if (name === 'children') {
+				children = val;
+			} else if (name[0] === '$') {
 				name = name.substring(1);
 
 				const set = (obj, name, val) => {
