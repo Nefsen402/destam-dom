@@ -202,7 +202,9 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 					}
 				};
 
-				const mountList = (val, observer, orphaned) => {
+				const mountList = (val, orphaned) => {
+					const observer = val[observerGetter];
+
 					link = observer?.linkNext_;
 					let mounted = root;
 					for (const item of val) {
@@ -212,9 +214,7 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 							link = link.linkNext_;
 						}
 					}
-				};
 
-				const setupListener = observer => {
 					arrayListener?.();
 					arrayListener = observer && shallowListener(observer, commit => {
 						const orphaned = new Map();
@@ -251,21 +251,16 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 					});
 				};
 
-				const observer = val[observerGetter];
-				mountList(val, observer);
-				setupListener(observer);
-
+				mountList(val);
 				notifyMount = 0;
 
 				return assignFirst(val => {
 					if (val) {
-						const observer = val[observerGetter];
 						const orphaned = new Map();
 						destroy(orphaned);
-						mountList(val, observer, orphaned);
+						mountList(val, orphaned);
 						cleanup(orphaned);
 
-						setupListener(observer);
 						return 1;
 					}
 
