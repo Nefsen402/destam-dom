@@ -86,9 +86,19 @@ const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
 		}
 	};
 
-	const watcher = watch(each, each => {
-		const observer = each[observerGetter];
+	const mountList = (each, observer, orphaned) => {
+		link = observer?.linkNext_;
+		let mounted = root;
+		for (const item of each) {
+			mounted = addMount(orphaned, item, mounted.next_);
+			if (link) {
+				link[linkGetter] = mounted;
+				link = link.linkNext_;
+			}
+		}
+	};
 
+	const setupListener = observer => {
 		arrayListener?.();
 		arrayListener = observer && shallowListener(observer, commit => {
 			const orphaned = new Map();
@@ -123,27 +133,26 @@ const arrayElement = (createMount, each) => (elem, _, before, notifyMount) => {
 
 			cleanup(orphaned);
 		});
+	};
 
-		const orphaned = new Map();
-		destroy(orphaned);
-
-		link = observer?.linkNext_;
-		let mounted = root;
-		for (const item of each) {
-			mounted = addMount(orphaned, item, mounted.next_);
-			if (link) {
-				link[linkGetter] = mounted;
-				link = link.linkNext_;
-			}
-		}
-
-		cleanup(orphaned);
-	});
+	const observer = each[observerGetter];
+	mountList(each, observer);
+	setupListener(observer);
 
 	notifyMount = 0;
 
-	return assignFirst(() => {
-		watcher();
+	return assignFirst(val => {
+		if (val) {
+			const observer = val[observerGetter];
+			const orphaned = new Map();
+			destroy(orphaned);
+			mountList(val, observer, orphaned);
+			cleanup(orphaned);
+
+			setupListener(observer);
+			return 1;
+		}
+
 		arrayListener?.();
 		destroy();
 	}, () => root.next_.first_());
@@ -247,7 +256,7 @@ const callAllSafe = list => {
 	}
 };
 
-export const mount = (elem, item, before, notifyMount) => {
+export const mount = (elem, item, before, notifyMount, mounter) => {
 	let mounted = null;
 	let lastType = 0;
 	const watcher = watch(item, val => {
@@ -256,7 +265,7 @@ export const mount = (elem, item, before, notifyMount) => {
 		let func;
 		let type = typeof val;
 		if (val == null) {
-			func = val
+			func = val;
 			type = 1;
 		} else if (type === 'function') {
 			func = val;
@@ -265,7 +274,7 @@ export const mount = (elem, item, before, notifyMount) => {
 			func = nativeElement(val);
 			type = 3;
 		} else {
-			func = arrayElement(mount, val);
+			func = arrayElement(mounter || mount, val);
 			type = 4;
 		}
 
@@ -324,7 +333,8 @@ const functionElement = (func, props) => {
 	assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
 		"'each' property is not iterable");
 
-	return arrayElement(createMount, each);
+	return (elem, item, before, notifyMount) =>
+		mount(elem, each, before, notifyMount, createMount);
 };
 
 export const h = (name, props = {}, children) => {
