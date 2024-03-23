@@ -183,7 +183,7 @@ export default (h, assign = Object.assign, concatinator = strings => {
 				assert(typeof name !== 'string' || validTags.includes(name.toUpperCase()) || name.includes('-'),
 					"Invalid tag name: " + name);
 
-				push(tags, h(name, props, !term && parse(name)));
+				push(tags, h(name, props, term ? null : parse(name)));
 				term = 0;
 			}
 		}
