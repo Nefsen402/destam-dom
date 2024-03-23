@@ -51,16 +51,19 @@ export const mount = (elem, item, before = noop, notifyMount, mounter = mount) =
 				elem?.insertBefore(e, before());
 
 				return assignFirst(val => {
+					if (val == null) {
+						elem?.removeChild(e);
+						return 0;
+					}
+
 					if (isInstance(val, Node)) {
 						elem?.replaceChild(val, e);
 						e = val;
-						return 1;
-					} else if (val != null) {
+					} else {
 						e.textContent = val;
-						return 1;
 					}
 
-					elem?.removeChild(e);
+					return 1;
 				}, () => e);
 			};
 
@@ -198,6 +201,7 @@ export const mount = (elem, item, before = noop, notifyMount, mounter = mount) =
 
 					arrayListener?.();
 					destroy();
+					return 0;
 				}, () => root.next_.first_());
 			};
 
