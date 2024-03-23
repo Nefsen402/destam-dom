@@ -292,45 +292,6 @@ export const mount = (elem, item, before, notifyMount, mounter) => {
 	}, () => (mounted?.first_ || before || noop)());
 };
 
-const functionElement = (func, props) => {
-	const each = props.each;
-	const createMount = (elem, item, before, notifyMount) => {
-		const cleanup = [];
-		let dom = null;
-		try {
-			if (each) props.each = item;
-			dom = func(props, cb => {
-				assert(typeof cb === 'function', "The cleanup function must be passed a function");
-				push(cleanup, cb);
-			});
-		} catch (e) {
-			console.error(e);
-		}
-
-		const m = mount(
-			elem,
-			dom,
-			before,
-			notifyMount,
-		);
-
-		return assignFirst(() => {
-			m();
-			callAllSafe(cleanup);
-		}, m.first_);
-	};
-
-	if (!each) {
-		return createMount;
-	}
-
-	assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
-		"'each' property is not iterable");
-
-	return (elem, item, before, notifyMount) =>
-		mount(elem, each, before, notifyMount, createMount);
-};
-
 export const h = (name, props = {}, children) => {
 	assert(name != null, "Tag name cannot be null or undefined");
 
@@ -341,7 +302,42 @@ export const h = (name, props = {}, children) => {
 	const type = typeof name;
 
 	if (type == 'function') {
-		return functionElement(name, props);
+		const each = props.each;
+		const createMount = (elem, item, before, notifyMount) => {
+			const cleanup = [];
+			let dom = null;
+			try {
+				if (each) props.each = item;
+				dom = name(props, cb => {
+					assert(typeof cb === 'function', "The cleanup function must be passed a function");
+					push(cleanup, cb);
+				});
+			} catch (e) {
+				console.error(e);
+			}
+
+			const m = mount(
+				elem,
+				dom,
+				before,
+				notifyMount,
+			);
+
+			return assignFirst(() => {
+				m();
+				callAllSafe(cleanup);
+			}, m.first_);
+		};
+
+		if (!each) {
+			return createMount;
+		}
+
+		assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
+			"'each' property is not iterable");
+
+		return (elem, item, before, notifyMount) =>
+			mount(elem, each, before, notifyMount, createMount);
 	} else {
 		if (type == 'string') {
 			name = document.createElement(name);
