@@ -299,9 +299,7 @@ export const h = (name, props = {}, children) => {
 		props.children = children;
 	}
 
-	const type = typeof name;
-
-	if (type == 'function') {
+	if (typeof name === 'function') {
 		const each = props.each;
 		const createMount = (elem, item, before, notifyMount) => {
 			const cleanup = [];
@@ -339,11 +337,13 @@ export const h = (name, props = {}, children) => {
 		return (elem, item, before, notifyMount) =>
 			mount(elem, each, before, notifyMount, createMount);
 	} else {
-		if (type == 'string') {
+		assert(isInstance(name, Node) || typeof name === 'string',
+			"Unsupported node type: " + typeof name);
+
+		if (!isInstance(name, Node)) {
 			name = document.createElement(name);
 		}
 
-		assert(isInstance(name, Node), "Unsupported node type: " + type);
 		return nativeElement(name, props);
 	}
 };
