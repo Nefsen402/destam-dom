@@ -53,10 +53,33 @@ const callAllSafe = list => {
 	}
 };
 
-const arrayMounter = (elem, val, before, notifyMount, mounter) => {
-	const linkGetter = Symbol();
-	let arrayListener;
+const insertMap = (map, item) => {
+	let a = map.get(item.item_);
+	if (!a) map.set(item.item_, a = []);
+	push(a, item);
+};
 
+const cleanupArrayMounts = mounts => {
+	for (const arr of mounts.values()) {
+		for (const mount of arr) {
+			mount.prev_.next_ = mount.next_;
+			mount.next_.prev_ = mount.prev_;
+			mount();
+		}
+	}
+};
+
+const destroyArrayMounts = (link, root, linkGetter, orphaned) => {
+	for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
+		delete link[linkGetter];
+	}
+
+	for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
+		(orphaned ? insertMap : cur)(orphaned, cur);
+	}
+};
+
+const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 	const root = {first_: before};
 	root.next_ = root.prev_ = root;
 	const addMount = (old, item, next) => {
@@ -96,33 +119,8 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 		return mounted;
 	};
 
-	const insertMap = (map, item) => {
-		let a = map.get(item.item_);
-		if (!a) map.set(item.item_, a = []);
-		push(a, item);
-	};
-
-	const cleanup = mounts => {
-		for (const arr of mounts.values()) {
-			for (const mount of arr) {
-				mount.prev_.next_ = mount.next_;
-				mount.next_.prev_ = mount.prev_;
-				mount();
-			}
-		}
-	};
-
-	let link = null;
-	const destroy = orphaned => {
-		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
-			delete link[linkGetter];
-		}
-
-		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
-			(orphaned ? insertMap : cur)(orphaned, cur);
-		}
-	};
-
+	let link = null, arrayListener = null;
+	const linkGetter = Symbol();
 	const mountList = (val, orphaned) => {
 		const observer = val[observerGetter];
 
@@ -168,7 +166,7 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 				}
 			}
 
-			cleanup(orphaned);
+			cleanupArrayMounts(orphaned);
 		});
 	};
 
@@ -178,15 +176,15 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 	return assignFirst(val => {
 		if (val) {
 			const orphaned = new Map();
-			destroy(orphaned);
+			destroyArrayMounts(link, root, linkGetter, orphaned);
 			mountList(val, orphaned);
-			cleanup(orphaned);
+			cleanupArrayMounts(orphaned);
 
 			return 1;
 		}
 
 		arrayListener?.();
-		destroy();
+		destroyArrayMounts(link, root, linkGetter);
 		return 0;
 	}, () => root.next_.first_());
 };
