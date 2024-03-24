@@ -9,8 +9,13 @@
 		<script type="module">
 			import {Observer, OArray, OObject, html, mount} from '/index.js';
 
-			const Input = ({value, ref, enter, keydown, cancel}) => {
+			const Input = ({value, ref, enter, keydown, cancel}, cleanup, mounted) => {
 				const input = ref || document.createElement('input');
+
+				mounted(() => {
+					input.focus();
+					requestIdleCallback(() => input.setSelectionRange(0, input.value.length));
+				});
 
 				return html`
 					<${input}
@@ -31,10 +36,6 @@
 							}
 						}}
 						$onblur=${cancel}
-						$onmount=${() => {
-							input.focus();
-							requestIdleCallback(() => input.setSelectionRange(0, input.value.length));
-						}}
 					/>
 				`;
 			}
