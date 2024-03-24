@@ -43,6 +43,16 @@ const nodeMounter = (elem, e, before, _, __, remove) => {
 	}, () => e);
 };
 
+const callAllSafe = list => {
+	if (list) for (const c of list) {
+		try {
+			c();
+		} catch (e) {
+			console.error(e);
+		}
+	}
+};
+
 const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 	const linkGetter = Symbol();
 	let arrayListener;
@@ -54,11 +64,13 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 		if (mounted === next) return mounted;
 
 		if (!mounted) {
+			let notify;
 			mounted = mounter(
 				elem, item,
 				() => (mounted?.next_ || next).first_(),
-				notifyMount
+				notifyMount || (notify = [])
 			);
+			callAllSafe(notify);
 			mounted.item_ = item;
 		} else {
 			let mountAt, term;
@@ -179,16 +191,6 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 	}, () => root.next_.first_());
 };
 
-const callAllSafe = list => {
-	for (const c of list) {
-		try {
-			c();
-		} catch (e) {
-			console.error(e);
-		}
-	}
-};
-
 export const mount = (elem, item, before = noop, notifyMount, mounter = mount) => {
 	let mounted = null;
 	let lastFunc;
@@ -205,10 +207,14 @@ export const mount = (elem, item, before = noop, notifyMount, mounter = mount) =
 			func = arrayMounter;
 		}
 
-		if (!mounted?.(lastFunc === func ? val : null)) {
-			mounted = func?.(elem, val, before, notifyMount, mounter);
-		}
+		let notify;
 
+		if (!mounted?.(lastFunc === func ? val : null)) mounted = func?.(
+			elem, val, before,
+			notifyMount || (notify = []), mounter
+		);
+
+		callAllSafe(notify);
 		lastFunc = func;
 	});
 
@@ -231,18 +237,17 @@ export const h = (e, props = {}, children) => {
 	if (typeof e === 'function') {
 		const each = props.each;
 		const createMount = (elem, item, before, notifyMount) => {
-			const cleanup = [];
-			let dom = null, notify = null;
+			let dom = null, cleanup = 0;
 
 			try {
 				if (each) props.each = item;
 
 				dom = e(props, cb => {
 					assert(typeof cb === 'function', "The cleanup function must be passed a function");
-					push(cleanup, cb);
+					push(cleanup || (cleanup = []), cb);
 				}, cb => {
 					assert(typeof cb === 'function', "The mount function must be passed a function");
-					push(notifyMount || (notify = []), cb);
+					push(notifyMount, cb);
 				});
 			} catch (e) {
 				console.error(e);
@@ -254,8 +259,6 @@ export const h = (e, props = {}, children) => {
 				before,
 				notifyMount,
 			);
-
-			if (notify) callAllSafe(notify);
 
 			return assignFirst(() => {
 				m();
