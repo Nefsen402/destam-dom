@@ -194,25 +194,14 @@ html`
 ## Lifetimes
 Since destam-dom does not use a virtual dom, the concept of "rendering" does not exist. When a component is mounted, it is invoked once to get a template of what the dom tree should look at and all reactivity is achieved through signals. However, we still have to worry about when a component is mounted and unmounted. This especially critical if you want to create animations.
 
-Native dom node mounts provide two special cased callbacks:
- - $onmount: Will be called after the element is visible on the dom tree
- - $onunmount: Will be called after the element has been removed from the dom tree
+Custom elements can register callbacks that gen invoked when all descendents of the component are mounted/unmounted.
 
-Note that `$onmount` will wait for all parents to be mounted before being invoked. `$onmount` is guaranteed to be called when the element can be found when walking up from the root dom node.
+When a custom component is first called, that marks the time when the custom component wants to be mounted. Obviously, the children of the component won't yet be on the dom because this is where we are generating the dom elements.
 
-```js
-html`
-	<div
-		$onmount=${() => console.log("the div has been mounted")}
-		$onunmount=${() => console.log("the div has been unmounted")}
-	/>;
-`
-```
-
-Custom elements have slightly different lifetimes since they do not live on the dom. When a custom component is first called, that marks the time when the custom component wants to be mounted. Custom components offer a cleanup function as a second argument that is invoked as soon as the custom component and all its descendants have been unmounted. This is useful for managing resources:
+Custom components offer a cleanup function as a second argument that is invoked as soon as the custom component and all its descendants have been unmounted. This is useful for managing resources:
 
 ```js
-const Timer = ({children}, cleanup) => {
+const Timer = ({children}, cleanup, mounted) => {
 	let time = Observer.mutable(0);
 
 	const int = setInterval(() => {
@@ -229,7 +218,35 @@ html`
 `
 ```
 
-Note that the above example can be achieved purely with `Observer.timer`.
+For a third paramater, custom components offer another callback function after all descendents of the custom component and the custom component itself is mounted. This callback is guaranteed to be invoked when the dom elements that the custom component generates are visible from the root of the mount point.
+
+```js
+const FadeIn = ({children}, _, mounted) => {
+	const opacity = Observer.mutable(0);
+
+	mounted(() => {
+		opacity.set(1);
+	});
+
+	return html`
+		<div $style=${{
+			opacity,
+			transition: 'opacity 200ms',
+		}}>
+			${children}
+		<div>
+	`;
+};
+
+html`
+	<${FadeIn}>
+		My fade in text
+	</>
+`
+
+```
+
+Note that the above timer example can be achieved purely with `Observer.timer`.
 
 ```js
 html`

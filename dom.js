@@ -18,16 +18,6 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const callAllSafe = list => {
-	for (const c of list) {
-		try {
-			c();
-		} catch (e) {
-			console.error(e);
-		}
-	}
-};
-
 const nodeMounter = (elem, e, before, _, __, remove) => {
 	if (!isInstance(e, Node)) {
 		e = document.createTextNode(e);
@@ -38,7 +28,7 @@ const nodeMounter = (elem, e, before, _, __, remove) => {
 	return assignFirst(val => {
 		if (val == null) {
 			elem?.removeChild(e);
-			if (remove) callAllSafe(remove);
+			if (remove) callAll(remove);
 			return 0;
 		}
 
@@ -189,6 +179,16 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 	}, () => root.next_.first_());
 };
 
+const callAllSafe = list => {
+	for (const c of list) {
+		try {
+			c();
+		} catch (e) {
+			console.error(e);
+		}
+	}
+};
+
 export const mount = (elem, item, before = noop, notifyMount, mounter = mount) => {
 	let mounted = null;
 	let lastFunc;
@@ -205,14 +205,10 @@ export const mount = (elem, item, before = noop, notifyMount, mounter = mount) =
 			func = arrayMounter;
 		}
 
-		let notify;
+		if (!mounted?.(lastFunc === func ? val : null)) {
+			mounted = func?.(elem, val, before, notifyMount, mounter);
+		}
 
-		if (!mounted?.(lastFunc === func ? val : null)) mounted = func?.(
-			elem, val, before,
-			notifyMount || (notify = []), mounter
-		);
-
-		if (notify) callAllSafe(notify);
 		lastFunc = func;
 	});
 
@@ -236,12 +232,17 @@ export const h = (e, props = {}, children) => {
 		const each = props.each;
 		const createMount = (elem, item, before, notifyMount) => {
 			const cleanup = [];
-			let dom = null;
+			let dom = null, notify = null;
+
 			try {
 				if (each) props.each = item;
+
 				dom = e(props, cb => {
 					assert(typeof cb === 'function', "The cleanup function must be passed a function");
 					push(cleanup, cb);
+				}, cb => {
+					assert(typeof cb === 'function', "The mount function must be passed a function");
+					push(notifyMount || (notify = []), cb);
 				});
 			} catch (e) {
 				console.error(e);
@@ -253,6 +254,8 @@ export const h = (e, props = {}, children) => {
 				before,
 				notifyMount,
 			);
+
+			if (notify) callAllSafe(notify);
 
 			return assignFirst(() => {
 				m();
@@ -277,15 +280,8 @@ export const h = (e, props = {}, children) => {
 			e = document.createElement(e);
 		}
 
-		const extract = prop => {
-			const val = props[prop];
-			delete props[prop];
-			return val;
-		};
-
-		const onmount = extract('$onmount');
-		const onunmount = extract('$onunmount');
-		children = extract('children');
+		children = props.children;
+		delete props.children;
 
 		const signals = [];
 		Object.entries(props).map(([name, val]) => {
@@ -333,9 +329,6 @@ export const h = (e, props = {}, children) => {
 
 		return (elem, _, before, notifyMount) => {
 			const remove = signals.map(([val, handler]) => watch(val, handler));
-
-			if (onmount) push(notifyMount, onmount);
-			if (onunmount) push(remove, onunmount);
 			if (children != null) push(remove, mount(e, children, noop, notifyMount));
 
 			return nodeMounter(elem, e, before, notifyMount, 0, remove);
