@@ -191,8 +191,55 @@ html`
 `
 ```
 
-## Lists
+## Lifetimes
+Since destam-dom does not use a virtual dom, the concept of "rendering" does not exist. When a component is mounted, it is invoked once to get a template of what the dom tree should look at and all reactivity is achieved through signals. However, we still have to worry about when a component is mounted and unmounted. This especially critical if you want to create animations.
 
+Native dom node mounts provide two special cased callbacks:
+ - $onmount: Will be called after the element is visible on the dom tree
+ - $onunmount: Will be called after the element has been removed from the dom tree
+
+Note that `$onmount` will wait for all parents to be mounted before being invoked. `$onmount` is guaranteed to be called when the element can be found when walking up from the root dom node.
+
+```js
+html`
+	<div
+		$onmount=${() => console.log("the div has been mounted")}
+		$onunmount=${() => console.log("the div has been unmounted")}
+	/>;
+`
+```
+
+Custom elements have slightly different lifetimes since they do not live on the dom. When a custom component is first called, that marks the time when the custom component wants to be mounted. Custom components offer a cleanup function as a second argument that is invoked as soon as the custom component and all its descendants have been unmounted. This is useful for managing resources:
+
+```js
+const Timer = ({children}, cleanup) => {
+	let time = Observer.mutable(0);
+
+	const int = setInterval(() => {
+		time.set(time.get() + 1);
+	}, 1000);
+
+	cleanup(() => clearInterval(int));
+
+	return time;
+};
+
+html`
+	<${Timer} />
+`
+```
+
+Note that the above example can be achieved purely with `Observer.timer`.
+
+```js
+html`
+	${Observer.timer(1000)}
+`
+```
+
+The lifetime of observers are undefined when used with destam-dom. Do not depend on an observer listener being added/removed for anything more than unregistering the listener when creating custom observers.
+
+## Lists
 Custom elements are also the basis of how destam-dom manages rendering a list of items with an arbitrary format. Suppose we have this data that we want to render:
 
 ```js
@@ -265,7 +312,7 @@ The JSX will be similar the html template literals except when it comes to templ
 const Website = () => {
 	return <p>
 		Welcome to my website!
-	</p
+	</p>
 };
 
 mount(document.body, <Website />);
