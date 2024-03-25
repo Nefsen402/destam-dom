@@ -293,28 +293,13 @@ export const h = (e, props = {}, children) => {
 		Object.entries(props).map(([name, val]) => {
 			assert(typeof name === 'string', "Property list must have key as a string");
 
+			let set;
 			if (name[0] === '$') {
 				name = name.substring(1);
 
-				const set = (obj, name, val) => {
-					if (isInstance(val, Observer)) {
-						push(signals, [val, val => {
-							obj[name] = val ?? null;
-						}]);
-					} else {
-						obj[name] = val ?? null;
-					}
-				};
-
-				if (!isInstance(val, Observer) && typeof val === 'object') {
-					for (const prop in val) {
-						set(e[name], prop, val[prop]);
-					}
-				} else {
-					set(e, name, val);
-				}
+				set = (e, name, val) => e[name] = val ?? null;
 			} else {
-				const set = val => {
+				set = (e, name, val) => {
 					val = val ?? false;
 					assert(['boolean', 'string', 'number'].includes(typeof val), `type ${typeof val} is used as the attribute: ${name}`);
 
@@ -324,13 +309,21 @@ export const h = (e, props = {}, children) => {
 						e.setAttribute(name, val);
 					}
 				};
-
-				if (isInstance(val, Observer)) {
-					push(signals, [val, set]);
-				} else {
-					set(val);
-				}
 			}
+
+			const search = (e, name, val) => {
+				if (isInstance(val, Observer)) {
+					push(signals, [val, val => set(e, name, val)]);
+				} else if (typeof val === 'object') {
+					for (const prop in val) {
+						search(e[name], prop, val[prop]);
+					}
+				} else {
+					set(e, name, val);
+				}
+			};
+
+			search(e, name, val);
 		});
 
 		return (elem, _, before) => {
