@@ -43,7 +43,9 @@ const nodeMounter = (elem, e, before, _, __, remove) => {
 	}, () => e);
 };
 
+let notifyMount;
 const callAllSafe = list => {
+	if (list === notifyMount) notifyMount = null;
 	if (list) for (const c of list) {
 		try {
 			c();
@@ -79,7 +81,7 @@ const destroyArrayMounts = (link, root, linkGetter, orphaned) => {
 	}
 };
 
-const arrayMounter = (elem, val, before, notifyMount, mounter) => {
+const arrayMounter = (elem, val, before, mounter) => {
 	const root = {first_: before};
 	root.next_ = root.prev_ = root;
 	const addMount = (old, item, next) => {
@@ -87,13 +89,17 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 		if (mounted === next) return mounted;
 
 		if (!mounted) {
-			let notify;
+			let not;
+			if (!notifyMount) {
+				not = notifyMount = [];
+			}
+
 			mounted = mounter(
 				elem, item,
 				() => (mounted?.next_ || next).first_(),
-				notifyMount || (notify = [])
 			);
-			callAllSafe(notify);
+
+			callAllSafe(not);
 			mounted.item_ = item;
 		} else {
 			let mountAt, term;
@@ -119,8 +125,8 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 		return mounted;
 	};
 
-	let link = null, arrayListener = null;
 	const linkGetter = Symbol();
+	let link, arrayListener;
 	const mountList = (val, orphaned) => {
 		const observer = val[observerGetter];
 
@@ -171,7 +177,6 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 	};
 
 	mountList(val);
-	notifyMount = 0;
 
 	return assignFirst(val => {
 		if (val) {
@@ -189,7 +194,8 @@ const arrayMounter = (elem, val, before, notifyMount, mounter) => {
 	}, () => root.next_.first_());
 };
 
-export const mount = (elem, item, before = noop, notifyMount, mounter = mount) => {
+
+export const mount = (elem, item, before = noop, mounter = mount) => {
 	let mounted = null;
 	let lastFunc;
 	const watcher = watch(item, val => {
@@ -205,18 +211,18 @@ export const mount = (elem, item, before = noop, notifyMount, mounter = mount) =
 			func = arrayMounter;
 		}
 
-		let notify;
+		let not;
+		if (!notifyMount) {
+			not = notifyMount = [];
+		}
 
-		if (!mounted?.(lastFunc === func ? val : null)) mounted = func?.(
-			elem, val, before,
-			notifyMount || (notify = []), mounter
-		);
+		if (!mounted?.(lastFunc === func ? val : null)) {
+			mounted = func?.(elem, val, before, mounter);
+		}
 
-		callAllSafe(notify);
+		callAllSafe(not);
 		lastFunc = func;
 	});
-
-	notifyMount = 0;
 
 	return assignFirst(() => {
 		watcher();
@@ -234,7 +240,7 @@ export const h = (e, props = {}, children) => {
 
 	if (typeof e === 'function') {
 		const each = props.each;
-		const createMount = (elem, item, before, notifyMount) => {
+		const createMount = (elem, item, before) => {
 			let dom = null, cleanup = 0;
 
 			try {
@@ -255,7 +261,6 @@ export const h = (e, props = {}, children) => {
 				elem,
 				dom,
 				before,
-				notifyMount,
 			);
 
 			return assignFirst(() => {
@@ -271,8 +276,8 @@ export const h = (e, props = {}, children) => {
 		assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
 			"'each' property is not iterable");
 
-		return (elem, item, before, notifyMount) =>
-			mount(elem, each, before, notifyMount, createMount);
+		return (elem, item, before) =>
+			mount(elem, each, before, createMount);
 	} else {
 		assert(isInstance(e, Node) || typeof e === 'string',
 			"Unsupported node type: " + typeof e);
@@ -328,11 +333,11 @@ export const h = (e, props = {}, children) => {
 			}
 		});
 
-		return (elem, _, before, notifyMount) => {
+		return (elem, _, before) => {
 			const remove = signals.map(([val, handler]) => watch(val, handler));
-			if (children != null) push(remove, mount(e, children, noop, notifyMount));
+			if (children != null) push(remove, mount(e, children, noop));
 
-			return nodeMounter(elem, e, before, notifyMount, 0, remove);
+			return nodeMounter(elem, e, before, 0, remove);
 		};
 	}
 };
