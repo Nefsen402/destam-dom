@@ -231,6 +231,12 @@ export const mount = (elem, item, before = noop, mounter = mount) => {
 	}, () => (mounted?.first_ || before)());
 };
 
+const forEachProp = (p, e) => {
+	for (let o in p) {
+		e(o, p[o]);
+	}
+};
+
 export const h = (e, props = {}, children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
@@ -290,9 +296,7 @@ export const h = (e, props = {}, children) => {
 		delete props.children;
 
 		const signals = [];
-		Object.entries(props).map(([name, val]) => {
-			assert(typeof name === 'string', "Property list must have key as a string");
-
+		forEachProp(props, (name, val) => {
 			let set;
 			if (name[0] === '$') {
 				name = name.substring(1);
@@ -315,9 +319,7 @@ export const h = (e, props = {}, children) => {
 				if (isInstance(val, Observer)) {
 					push(signals, [val, val => set(e, name, val)]);
 				} else if (typeof val === 'object') {
-					for (const prop in val) {
-						search(e[name], prop, val[prop]);
-					}
+					forEachProp(val, (prop, val) => search(e[name], prop, val));
 				} else {
 					set(e, name, val);
 				}
