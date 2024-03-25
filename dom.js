@@ -18,7 +18,7 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const nodeMounter = (elem, e, before, _, __, remove) => {
+const nodeMounter = (elem, e, before, _, remove) => {
 	if (!isInstance(e, Node)) {
 		e = document.createTextNode(e);
 	}
@@ -335,7 +335,7 @@ export const h = (e, props = {}, children) => {
 
 		return (elem, _, before) => {
 			const remove = signals.map(([val, handler]) => watch(val, handler));
-			if (children != null) push(remove, mount(e, children, noop));
+			if (children != null) push(remove, mount(e, children));
 
 			return nodeMounter(elem, e, before, 0, remove);
 		};
