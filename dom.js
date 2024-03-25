@@ -231,9 +231,9 @@ export const mount = (elem, item, before = noop, mounter = mount) => {
 	}, () => (mounted?.first_ || before)());
 };
 
-const forEachProp = (p, e) => {
+const forEachProp = (p, e, opt) => {
 	for (let o in p) {
-		e(o, p[o]);
+		e(o, p[o], opt);
 	}
 };
 
@@ -301,9 +301,9 @@ export const h = (e, props = {}, children) => {
 			if (name[0] === '$') {
 				name = name.substring(1);
 
-				set = (e, name, val) => e[name] = val ?? null;
+				set = (name, val, e) => e[name] = val ?? null;
 			} else {
-				set = (e, name, val) => {
+				set = (name, val, e) => {
 					val = val ?? false;
 					assert(['boolean', 'string', 'number'].includes(typeof val), `type ${typeof val} is used as the attribute: ${name}`);
 
@@ -315,17 +315,17 @@ export const h = (e, props = {}, children) => {
 				};
 			}
 
-			const search = (e, name, val) => {
+			const search = (name, val, e) => {
 				if (isInstance(val, Observer)) {
-					push(signals, [val, val => set(e, name, val)]);
+					push(signals, [val, val => set(name, val, e)]);
 				} else if (typeof val === 'object') {
-					forEachProp(val, (prop, val) => search(e[name], prop, val));
+					forEachProp(val, search, e[name]);
 				} else {
-					set(e, name, val);
+					set(name, val, e);
 				}
 			};
 
-			search(e, name, val);
+			search(name, val, e);
 		});
 
 		return (elem, _, before) => {
