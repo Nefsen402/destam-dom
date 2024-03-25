@@ -192,9 +192,9 @@ html`
 ```
 
 ## Lifetimes
-Since destam-dom does not use a virtual dom, the concept of "rendering" does not exist. When a component is mounted, it is invoked once to get a template of what the dom tree should look at and all reactivity is achieved through signals. However, we still have to worry about when a component is mounted and unmounted. This especially critical if you want to create animations.
+Since destam-dom does not use a virtual dom, the concept of "re-render"ing does not exist. When a component is mounted, it is invoked once to get a template of what the dom tree should look at and all reactivity is achieved through signals. However, we still have to worry about when a component is mounted and unmounted. This especially critical if you want to create animations.
 
-Custom elements can register callbacks that gen invoked when all descendents of the component are mounted/unmounted.
+Custom elements can register callbacks that get invoked when all descendents of the component are mounted/unmounted.
 
 When a custom component is first called, that marks the time when the custom component wants to be mounted. Obviously, the children of the component won't yet be on the dom because this is where we are generating the dom elements.
 
