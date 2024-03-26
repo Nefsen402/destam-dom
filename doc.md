@@ -1,3 +1,5 @@
+Note that this documentation assumes that you already know about [destam](https://github.com/Equator-Studios/destam/blob/HEAD/destam/README.md), which this library is built on. This library heavily depends on destam and simply builds on top of it. Destam provides primitives that this library uses in order to implement reactivity.
+
 destam-dom is designed to be as simple as possible and only provides two functions:
  - mount
  - html
