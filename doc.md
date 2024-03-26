@@ -24,8 +24,7 @@ document.body.appendChild(div);
 Mount supports:
  - Strings
  - Html nodes
- - Arrays (common references will be reconciliated)
- - Any iterable
+ - Iterables (common references will be reconciliated)
  - Numbers
  - booleans (will be rendered as the string true/false)
  - `null`
