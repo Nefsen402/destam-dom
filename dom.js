@@ -194,7 +194,6 @@ const arrayMounter = (elem, val, before, mounter) => {
 	}, () => root.next_.first_());
 };
 
-
 export const mount = (elem, item, before = noop, mounter = mount) => {
 	let mounted = null;
 	let lastFunc;
@@ -204,6 +203,8 @@ export const mount = (elem, item, before = noop, mounter = mount) => {
 		let type = typeof val;
 		let func;
 		if (val == null || type === 'function') {
+			assert(!val || val.__is_destam_dom_internal_func,
+				"Mount must be passed an initialized element");
 			func = val;
 		} else if (isInstance(val, Node) || type !== 'object') {
 			func = nodeMounter;
@@ -244,6 +245,7 @@ export const h = (e, props = {}, children) => {
 		props.children = children;
 	}
 
+	let a;
 	if (typeof e === 'function') {
 		const each = props.each;
 		const createMount = (elem, item, before) => {
@@ -276,14 +278,14 @@ export const h = (e, props = {}, children) => {
 		};
 
 		if (!each) {
-			return createMount;
+			a = createMount;
+		} else {
+			assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
+				"'each' property is not iterable");
+
+			a = (elem, item, before) =>
+				mount(elem, each, before, createMount);
 		}
-
-		assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
-			"'each' property is not iterable");
-
-		return (elem, item, before) =>
-			mount(elem, each, before, createMount);
 	} else {
 		assert(isInstance(e, Node) || typeof e === 'string',
 			"Unsupported node type: " + typeof e);
@@ -305,7 +307,8 @@ export const h = (e, props = {}, children) => {
 			} else {
 				set = (name, val, e) => {
 					val = val ?? false;
-					assert(['boolean', 'string', 'number'].includes(typeof val), `type ${typeof val} is used as the attribute: ${name}`);
+					assert(['boolean', 'string', 'number'].includes(typeof val),
+						`type ${typeof val} is used as the attribute: ${name}`);
 
 					if (typeof val === 'boolean') {
 						e.toggleAttribute(name, val);
@@ -328,11 +331,14 @@ export const h = (e, props = {}, children) => {
 			search(name, val, e);
 		});
 
-		return (elem, _, before) => {
+		a = (elem, _, before) => {
 			const remove = signals.map(([val, handler]) => watch(val, handler));
 			if (children != null) push(remove, mount(e, children));
 
 			return nodeMounter(elem, e, before, 0, remove);
 		};
 	}
+
+	assert(a.__is_destam_dom_internal_func = true);
+	return a;
 };
