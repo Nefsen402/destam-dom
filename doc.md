@@ -144,6 +144,40 @@ html`
 `
 ```
 
+## Prop spreading
+All properties in an object can be used to populate the props of an element. The syntax for this looks like:
+```js
+html`
+	<div =${props} />
+`
+```
+
+It uses similar syntax for setting any other property, except we leave the propery name blank. Property spreading is especially useful for custom elements.
+
+## Children prop
+
+Every element can take in a `children` property that will be used to populate the children of an element.
+```js
+const children = ['hello ', 'world'];
+
+html`
+	<div children=${children} />
+`
+```
+
+The above example will generate the text "hello world" in the div.
+
+Note that if there is a body for the div, even if it is empty, the children property will be ignored.
+```js
+const children = ['hello ', 'world'];
+
+html`
+	<div children=${children}></div>
+`
+```
+
+This example won't render anything because it is assuming the children in the body, of which there are none.
+
 ## Custom elements
 
 Element names don't just have to be a reference to an html node, they can also be functions to create custom elements.
@@ -341,4 +375,25 @@ or for refs:
 const Div = document.createElement('div');
 
 mount(document.body, <Div />);
+```
+
+In `html()`:
+```js
+html`
+	<div>
+		<${Header} class=header =${headerProp} />
+		<p id=content>
+			My content
+		</p>
+	</div>
+`
+```
+if converted to JSX would look like this:
+```jsx
+<div>
+	<Header class="header" {...headerProp} />
+	<p id="content">
+		My content
+	</p>
+</div>
 ```
