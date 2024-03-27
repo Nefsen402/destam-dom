@@ -184,9 +184,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 };
 
 export const mount = (elem, item, before = noop, mounter = mount) => {
-	let mounted = null;
-	let lastFunc;
-
+	let lastFunc, mounted = null;
 	const update = () => {
 		const val = isObserver ? item.get() : item;
 		assert(val !== undefined, "Cannot mount undefined");
@@ -209,11 +207,10 @@ export const mount = (elem, item, before = noop, mounter = mount) => {
 		}
 
 		if (!mounted?.(lastFunc === func ? val : null)) {
-			mounted = func?.(elem, val, before, mounter);
+			mounted = (lastFunc = func)?.(elem, val, before, mounter);
 		}
 
 		callAllSafe(not);
-		lastFunc = func;
 	};
 
 	const isObserver = isInstance(item, Observer);
