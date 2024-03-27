@@ -314,7 +314,7 @@ html`
 `
 ```
 
-Note that destam-dom will compare by reference every value in each to try to reduce rendering nodes. For instance, if `names` was an observer itself, that observer could be updated with a different list and if there are common elements between the old list and the new one, existing element mounts will be reused.
+Note that destam-dom will compare by reference every value in each to try to reduce rendering nodes. For instance, if `names` was an observer, that observer could be updated with a different list. If there are common elements between the old list and the new one, existing components will be reused if there are matching object references.
 
 ```js
 const names = Observer.mutable([
@@ -354,7 +354,7 @@ html`
 names.push('Ford');
 ```
 
-The optimization here will let destam-dom not need to compare references, but instead just directly the new name in constant time. Prefer these kinds of arrays.
+The optimization here will let destam-dom not need to compare references, but instead just directly insert the new name in constant time. Prefer these kinds of arrays.
 
 ## JSX
 JSX support is provided from the `transform/htmlLiteral` file. This can be hooked up to any build system with a vite example being provided in this repository.
@@ -382,7 +382,7 @@ In `html()`:
 html`
 	<div>
 		<${Header} class=header =${headerProp} />
-		<p id=content>
+		<p id=content $onclick=${() => console.log("the paragraph was clicked")}>
 			My content
 		</p>
 	</div>
@@ -392,7 +392,7 @@ if converted to JSX would look like this:
 ```jsx
 <div>
 	<Header class="header" {...headerProp} />
-	<p id="content">
+	<p id="content" $onclick={() => console.log("the paragraph was clicked")}>
 		My content
 	</p>
 </div>
