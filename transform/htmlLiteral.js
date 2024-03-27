@@ -125,17 +125,21 @@ const parse = node => {
 	];
 
 	const children = transformChildren(node);
-
-	if (children.length) {
-		args.push(t.arrayExpression(children));
+	if (children) {
+		args.push(createArray(children));
 	}
 
 	return t.callExpression(t.identifier('h'), args);
 };
 
 const transformChildren = node => {
+	if (node.type !== 'JSXFragment' && !node.closingElement) {
+		if (node.children.length) throw new Error("Expected no children if there is no closing element");
+		return null;
+	}
+
 	const children = [];
-	let canExclude = false, newline = false, whitespace = false, cur = '';
+	let canExclude = true, newline = false, whitespace = false, cur = '';
 
 	const flush = () => {
 		if (whitespace) {
@@ -178,11 +182,13 @@ const transformChildren = node => {
 		} else if (child.type === 'JSXExpressionContainer') {
 			flush();
 
-			children.push(child.expression);
+			if (child.expression.type !== 'JSXEmptyExpression') {
+				children.push(child.expression);
+			}
 		} else if (child.type === 'JSXFragment') {
 			flush();
 
-			children.push(createArray(transformChildren(child)));
+			children.push(...transformChildren(child));
 		} else {
 			throw new Error("Unknown AST type for JSX child: " + child.type);
 		}
@@ -297,14 +303,5 @@ const transform = (source, options) => {
 		...options,
 	}, source);
 };
-
-/*
-console.log(transform(`
-	import {html} from 'h';
-	import Observer from 'dude';
-
-	console.log(html\`<<\`);
-`, {plugins: ['jsx']}).code);
-*/
 
 export default transform;
