@@ -2,17 +2,6 @@ import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
-const watch = (obs, cb) => {
-	if (isInstance(obs, Observer)) {
-		const listener = shallowListener(obs, () => cb(obs.get()));
-		cb(obs.get());
-		return listener;
-	}
-
-	cb(obs);
-	return noop;
-};
-
 const assignFirst = (remove, first) => {
 	remove.first_ = first;
 	return remove;
@@ -197,7 +186,9 @@ const arrayMounter = (elem, val, before, mounter) => {
 export const mount = (elem, item, before = noop, mounter = mount) => {
 	let mounted = null;
 	let lastFunc;
-	const watcher = watch(item, val => {
+
+	const update = () => {
+		const val = isObserver ? item.get() : item;
 		assert(val !== undefined, "Cannot mount undefined");
 
 		let type = typeof val;
@@ -223,7 +214,11 @@ export const mount = (elem, item, before = noop, mounter = mount) => {
 
 		callAllSafe(not);
 		lastFunc = func;
-	});
+	};
+
+	const isObserver = isInstance(item, Observer);
+	const watcher = isObserver ? shallowListener(item, update) : noop;
+	update();
 
 	return assignFirst(() => {
 		watcher();
@@ -320,7 +315,7 @@ export const h = (e, props = {}, children) => {
 
 			const search = (name, val, e) => {
 				if (isInstance(val, Observer)) {
-					push(signals, [val, val => set(name, val, e)]);
+					push(signals, [val, () => set(name, val.get(), e)]);
 				} else if (typeof val === 'object') {
 					forEachProp(val, search, e[name]);
 				} else {
@@ -332,7 +327,12 @@ export const h = (e, props = {}, children) => {
 		});
 
 		a = (elem, _, before) => {
-			const remove = signals.map(([val, handler]) => watch(val, handler));
+			const remove = signals.map(([val, handler]) => {
+				const listener = shallowListener(val, handler);
+				handler();
+				return listener;
+			});
+
 			if (children != null) push(remove, mount(e, children));
 
 			return nodeMounter(elem, e, before, 0, remove);
