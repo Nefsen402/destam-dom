@@ -45,8 +45,8 @@ mount(document.body, html`
 destam-dom provides source passes under transform/ that will take the ```html`` ``` syntax and jsx and turn it into simple calls that destam-dom directly understands so that no parsing has to happen at runtime.
 
 ## More examples
-The pages directory provides many simple examples for how to use this library.
+The `examples` directory provides many simple examples for how to use this library.
 ```bash
 npm run dev
 ```
-And navigate to one of the examples using the browser.
+And navigate to one of the compliment `.html` files for each implementation. For instance, if you wanted to see the result of `examples/basic.js`, navigate to `examples/basic.html` in the browser.

@@ -62,25 +62,25 @@ if (lib in libs) {
 	});
 } else {
 	const getExample = (loc) => {
-		if (!loc.startsWith('/pages/')) {
+		if (!loc.startsWith('/examples/')) {
 			return null;
 		}
 
-		const file = loc.substring(7);
+		const file = loc.substring(9);
 		let i = file.lastIndexOf('.');
 		const name = file.substring(0, i);
 
-		const existed = ['.html', '.js', '.jsx'].find(ex => fs.existsSync('pages/' + name + ex));
+		const existed = ['.html', '.js', '.jsx'].find(ex => fs.existsSync('examples/' + name + ex));
 		if (!existed) {
 			return null;
 		}
 
-		const relative = '/pages/' + name + '.html';
+		const relative = '/examples/' + name + '.html';
 		return {
 			name,
 			file: name + existed,
 			relative,
-			location: resolve(__dirname, '/pages/' + name + existed),
+			location: resolve(__dirname, '/examples/' + name + existed),
 			resolved: join(__dirname, relative),
 		};
 	};
@@ -91,8 +91,8 @@ if (lib in libs) {
 			return examples;
 		}
 
-		return examples = fs.readdirSync(resolve(__dirname, 'pages')).map(file => {
-			return getExample('/pages/' + file);
+		return examples = fs.readdirSync(resolve(__dirname, 'examples')).map(file => {
+			return getExample('/examples/' + file);
 		});
 	};
 
