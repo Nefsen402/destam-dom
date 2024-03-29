@@ -25,11 +25,6 @@ const transform = (source, options) => {
 				path.node.operator = '!=';
 			}
 		},
-		CallExpression: path => {
-			if (path.node.callee.type === 'Identifier' && path.node.callee.name === 'assert') {
-				path.replaceWithMultiple([]);
-			}
-		}
 	});
 
 	const traverse = (node, vars, context, remove) => {

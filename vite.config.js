@@ -1,6 +1,7 @@
 import { resolve, join } from 'path'
 import { defineConfig } from 'vite'
 import unsafeVars from './transform/unsafeVariables';
+import assertRemove from './transform/assertRemove';
 import compileHTMLLiteral from './transform/htmlLiteral';
 import fs from 'fs';
 
@@ -41,6 +42,21 @@ if (lib in libs) {
 			sourcemap: true,
 			rollupOptions: {
 				plugins: [
+					{
+						name: 'assert-remove',
+						transform(code, id) {
+							if (id.endsWith('.js')) {
+								const transform = assertRemove(code, {
+									sourceFileName: id,
+								});
+
+								return {
+									code: transform.code,
+									map: transform.decodedMap,
+								};
+							}
+						}
+					},
 					{
 						name: 'drop-const',
 						transform(code, id) {
