@@ -1,6 +1,6 @@
 import { resolve, join } from 'path'
 import { defineConfig } from 'vite'
-import unsafeVars from './transform/unsafe-variables';
+import unsafeVars from './transform/unsafeVariables';
 import compileHTMLLiteral from './transform/htmlLiteral';
 import fs from 'fs';
 
