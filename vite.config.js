@@ -1,4 +1,4 @@
-import { resolve } from 'path'
+import { resolve, join } from 'path'
 import { defineConfig } from 'vite'
 import unsafeVars from './transform/unsafe-variables';
 import compileHTMLLiteral from './transform/htmlLiteral';
@@ -61,12 +61,57 @@ if (lib in libs) {
 		},
 	});
 } else {
-	const pages = fs.readdirSync(resolve(__dirname, 'pages')).map(file => {
+	const getExample = (loc) => {
+		if (!loc.startsWith('/pages/')) {
+			return null;
+		}
+
+		const file = loc.substring(7);
 		let i = file.lastIndexOf('.');
 		const name = file.substring(0, i);
 
-		return [name, resolve(__dirname, 'pages/' + file)];
-	});
+		const existed = ['.html', '.js', '.jsx'].find(ex => fs.existsSync('pages/' + name + ex));
+		if (!existed) {
+			return null;
+		}
+
+		const relative = '/pages/' + name + '.html';
+		return {
+			name,
+			file: name + existed,
+			relative,
+			location: resolve(__dirname, '/pages/' + name + existed),
+			resolved: join(__dirname, relative),
+		};
+	};
+
+	let examples;
+	const getExamples = () => {
+		if (examples) {
+			return examples;
+		}
+
+		return examples = fs.readdirSync(resolve(__dirname, 'pages')).map(file => {
+			return getExample('/pages/' + file);
+		});
+	};
+
+	const generateTemplate = (entry, hot) => {
+		return `
+			<!doctype html>
+			<html lang="en">
+				${hot ? '<script type="module" src="/@vite/client"></script>' : ""}
+				<head>
+					<meta charset="UTF-8" />
+					<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+					<title>Destam-Dom</title>
+				</head>
+				<body>
+					<script type="module" src="./${entry.file}"></script>
+				</body>
+			</html>
+		`;
+	};
 
 	config = defineConfig({
 		plugins: [
@@ -84,12 +129,44 @@ if (lib in libs) {
 							map: transform.decodedMap,
 						};
 					}
-				}
+				},
+			},
+			{
+				name: 'examples',
+				resolveId (id) {
+					let found = getExamples().find(ex => ex.resolved === id);
+					if (found) {
+						return found.resolved;
+					}
+				},
+				load(id) {
+					let found = getExamples().find(ex => ex.resolved === id);
+					if (found) return generateTemplate(found);
+				},
+				configureServer(server) {
+					server.middlewares.use((req, res, next) => {
+						let found = getExample(req.originalUrl);
+						if (found && found.relative === req.originalUrl && !found.file.endsWith('.html')) {
+							res.end(generateTemplate(found, true));
+						} else {
+							next();
+						}
+					});
+				},
+				handleHotUpdate({ server, modules, timestamp }) {
+					let found = modules.map(m => getExample(m.url)).find(e => e);
+					if (found) {
+						server.hot.send({
+							type: 'full-reload',
+							path: found.resolved,
+						});
+					}
+				},
 			}
 		],
 		build: {
 			rollupOptions: {
-				input: Object.fromEntries(pages),
+				input: Object.fromEntries(getExamples().map(ex => [ex.name, ex.resolved])),
 			},
 		},
 	});
