@@ -8,7 +8,7 @@ const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", 
 
 function _random (max) { return Math.round(Math.random() * 1000) % max; };
 
-function appendData(array, count) {
+const appendData = (array, count) => atomic(() => {
   for (let i = 0; i < count; i++) {
     let label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
     array.push({
@@ -16,7 +16,7 @@ function appendData(array, count) {
       label,
     });
   }
-}
+});
 
 const Button = ({ id, text, fn }) => {
   return html `<div class='col-sm-6 smallpad'>
