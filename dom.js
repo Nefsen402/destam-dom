@@ -299,7 +299,7 @@ export const h = (e, props = {}, ...children) => {
 		let bef = noop;
 
 		children = [];
-		props.children?.reverse().forEach(child => {
+		props.children?.findLast(child => {
 			assert(child !== undefined, "Cannot mount undefined");
 			if (child == null) return;
 
