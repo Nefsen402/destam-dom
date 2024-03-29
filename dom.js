@@ -307,12 +307,19 @@ export const h = (e, props = {}, ...children) => {
 			assert(child !== undefined, "Cannot mount undefined");
 			if (child == null) return;
 
-			if (child.element_) {
+			if (typeof child === 'string') {
+				child = document.createTextNode(child);
+			}
+
+			if (isInstance(child, Node)) {
+				e.prepend(child);
+				bef = () => child;
+			} else if (child.element_) {
 				signals.push(...child.signals_);
 				children.unshift(...child.children_);
 
 				const childElement = child.element_;
-				e.insertBefore(childElement, e.firstChild);
+				e.prepend(childElement);
 				bef = () => childElement;
 			} else {
 				push(children, [e, child, bef]);
