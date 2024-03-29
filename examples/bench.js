@@ -1,4 +1,5 @@
-import {Observer, html, mount, OObject, OArray } from '/index.js';
+import {Observer, html, mount, OArray } from '/index.js';
+import {atomic} from 'destam/Network';
 
 let idCounter = 1;
 const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint", "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly", "adorable", "important", "inexpensive", "cheap", "expensive", "fancy"],
@@ -9,10 +10,11 @@ function _random (max) { return Math.round(Math.random() * 1000) % max; };
 
 function appendData(array, count) {
   for (let i = 0; i < count; i++) {
-    array.push(OObject({
+    let label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
+    array.push({
       id: idCounter++,
-      label: `${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`
-    }));
+      label,
+    });
   }
 }
 
@@ -37,24 +39,24 @@ const App = () => {
     },
     add = () => appendData(array, 1000),
     update = () => {
-    	let arr = state.get();
-      for(let i = 0, len = arr.length; i < len; i += 10)
-        arr[i].label = arr[i].label + ' !!!';
+      for(let i = 0, len = array.length; i < len; i += 10)
+        array[i].label.set(array[i].label.get() + ' !!!');
     },
     swapRows = () => {
-    	let arr = state.get();
-      if (arr.length > 998) {
-        let tmp = arr[1];
-        arr[1] = arr[998];
-        arr[998] = tmp;
+      if (array.length > 998) {
+        atomic (() => {
+          let tmp = array[1];
+          array[1] = array[998];
+          array[998] = tmp;
+        });
       }
     },
     clear = () => {
       array.splice(0, array.length);
     },
     remove = row => {
-      const idx = state.indexOf(row);
-      state.splice(idx, 1);
+      const idx = array.indexOf(row);
+      array.splice(idx, 1);
     };
 
   return html`
@@ -101,7 +103,7 @@ const App = () => {
       <table class='table table-hover table-striped test-data'><tbody>
         <${({each: row}) => {
           return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
-            <td class='col-md-4'><a $onclick=${() => selected.set(row)}>${row.observer.path('label')}</a></td>
+            <td class='col-md-4'><a $onclick=${() => selected.set(row)}>${row.label}</a></td>
             <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
             <td class='col-md-6'/>
           </tr>`
