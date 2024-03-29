@@ -184,7 +184,7 @@ export default (h, assign = Object.assign, concatinator = strings => {
 					"Invalid tag name: " + name);
 
 				let ch;
-				push(tags, h(name, props, ...(term ? [] : (ch = parse(name),len(ch) ? ch : [null]))));
+				push(tags, h(name, props, ...(term ? [] : (ch = parse(name), len(ch) ? ch : [null]))));
 				term = 0;
 			}
 		}

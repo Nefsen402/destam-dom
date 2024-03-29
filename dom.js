@@ -300,7 +300,10 @@ export const h = (e, props = {}, ...children) => {
 
 		children = [];
 		props.children?.reverse().forEach(child => {
-			if (child.signals_) {
+			assert(child !== undefined, "Cannot mount undefined");
+			if (child == null) return;
+
+			if (child.element_) {
 				signals.push(...child.signals_);
 				children.unshift(...child.children_);
 
@@ -354,9 +357,9 @@ export const h = (e, props = {}, ...children) => {
 				return listener;
 			});
 
-			let bef = noop;
-			for (let [e, child, pbef] of children) {
-				let m = mount(e, child, pbef || bef);
+			let bef;
+			for (let [el, child, pbef] of children) {
+				const m = mount(el, child, pbef || bef);
 				bef = m.first_;
 				push(remove, m);
 			}

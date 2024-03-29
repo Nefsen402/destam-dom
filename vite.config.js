@@ -33,6 +33,9 @@ const lib = process.env.LIB;
 let config;
 if (lib in libs) {
 	config = defineConfig({
+		define: {
+			'process.env.NODE_ENV': '"development"',
+		},
 		build: {
 			minify: 'terser',
 			target: 'es2020',
@@ -57,8 +60,8 @@ if (lib in libs) {
 			},
 			sourcemap: true,
 			rollupOptions: {
-				plugins: [
-					...(process.env.N_DEBUG ? [createAssertRemovePlugin()] : []),
+				plugins: !process.env.N_DEBUG ? [] : [
+					createAssertRemovePlugin(),
 					{
 						name: 'drop-const',
 						transform(code, id) {
