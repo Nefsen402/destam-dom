@@ -66,7 +66,7 @@ if (lib in libs) {
 			return null;
 		}
 
-		const file = loc.substring(9);
+		const file = loc.substring(10);
 		let i = file.lastIndexOf('.');
 		const name = file.substring(0, i);
 
