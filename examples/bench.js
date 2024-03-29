@@ -7,15 +7,13 @@ const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", 
 
 function _random (max) { return Math.round(Math.random() * 1000) % max; };
 
-function buildData(count) {
-  let data = new Array(count);
+function appendData(array, count) {
   for (let i = 0; i < count; i++) {
-    data[i] = OObject({
+    array.push(OObject({
       id: idCounter++,
       label: `${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`
-    })
+    }));
   }
-  return data;
 }
 
 const Button = ({ id, text, fn }) => {
@@ -26,12 +24,18 @@ const Button = ({ id, text, fn }) => {
 
 const App = () => {
 	let selected = Observer.mutable(null);
-	let state = Observer.mutable(OArray());
+	let array = OArray();
 
 	const
-    run = () => state.set(OArray(buildData(1000))),
-    runLots = () => state.set(OArray(buildData(10000))),
-    add = () => state.get().push(...buildData(1000)),
+    run = () => {
+      array.splice(0, array.length);
+      appendData(array, 1000);
+    },
+    runLots = () => {
+      array.splice(0, array.length);
+      appendData(array, 10000)
+    },
+    add = () => appendData(array, 1000),
     update = () => {
     	let arr = state.get();
       for(let i = 0, len = arr.length; i < len; i += 10)
@@ -46,11 +50,11 @@ const App = () => {
       }
     },
     clear = () => {
-    	state.set(OArray());
+      array.splice(0, array.length);
     },
     remove = row => {
-      const idx = state.get().indexOf(row);
-      state.get().splice(idx, 1);
+      const idx = state.indexOf(row);
+      state.splice(idx, 1);
     };
 
   return html`
@@ -101,7 +105,7 @@ const App = () => {
             <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
             <td class='col-md-6'/>
           </tr>`
-        }} each=${state} />
+        }} each=${array} />
       </tbody></table>
       <span class='preloadicon glyphicon glyphicon-remove' aria-hidden="true" />
     </div>
