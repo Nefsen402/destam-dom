@@ -139,7 +139,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 				return;
 			}
 
-			const orphaned = null;
+			let orphaned = null;
 			const inserts = [];
 
 			for (const delta of commit) {
