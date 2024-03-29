@@ -172,15 +172,6 @@ if (lib in libs) {
 						}
 					});
 				},
-				handleHotUpdate({ server, modules, timestamp }) {
-					let found = modules.map(m => getExample(m.url)).find(e => e);
-					if (found) {
-						server.hot.send({
-							type: 'full-reload',
-							path: found.resolved,
-						});
-					}
-				},
 			}
 		],
 		esbuild: {
