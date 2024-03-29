@@ -302,7 +302,7 @@ export const h = (e, props = {}, ...children) => {
 		props.children?.reverse().forEach(child => {
 			if (child.signals_) {
 				signals.push(...child.signals_);
-				children.splice(0, 0, ...child.children_);
+				children.unshift(...child.children_);
 
 				const childElement = child.element_;
 				e.insertBefore(childElement, e.firstChild);
