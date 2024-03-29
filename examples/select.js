@@ -1,11 +1,4 @@
 import {Observer, html, mount} from '/index.js';
-import {css} from '../util.js';
-
-css`
-	body {
-		background: black;
-	}
-`;
 
 const value = Observer.mutable(true);
 
@@ -139,4 +132,11 @@ const App = ({map}, cleanup) => {
 	`;
 }
 
-mount(document.body, html`<${App} map=${map}/>`);
+mount(document.body, html`
+	<style>
+		body {
+			background: black;
+		}
+	</style>
+	<${App} map=${map}/>
+`);
