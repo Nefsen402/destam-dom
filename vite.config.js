@@ -164,6 +164,9 @@ if (lib in libs) {
 				},
 			}
 		],
+		esbuild: {
+			jsx: 'preserve',
+		},
 		build: {
 			rollupOptions: {
 				input: Object.fromEntries(getExamples().map(ex => [ex.name, ex.resolved])),
