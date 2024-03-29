@@ -21,7 +21,7 @@
     "@babel/traverse": "^7.23.6",
     "@babel/types": "^7.23.6",
     "@rollup/plugin-terser": "^0.4.4",
-    "vite": "^5.0.0"
+    "vite": "^5.2.6"
   },
   "peerDependencies": {
     "destam": "^0.0.4"
