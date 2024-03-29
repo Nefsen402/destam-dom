@@ -296,9 +296,9 @@ export const h = (e, props = {}, ...children) => {
 		}
 
 		const signals = [];
+		let bef = noop;
 
 		children = [];
-		let bef = noop;
 		props.children?.reverse().forEach(child => {
 			if (child.signals_) {
 				signals.push(...child.signals_);
@@ -309,7 +309,7 @@ export const h = (e, props = {}, ...children) => {
 				bef = () => childElement;
 			} else {
 				push(children, [e, child, bef]);
-				bef = null;
+				bef = 0;
 			}
 		});
 		delete props.children;
