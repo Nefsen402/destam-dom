@@ -9,48 +9,13 @@ const libs = {
 		entry: resolve(__dirname, 'index.js'),
 		fileName: 'destam-dom',
 	},
-	tracking: {
-		entry: resolve(__dirname, 'tracking.js'),
-		fileName: 'tracking',
-	},
 };
 
 const lib = process.env.LIB;
 
-export default defineConfig({
-	...(!(lib in libs) ? (() => {
-		const pages = fs.readdirSync(resolve(__dirname, 'pages')).map(file => {
-			let i = file.lastIndexOf('.');
-			const name = file.substring(0, i);
-
-			return [name, resolve(__dirname, 'pages/' + file)];
-		});
-		return {
-			plugins: [
-				{
-					name: 'transform-literal-html',
-					transform(code, id) {
-						if (id.endsWith('.js') || id.endsWith('.jsx')) {
-							const transform = compileHTMLLiteral(code, {
-								sourceFileName: id,
-								plugins: ['jsx'],
-							});
-
-							return {
-								code: transform.code,
-								map: transform.decodedMap,
-							};
-						}
-					}
-				}
-			],
-			build: {
-				rollupOptions: {
-					input: Object.fromEntries(pages),
-				},
-			},
-		};
-	})() : {
+let config;
+if (lib in libs) {
+	config = defineConfig({
 		build: {
 			minify: 'terser',
 			target: 'es2020',
@@ -94,5 +59,41 @@ export default defineConfig({
 				],
 			},
 		},
-	}),
-})
+	});
+} else {
+	const pages = fs.readdirSync(resolve(__dirname, 'pages')).map(file => {
+		let i = file.lastIndexOf('.');
+		const name = file.substring(0, i);
+
+		return [name, resolve(__dirname, 'pages/' + file)];
+	});
+
+	config = defineConfig({
+		plugins: [
+			{
+				name: 'transform-literal-html',
+				transform(code, id) {
+					if (id.endsWith('.js') || id.endsWith('.jsx')) {
+						const transform = compileHTMLLiteral(code, {
+							sourceFileName: id,
+							plugins: ['jsx'],
+						});
+
+						return {
+							code: transform.code,
+							map: transform.decodedMap,
+						};
+					}
+				}
+			}
+		],
+		build: {
+			rollupOptions: {
+				input: Object.fromEntries(pages),
+			},
+		},
+	});
+
+}
+
+export default config;
