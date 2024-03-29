@@ -1,34 +1,4 @@
 import {Observer, html, mount, OObject, OArray } from '/index.js';
-import {css} from '../util.js';
-
-css`
-	body {
-	    padding: 10px 0 0 0;
-	    margin: 0;
-	    overflow-y: scroll;
-	}
-	#duration {
-	    padding-top: 0px;
-	}
-	.jumbotron {
-	    padding-top:10px;
-	    padding-bottom:10px;
-	}
-	.test-data a {
-	    display: block;
-	}
-	.preloadicon {
-	    position: absolute;
-	    top:-20px;
-	    left:-20px;
-	}
-	.col-sm-6.smallpad {
-	    padding: 5px;
-	}
-	.jumbotron .row h1 {
-	    font-size: 40px;
-	}
-`;
 
 let idCounter = 1;
 const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint", "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly", "adorable", "important", "inexpensive", "cheap", "expensive", "fancy"],
@@ -83,29 +53,59 @@ const App = () => {
       state.get().splice(idx, 1);
     };
 
-  return html`<div class='container'>
-    <div class='jumbotron'><div class='row'>
-      <div class='col-md-6'><h1>SolidJS Keyed</h1></div>
-      <div class='col-md-6'><div class='row'>
-        <${Button} id='run' text='Create 1,000 rows' fn=${run} />
-        <${Button} id='runlots' text='Create 10,000 rows' fn=${runLots} />
-        <${Button} id='add' text='Append 1,000 rows' fn=${add} />
-        <${Button} id='update' text='Update every 10th row' fn=${update} />
-        <${Button} id='clear' text='Clear' fn=${clear} />
-        <${Button} id='swaprows' text='Swap Rows' fn=${swapRows} />
+  return html`
+    <style>
+      body {
+          padding: 10px 0 0 0;
+          margin: 0;
+          overflow-y: scroll;
+      }
+      #duration {
+          padding-top: 0px;
+      }
+      .jumbotron {
+          padding-top:10px;
+          padding-bottom:10px;
+      }
+      .test-data a {
+          display: block;
+      }
+      .preloadicon {
+          position: absolute;
+          top:-20px;
+          left:-20px;
+      }
+      .col-sm-6.smallpad {
+          padding: 5px;
+      }
+      .jumbotron .row h1 {
+          font-size: 40px;
+      }
+    </style>
+    <div class='container'>
+      <div class='jumbotron'><div class='row'>
+        <div class='col-md-6'><h1>SolidJS Keyed</h1></div>
+        <div class='col-md-6'><div class='row'>
+          <${Button} id='run' text='Create 1,000 rows' fn=${run} />
+          <${Button} id='runlots' text='Create 10,000 rows' fn=${runLots} />
+          <${Button} id='add' text='Append 1,000 rows' fn=${add} />
+          <${Button} id='update' text='Update every 10th row' fn=${update} />
+          <${Button} id='clear' text='Clear' fn=${clear} />
+          <${Button} id='swaprows' text='Swap Rows' fn=${swapRows} />
+        </div></div>
       </div></div>
-    </div></div>
-    <table class='table table-hover table-striped test-data'><tbody>
-      <${({each: row}) => {
-        return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
-          <td class='col-md-4'><a $onclick=${() => selected.set(row)}>${row.observer.path('label')}</a></td>
-          <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
-          <td class='col-md-6'/>
-        </tr>`
-      }} each=${state} />
-    </tbody></table>
-    <span class='preloadicon glyphicon glyphicon-remove' aria-hidden="true" />
-  </div>`;
+      <table class='table table-hover table-striped test-data'><tbody>
+        <${({each: row}) => {
+          return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
+            <td class='col-md-4'><a $onclick=${() => selected.set(row)}>${row.observer.path('label')}</a></td>
+            <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
+            <td class='col-md-6'/>
+          </tr>`
+        }} each=${state} />
+      </tbody></table>
+      <span class='preloadicon glyphicon glyphicon-remove' aria-hidden="true" />
+    </div>
+  `;
 }
 
 mount(document.body, App());

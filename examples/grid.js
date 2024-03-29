@@ -1,16 +1,4 @@
 import {html, mount, Observer} from '/index.js';
-import {css} from '../util.js';
-
-css`
-	.cell {
-		outline: 1px solid #efefef;
-	}
-
-	body {
-		background: black;
-		color: white;
-	}
-`;
 
 function randomHexColorString() {
 	return "#" + Math.floor(Math.random() * 16777215).toString(16);
@@ -22,6 +10,17 @@ const blockSize = 500;
 const sizeRepeat = size.map(size => `repeat(${size}, ${blockSize / size}px)`);
 
 mount(document.body, html`
+	<style>
+		.cell {
+			outline: 1px solid #efefef;
+		}
+
+		body {
+			background: black;
+			color: white;
+		}
+	</style>
+
 	Grid Side Length: <input $value=${size} $oninput=${e => size.set(e.target.value)} type=number /><br />
 
 	<div $style=${{display: 'grid', 'grid-template-rows': sizeRepeat, 'grid-template-columns': sizeRepeat}}>
