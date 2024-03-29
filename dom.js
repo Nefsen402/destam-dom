@@ -251,7 +251,7 @@ export const h = (e, props = {}, ...children) => {
 		props.children = children;
 	}
 
-	let a;
+	let virtualElement;
 	if (typeof e === 'function') {
 		const each = props.each;
 		const createMount = (elem, item, before) => {
@@ -284,13 +284,12 @@ export const h = (e, props = {}, ...children) => {
 		};
 
 		if (!each) {
-			a = createMount;
+			virtualElement = createMount;
 		} else {
 			assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
 				"'each' property is not iterable");
 
-			a = (elem, item, before) =>
-				mount(elem, each, before, createMount);
+			virtualElement = (elem, item, before) => mount(elem, each, before, createMount);
 		}
 	} else {
 		assert(isInstance(e, Node) || typeof e === 'string',
@@ -355,7 +354,7 @@ export const h = (e, props = {}, ...children) => {
 			search(name, val, e);
 		});
 
-		a = (elem, _, before) => {
+		virtualElement = (elem, _, before) => {
 			const remove = signals.map(([val, handler]) => {
 				const listener = shallowListener(val, handler);
 				handler();
@@ -372,11 +371,11 @@ export const h = (e, props = {}, ...children) => {
 			return nodeMounter(elem, e, before, 0, remove);
 		};
 
-		a.signals_ = signals;
-		a.children_ = children;
-		a.element_ = e;
+		virtualElement.signals_ = signals;
+		virtualElement.children_ = children;
+		virtualElement.element_ = e;
 	}
 
-	assert(a.__is_destam_dom_internal_func = true);
-	return a;
+	assert(virtualElement.__is_destam_dom_internal_func = true);
+	return virtualElement;
 };
