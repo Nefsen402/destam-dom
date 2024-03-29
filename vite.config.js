@@ -58,7 +58,7 @@ if (lib in libs) {
 			sourcemap: true,
 			rollupOptions: {
 				plugins: [
-					createAssertRemovePlugin(),
+					...(process.env.N_DEBUG ? [createAssertRemovePlugin()] : []),
 					{
 						name: 'drop-const',
 						transform(code, id) {
