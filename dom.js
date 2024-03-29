@@ -295,10 +295,23 @@ export const h = (e, props = {}, ...children) => {
 			e = document.createElement(e);
 		}
 
-		children = props.children;
+		const signals = [];
+
+		children = [];
+		let bef = noop;
+		props.children?.reverse().forEach(child => {
+			if (child.signals_) {
+				signals.push(...child.signals_);
+				children.splice(0, 0, ...child.children_);
+				e.insertBefore(child.element_, e.firstChild);
+				bef = () => child.element_;
+			} else {
+				push(children, [e, child, bef]);
+				bef = null;
+			}
+		});
 		delete props.children;
 
-		const signals = [];
 		forEachProp(props, (name, val) => {
 			let set;
 			if (name[0] === '$') {
@@ -339,10 +352,19 @@ export const h = (e, props = {}, ...children) => {
 				return listener;
 			});
 
-			if (children != null) push(remove, mount(e, children));
+			let bef = noop;
+			for (let [e, child, pbef] of children) {
+				let m = mount(e, child, pbef || bef);
+				bef = m.first_;
+				push(remove, m);
+			}
 
 			return nodeMounter(elem, e, before, 0, remove);
 		};
+
+		a.signals_ = signals;
+		a.children_ = children;
+		a.element_ = e;
 	}
 
 	assert(a.__is_destam_dom_internal_func = true);
