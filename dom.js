@@ -51,7 +51,7 @@ const insertMap = (map, item) => {
 };
 
 const cleanupArrayMounts = mounts => {
-	for (const arr of mounts.values()) {
+	if (mounts) for (const arr of mounts.values()) {
 		for (const mount of arr) {
 			mount.prev_.next_ = mount.next_;
 			mount.next_.prev_ = mount.prev_;
@@ -68,6 +68,8 @@ const destroyArrayMounts = (link, root, linkGetter, orphaned) => {
 	for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
 		(orphaned ? insertMap : cur)(orphaned, cur);
 	}
+
+	if (!orphaned) root.next_ = root.prev_ = root;
 };
 
 const arrayMounter = (elem, val, before, mounter) => {
@@ -131,7 +133,13 @@ const arrayMounter = (elem, val, before, mounter) => {
 
 		arrayListener?.();
 		arrayListener = observer && shallowListener(observer, commit => {
-			const orphaned = new Map();
+			// fast path when removing everything
+			if (!len(val)) {
+				destroyArrayMounts(link, root, linkGetter);
+				return;
+			}
+
+			const orphaned = null;
 			const inserts = [];
 
 			for (const delta of commit) {
@@ -139,7 +147,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 				const link = delta.network_.link_;
 
 				if (isModify || isInstance(delta, Delete)) {
-					insertMap(orphaned, link[linkGetter]);
+					insertMap(orphaned || (orphaned = new Map()), link[linkGetter]);
 					delete link[linkGetter];
 				}
 
@@ -153,11 +161,11 @@ const arrayMounter = (elem, val, before, mounter) => {
 				}
 			}
 
-			for (let link of inserts) {
-				let next = link.linkNext_[linkGetter] || root;
-				for (; link.reg_ && !link[linkGetter]; link = link.linkPrev_) {
-					next = link[linkGetter] = addMount(orphaned, link.dom_val_, next);
-					delete link.dom_val_;
+			for (let insert of inserts) {
+				let next = insert.linkNext_[linkGetter] || root;
+				for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
+					next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
+					delete insert.dom_val_;
 				}
 			}
 
@@ -169,7 +177,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 
 	return assignFirst(val => {
 		if (val) {
-			const orphaned = new Map();
+			const orphaned = len(val) ? new Map() : null;
 			destroyArrayMounts(link, root, linkGetter, orphaned);
 			mountList(val, orphaned);
 			cleanupArrayMounts(orphaned);
