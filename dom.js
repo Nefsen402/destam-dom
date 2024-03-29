@@ -222,14 +222,19 @@ export const mount = (elem, item, before = noop, mounter = mount) => {
 	};
 
 	const isObserver = isInstance(item, Observer);
-	const watcher = isObserver ? shallowListener(item, update) : noop;
-	update();
+	if (isObserver) {
+		const watcher = shallowListener(item, update);
+		update();
 
-	return assignFirst(() => {
-		watcher();
-		mounted?.();
-		mounted = null;
-	}, () => (mounted?.first_ || before)());
+		return assignFirst(() => {
+			watcher();
+			mounted?.();
+			mounted = null;
+		}, () => (mounted?.first_ || before)());
+	} else {
+		update();
+		return mounted || assignFirst(() => {}, before);
+	}
 };
 
 const forEachProp = (p, e, opt) => {
