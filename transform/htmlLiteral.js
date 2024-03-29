@@ -92,7 +92,7 @@ const parse = node => {
 		if (name.name[0].toLowerCase() !== name.name[0]) {
 			name = t.identifier(name.name);
 		} else {
-			if (!validTags.includes(name.name.toUpperCase())) {
+			if (!validTags.includes(name.name.toUpperCase()) && !name.name.includes('-')) {
 				throw new Error("Invalid tag name: " + name.name);
 			}
 
