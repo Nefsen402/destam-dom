@@ -18,17 +18,15 @@ const nodeMounter = (elem, e, before, _, remove) => {
 		if (val == null) {
 			elem?.removeChild(e);
 			if (remove) callAll(remove);
-			return remove = elem = null;
-		}
-
-		if (isInstance(val, Node)) {
+			remove = elem = val;
+		} else if (isInstance(val, Node)) {
 			elem?.replaceChild(val, e);
 			e = val;
 		} else {
 			e.textContent = val;
 		}
 
-		return 1;
+		return val;
 	}, () => e);
 };
 
@@ -181,13 +179,12 @@ const arrayMounter = (elem, val, before, mounter) => {
 			destroyArrayMounts(link, root, linkGetter, orphaned);
 			mountList(val, orphaned);
 			cleanupArrayMounts(orphaned);
-
-			return 1;
+		} else {
+			arrayListener?.();
+			destroyArrayMounts(link, root, linkGetter);
 		}
 
-		arrayListener?.();
-		destroyArrayMounts(link, root, linkGetter);
-		return 0;
+		return val;
 	}, () => root.next_.first_());
 };
 
