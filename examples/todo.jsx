@@ -9,7 +9,7 @@ const TodoItem = ({each: item}) => {
 		$onclick={() => {
 			item.completed = !item.completed;
 		}}
-	>${item.observer.path('name')}</li>;
+	>{item.observer.path('name')}</li>;
 };
 
 const TodoList = ({todos}) => {
