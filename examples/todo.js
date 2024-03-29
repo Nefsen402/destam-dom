@@ -3,7 +3,7 @@ import createNetwork from 'destam/Tracking';
 
 const TodoItem = ({each: item}) => {
 	return html`<li
-		style=${{
+		$style=${{
 			'text-decoration': item.observer.path('completed').map(c => c ? 'line-through' : 'none')
 		}}
 		$onclick=${() => {
