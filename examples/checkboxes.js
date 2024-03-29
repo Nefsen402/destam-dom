@@ -16,7 +16,6 @@ const countries = [
 	'USA',
 	'Mexico',
 	'Japan',
-	"dudeooooo"
 ];
 
 const App = () => {
