@@ -15,12 +15,12 @@ const createArray = (items) => {
 
 const spreadKeys = Symbol();
 
-const html = htm((name, props, children) => {
+const html = htm((name, props, ...children) => {
 	const args = [
 		typeof name === 'string' ? t.stringLiteral(name) : name,
 	];
 
-	if (Object.keys(props).length || children) {
+	if (Object.keys(props).length || children.length) {
 		args.push(t.objectExpression(Object.entries(props).map(([key, val]) => {
 			if (props[spreadKeys]?.includes(key)) {
 				return t.spreadElement(val);
@@ -42,15 +42,13 @@ const html = htm((name, props, children) => {
 		})));
 	}
 
-	if (children) {
-		args.push(createArray(children.map(child => {
-			if (typeof child === 'string') {
-				return t.stringLiteral(child);
-			} else {
-				return child;
-			}
-		})));
-	}
+	args.push(...children.map(child => {
+		if (typeof child === 'string') {
+			return t.stringLiteral(child);
+		} else {
+			return child;
+		}
+	}));
 
 	return t.callExpression(t.identifier('h'), args);
 }, (props, obj) => {
@@ -126,7 +124,11 @@ const parse = node => {
 
 	const children = transformChildren(node);
 	if (children) {
-		args.push(createArray(children));
+		if (children.length) {
+			args.push(t.identifier('null'));
+		} else {
+			args.push(children);
+		}
 	}
 
 	return t.callExpression(t.identifier('h'), args);

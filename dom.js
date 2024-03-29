@@ -238,10 +238,11 @@ const forEachProp = (p, e, opt) => {
 	}
 };
 
-export const h = (e, props = {}, children) => {
+export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
-	if (children != null) {
+	if (len(children)) {
+		assert(!("children" in props), "Overwriting children property because element has a body");
 		props.children = children;
 	}
 
