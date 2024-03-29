@@ -303,8 +303,10 @@ export const h = (e, props = {}, ...children) => {
 			if (child.signals_) {
 				signals.push(...child.signals_);
 				children.splice(0, 0, ...child.children_);
-				e.insertBefore(child.element_, e.firstChild);
-				bef = () => child.element_;
+
+				const childElement = child.element_;
+				e.insertBefore(childElement, e.firstChild);
+				bef = () => childElement;
 			} else {
 				push(children, [e, child, bef]);
 				bef = null;
