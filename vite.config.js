@@ -121,7 +121,7 @@ if (lib in libs) {
 					if (id.endsWith('.js') || id.endsWith('.jsx')) {
 						const transform = compileHTMLLiteral(code, {
 							sourceFileName: id,
-							plugins: ['jsx'],
+							plugins: id.endsWith('.jsx') ? ['jsx'] : [],
 						});
 
 						return {
