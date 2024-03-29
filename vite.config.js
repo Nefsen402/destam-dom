@@ -5,6 +5,22 @@ import assertRemove from './transform/assertRemove';
 import compileHTMLLiteral from './transform/htmlLiteral';
 import fs from 'fs';
 
+const createAssertRemovePlugin = () => ({
+	name: 'assert-remove',
+	transform(code, id) {
+		if (id.endsWith('.js')) {
+			const transform = assertRemove(code, {
+				sourceFileName: id,
+			});
+
+			return {
+				code: transform.code,
+				map: transform.decodedMap,
+			};
+		}
+	}
+});
+
 const libs = {
 	destamd: {
 		entry: resolve(__dirname, 'index.js'),
@@ -42,21 +58,7 @@ if (lib in libs) {
 			sourcemap: true,
 			rollupOptions: {
 				plugins: [
-					{
-						name: 'assert-remove',
-						transform(code, id) {
-							if (id.endsWith('.js')) {
-								const transform = assertRemove(code, {
-									sourceFileName: id,
-								});
-
-								return {
-									code: transform.code,
-									map: transform.decodedMap,
-								};
-							}
-						}
-					},
+					createAssertRemovePlugin(),
 					{
 						name: 'drop-const',
 						transform(code, id) {
@@ -131,6 +133,7 @@ if (lib in libs) {
 
 	config = defineConfig({
 		plugins: [
+			...(process.env.N_DEBUG ? [createAssertRemovePlugin()] : []),
 			{
 				name: 'transform-literal-html',
 				transform(code, id) {
