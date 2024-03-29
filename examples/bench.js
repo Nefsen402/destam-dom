@@ -104,7 +104,7 @@ const App = () => {
         <${({each: row}) => {
           return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
             <td class='col-md-4'><a $onclick=${() => selected.set(row)}>${row.label}</a></td>
-            <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" /></a></td>
+            <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" />x</a></td>
             <td class='col-md-6'/>
           </tr>`
         }} each=${array} />
