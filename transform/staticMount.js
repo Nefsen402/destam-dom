@@ -152,11 +152,8 @@ const transformBabelAST = (ast) => {
 			while (!block.node.body) {
 				if (block.parentPath.node.body) {
 					if (!Array.isArray(block.parentPath.node.body)) {
-						index = 0;
-						const b = t.blockStatement([t.returnStatement(block.parentPath.node.body)]);
-						block.parentPath.node.body = b;
-						block = {node: b};
-						break;
+						block.replaceWith(t.blockStatement([t.returnStatement(block.node)]));
+						return;
 					} else {
 						index = block.parentPath.node.body.indexOf(block.node);
 					}
@@ -190,6 +187,10 @@ const transform = (source, options) => {
 /*
 console.log(transform(`
 	let $thing = 0;
+	const Button = ({ id, text, fn }) =>
+	  mount(h('div', {"class": 'col-sm-6 smallpad'},
+	    h('button', {id, "class": 'btn btn-primary btn-block', type: 'button', $onclick: fn}, text)
+	  ))
 
 	let a = () => h('a', {hello: world});
 
