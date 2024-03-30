@@ -23,6 +23,14 @@ mount(null, html`
 document.body.appendChild(div);
 ```
 
+`mount()` will return a function pointer that can be called to then later unmount. It's likely to see this omitted if the app's lifetime is the same as the mount such as for applications written entirely in destam-dom.
+```js
+let remove = mount(document.body, "Hello, world!");
+
+setTimeout(() => remove(), 1000);
+```
+This will only show the text for one second before removing it.
+
 Mount supports:
  - Strings
  - Html nodes
