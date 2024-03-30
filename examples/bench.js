@@ -18,7 +18,7 @@ const App = () => {
 	let array = OArray();
 
   const appendData = count => atomic(() => {
-    for (let i = 0; i < count; i++) {
+    array.push(...Array.from(Array(count), () => {
       let label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
 
       const dom = html`
@@ -30,8 +30,8 @@ const App = () => {
       `;
 
       dom.label = label;
-      array.push(dom);
-    }
+      return dom;
+    }));
   });
 
 	const
