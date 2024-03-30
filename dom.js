@@ -310,7 +310,7 @@ export const h = (e, props = {}, ...children) => {
 		}
 
 		const signals = [];
-		let bef = noop;
+		let bef = noop, insertLoc = null;
 
 		children = [];
 		props.children?.findLast(child => {
@@ -330,8 +330,9 @@ export const h = (e, props = {}, ...children) => {
 			}
 
 			if (child) {
-				if (!child.parentElement) e.insertBefore(child, bef());
+				if (!child.parentElement) e.insertBefore(child, insertLoc);
 				bef = () => child;
+				insertLoc = child;
 			}
 		});
 		delete props.children;
