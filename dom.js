@@ -116,29 +116,36 @@ const arrayMounter = (elem, val, before, mounter) => {
 
 	const linkGetter = Symbol();
 	let link, arrayListener;
-	const mountAll = (observer, orphaned) => {
-		link = observer?.linkNext_;
-		let mounted = root;
-		for (const item of val) {
-			mounted = addMount(orphaned, item, mounted.next_);
-			if (link) {
-				link[linkGetter] = mounted;
-				link = link.linkNext_;
-			}
-		}
-	};
 
 	const mountList = (val, orphaned) => {
 		const observer = val[observerGetter];
-		mountAll(observer, orphaned);
+		const mountAll = orphaned => {
+			link = observer?.linkNext_;
+			let mounted = root;
+			for (const item of val) {
+				mounted = addMount(orphaned, item, mounted.next_);
+				if (link) {
+					link[linkGetter] = mounted;
+					link = link.linkNext_;
+				}
+			}
+		};
+
+		mountAll(orphaned);
 
 		arrayListener?.();
 		arrayListener = observer && shallowListener(observer, commit => {
 			// fast path when removing everything
-			if (!len(val)) return destroyArrayMounts(link, root, linkGetter);
+			if (!len(val)) {
+				destroyArrayMounts(link, root, linkGetter);
+				return;
+			}
 
 			// fast path when adding from an empty array
-			if (root.next_ === root) return mountAll(observer);
+			if (root.next_ === root) {
+				mountAll();
+				return;
+			}
 
 			let orphaned = null;
 			const inserts = [];
