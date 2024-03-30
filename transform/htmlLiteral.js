@@ -45,6 +45,8 @@ const html = htm((name, props, ...children) => {
 	args.push(...children.map(child => {
 		if (typeof child === 'string') {
 			return t.stringLiteral(child);
+		} else if (child === null) {
+			return t.identifier('null');
 		} else {
 			return child;
 		}
