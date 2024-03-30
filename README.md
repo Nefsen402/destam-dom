@@ -1,6 +1,6 @@
 # destam-dom
 
-This is a dom manipulation library built on destam. This library does not use a virtual dom and its purpose is to provide a binding from mutation events that happen through the destam state manager to then manipulate the dom. This library is designed to be as simple as possible. It does not provide any filtering of events to account for browser differences or any magic regarding node attributes. This is designed to be a base for other libraries to build on top of to provide those creature comforts.
+This is a dom manipulation library built on [destam](https://github.com/equator-studios/destam) (delta state manager). This library's purpose is to provide a bindings to interpret destam deltas as mutations on the dom.
 
 See the [documentation](doc.md)
 
@@ -21,7 +21,7 @@ Virtual doms were a mistake:
 - they require a lot of magic called "reconciliation" in order to actually work
 - they have horrible performance with lists
 
-destam-dom relies on the idea of signals, but destam-dom does not attempt to re-invent another state library, it's built on the existing [destam library](https://github.com/equator-studios/destam). Destam provides primitives that generate deltas whenever they are mutated, and destam-dom takes those deltas and interprets them as dom manipluations. This approach achieves true constant time insertion, deletion and modification to dom children.
+destam-dom relies on the idea of signals, but destam-dom does not attempt to re-invent another state library, it's built on the existing destam library. Destam provides primitives that generate deltas whenever they are mutated, and destam-dom takes those deltas and interprets them as dom manipluations. This approach achieves true constant time insertion, deletion and modification to dom children.
 
 ## List example
 ```js
@@ -42,7 +42,7 @@ mount(document.body, html`
 ```
 
 ## JSX compatible
-destam-dom provides source passes under transform/ that will take the ```html`` ``` syntax and jsx and turn it into simple calls that destam-dom directly understands so that no parsing has to happen at runtime.
+destam-dom provides various source passes under transform/ for build systems that will take ```html`` ``` template literals and JSX and turn it into simple calls that destam-dom directly understands so that no parsing has to happen at runtime.
 
 ## More examples
 The `examples` directory provides many simple examples for how to use this library.
