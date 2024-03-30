@@ -3,8 +3,7 @@ import t from '@babel/types';
 import generate from '@babel/generator';
 import babelTraverse from '@babel/traverse';
 
-let i = 0;
-const createTemporary = () => t.identifier('static_' + i++ + '_' + Math.random().toString().substring(2));
+const createTemporary = i => t.identifier('static_' + i + '_' + Math.random().toString().substring(2));
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
 
 const computeNode = (rep, node) => {
@@ -18,7 +17,7 @@ const computeNode = (rep, node) => {
 		return node;
 	}
 
-	let temporary = createTemporary();
+	let temporary = createTemporary(rep.length);
 	rep.push(declare(temporary, t.callExpression(
 		t.memberExpression(t.identifier("document"), t.identifier("createElement")),
 		[name]
@@ -95,7 +94,7 @@ const computeNode = (rep, node) => {
 
 		let append = false;
 		if (['StringLiteral', 'BooleanLiteral', 'NumericLiteral'].includes(child.type)) {
-			let temporary = createTemporary();
+			let temporary = createTemporary(rep.length);
 			rep.push(declare(temporary, t.callExpression(
 				t.memberExpression(t.identifier("document"), t.identifier("createTextNode")),
 				[child]
