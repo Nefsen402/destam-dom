@@ -116,9 +116,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 
 	const linkGetter = Symbol();
 	let link, arrayListener;
-	const mountList = (val, orphaned) => {
-		const observer = val[observerGetter];
-
+	const mountAll = (observer, orphaned) => {
 		link = observer?.linkNext_;
 		let mounted = root;
 		for (const item of val) {
@@ -128,24 +126,19 @@ const arrayMounter = (elem, val, before, mounter) => {
 				link = link.linkNext_;
 			}
 		}
+	};
+
+	const mountList = (val, orphaned) => {
+		const observer = val[observerGetter];
+		mountAll(observer, orphaned);
 
 		arrayListener?.();
 		arrayListener = observer && shallowListener(observer, commit => {
 			// fast path when removing everything
-			if (!len(val)) {
-				destroyArrayMounts(link, root, linkGetter);
-				return;
-			}
+			if (!len(val)) return destroyArrayMounts(link, root, linkGetter);
 
 			// fast path when adding from an empty array
-			if (root.next_ === root) {
-				for (const delta of commit) {
-					const link = delta.network_.link_;
-					link[linkGetter] = addMount(null, delta.value, root);
-				}
-
-				return;
-			}
+			if (root.next_ === root) return mountAll(observer);
 
 			let orphaned = null;
 			const inserts = [];
