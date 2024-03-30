@@ -56,6 +56,7 @@ const computeNode = (rep, node) => {
 					'BooleanLiteral', 'StringLiteral',
 					'NumericLiteral', 'ArrowFunctionExpression',
 					'FunctionExpression', 'BinaryExpression',
+					'TemplateLiteral',
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(t.assignmentExpression('=',
 						t.memberExpression(e, name, name.type === 'StringLiteral'),
@@ -71,7 +72,7 @@ const computeNode = (rep, node) => {
 				)));
 
 				return true;
-			} else if (['StringLiteral', 'NumericLiteral'].includes(val.type)) {
+			} else if (['StringLiteral', 'NumericLiteral', 'TemplateLiteral'].includes(val.type)) {
 				rep.push(t.expressionStatement(t.callExpression(
 					t.memberExpression(e, t.identifier('setAttribute')),
 					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
