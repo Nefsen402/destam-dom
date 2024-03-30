@@ -16,9 +16,9 @@ const nodeMounter = (elem, e, before, _, remove) => {
 
 	return assignFirst(val => {
 		if (val == null) {
-			elem?.removeChild(e);
+			e?.remove();
 			if (remove) callAll(remove);
-			remove = elem = val;
+			e = remove = val;
 		} else if (isInstance(val, Node)) {
 			elem?.replaceChild(val, e);
 			e = val;
