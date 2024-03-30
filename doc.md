@@ -156,7 +156,7 @@ It uses similar syntax for setting any other property, except we leave the prope
 
 ## Children prop
 
-Every element can take in a `children` property that will be used to populate the children of an element. This property must always either be null.
+Every element can take in a `children` property that will be used to populate the children of an element. This property must always either be null or an array.
 
 ```js
 const children = ['hello ', 'world'];
