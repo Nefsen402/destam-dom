@@ -1,14 +1,5 @@
 import {html, mount, OArray, OObject} from '/index.js';
 import {atomic} from 'destam/Network';
-import {css} from '../util.js';
-
-css`
-	.center {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-`;
 
 const windows = window.windows = OArray();
 let currentInteraction = null;
@@ -123,6 +114,13 @@ const Window = ({each: window}) => {
 };
 
 mount(document.body, html`
+	<style>
+		.center {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+	</style>
 	<button $onclick=${() => {
 		windows.push(OObject({
 			x: 10,
