@@ -156,7 +156,8 @@ It uses similar syntax for setting any other property, except we leave the prope
 
 ## Children prop
 
-Every element can take in a `children` property that will be used to populate the children of an element.
+Every element can take in a `children` property that will be used to populate the children of an element. This property must always either be null.
+
 ```js
 const children = ['hello ', 'world'];
 
@@ -177,6 +178,11 @@ html`
 ```
 
 This example won't render anything because it is assuming the children in the body, of which there are none.
+
+Note that children must either be null, or a regular javascript array. Children
+cannot be an `OArray` as it will not be reactive. This is done for performance
+reasons. If you wanted to pass an `OArray` or anything else as a single child,
+first wrap it in an array.
 
 ## Custom elements
 

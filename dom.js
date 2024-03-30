@@ -246,6 +246,9 @@ export const h = (e, props = {}, ...children) => {
 	if (len(children)) {
 		assert(!("children" in props), "Overwriting children property because element has a body");
 		props.children = children;
+	} else {
+		assert(props.children == null || props.children.constructor === Array,
+			"Children must be null or an array");
 	}
 
 	let virtualElement;
