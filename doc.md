@@ -306,7 +306,7 @@ html`
 The lifetime of observers are undefined when used with destam-dom. Do not depend on an observer listener being added/removed for anything more than unregistering the listener when creating custom observers.
 
 ## Lists
-Custom elements are also the basis of how destam-dom manages rendering a list of items with an arbitrary format. Suppose we have this data that we want to render:
+Destam can interpret arrays of items like a list of names.
 
 ```js
 const names = [
@@ -316,11 +316,56 @@ const names = [
 ];
 ```
 
+We can transform them into elements and render them. This could also be any sort of iterable, it doesn't necessarily have to be an array.
+
+```js
+html`
+	${names.map(name => html`<div>${name}</div>`)}
+`
+```
+
+In order to implement reactivity, an Observer can be used to wrap the array. Destam-dom will reconcile common object references (objects that compare equal in `Map`). If you're used to other framework, it's like the objects in the array themselves act as the key. It's easy to lose these object references unfortunately. If we were to generate the div wrappers around names at the last moment such as the above example, those div wrappers would compare as different and everything would be remounted. Instead, we'll store the div wrappers as part of the array.
+
+```js
+const names = Observer.mutable([
+	html`<div>Bob</div>`,
+	html`<div>Bill</div>`,
+	html`<div>Jane</div>`
+]);
+
+html`
+	${names}
+`
+
+names.set([...names.get(), html`<div>Ford</div>`]);
+```
+
+Hovever, this is a naive way of implementing reactivity with arrays because we require that we copy all elements from the previous array into the new one, to then add one more element. To achieve constant time insertion, we can use `OArray`.
+
+```js
+const names = OArray([
+	html`<div>Bob</div>`,
+	html`<div>Bill</div>`,
+	html`<div>Jane</div>`
+]);
+
+html`
+	${names}
+`
+
+names.push(html`<div>Ford</div>`);
+```
+
+This also has the added effect that destam-dom does not need to reconcile references. It simply detects that a new item was pushed and adds it to the dom.
+
+## Custom element each property
+Sometimes, it's inconventient to need to manage an array of components, you might just have a list of arbitrary program state. Custom elements are the basis of how destam-dom manages rendering a list of items with an arbitrary format.
+
 The `each` element property can be used to iterate a list and transform the list into html elements at the same time with a custom element. In the custom component, the `each` property will no longer be the list, but instead an element of the list.
 
 ```js
 const Name = ({each: name}) => {
-	return name;
+	return html`<div>${name}</div>`;
 };
 
 html`
@@ -328,7 +373,7 @@ html`
 `
 ```
 
-Note that destam-dom will compare by reference every value in each to try to reduce rendering nodes. For instance, if `names` was an observer, that observer could be updated with a different list. If there are common elements between the old list and the new one, existing components will be reused if there are matching object references.
+In this case, the array reconciler will notice that the references are the same, as the references are now just simple strings and prenent unnecessary dom manipulations.
 
 ```js
 const names = Observer.mutable([
@@ -338,7 +383,7 @@ const names = Observer.mutable([
 ]);
 
 const Name = ({each: name}) => {
-	return name;
+	return ;
 };
 
 html`
@@ -348,7 +393,7 @@ html`
 names.set([...names.get(), 'Ford']);
 ```
 
-In this example, the `Name` custom component will be involked only 4 times. Note that the above example can be further optimized by using an `OArray` provided by destam.
+Like above when we weren't using custom elements, we can implement naive list reactivity using an observer. This time, we're able to do it with just basic strings. Note that this example will render `Name` exactly 4 times, it will not recompute the first three names.
 
 ```js
 const names = OArray([
@@ -358,7 +403,7 @@ const names = OArray([
 ]);
 
 const Name = ({each: name}) => {
-	return name;
+	return html`<div>${name}</div>`;
 };
 
 html`
@@ -368,7 +413,7 @@ html`
 names.push('Ford');
 ```
 
-The optimization here will let destam-dom not need to compare references, but instead just directly insert the new name in constant time. Prefer these kinds of arrays.
+And of course, prefer to use `OArray` when possible to achieve constant time insertion.
 
 ## JSX
 JSX support is provided from the `transform/htmlLiteral` file. This can be hooked up to any build system with a vite example being provided in this repository.
