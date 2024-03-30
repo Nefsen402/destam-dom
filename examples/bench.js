@@ -1,22 +1,11 @@
 import {Observer, html, mount, OArray } from '/index.js';
 import {atomic} from 'destam/Network';
 
-let idCounter = 1;
 const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint", "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly", "adorable", "important", "inexpensive", "cheap", "expensive", "fancy"],
   colours = ["red", "yellow", "blue", "green", "pink", "brown", "purple", "brown", "white", "black", "orange"],
   nouns = ["table", "chair", "house", "bbq", "desk", "car", "pony", "cookie", "sandwich", "burger", "pizza", "mouse", "keyboard"];
 
 function _random (max) { return Math.round(Math.random() * 1000) % max; };
-
-const appendData = (array, count) => atomic(() => {
-  for (let i = 0; i < count; i++) {
-    let label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
-    array.push({
-      id: idCounter++,
-      label,
-    });
-  }
-});
 
 const Button = ({ id, text, fn }) => {
   return html `<div class='col-sm-6 smallpad'>
@@ -28,16 +17,33 @@ const App = () => {
 	let selected = Observer.mutable(null);
 	let array = OArray();
 
+  const appendData = count => atomic(() => {
+    for (let i = 0; i < count; i++) {
+      let label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
+
+      const dom = html`
+        <tr class=${selected.map(sel => sel === dom ? "danger": "")}>
+          <td class='col-md-4'><a $onclick=${() => selected.set(dom)}>${label}</a></td>
+          <td class='col-md-1'><a $onclick=${() => remove(dom)}><span class='glyphicon glyphicon-remove' aria-hidden="true" />x</a></td>
+          <td class='col-md-6'/>
+        </tr>
+      `;
+
+      dom.label = label;
+      array.push(dom);
+    }
+  });
+
 	const
     run = () => {
       array.splice(0, array.length);
-      appendData(array, 1000);
+      appendData(1000);
     },
     runLots = () => {
       array.splice(0, array.length);
-      appendData(array, 10000)
+      appendData(10000)
     },
-    add = () => appendData(array, 1000),
+    add = () => appendData(1000),
     update = () => {
       for(let i = 0, len = array.length; i < len; i += 10)
         array[i].label.set(array[i].label.get() + ' !!!');
@@ -101,13 +107,7 @@ const App = () => {
         </div></div>
       </div></div>
       <table class='table table-hover table-striped test-data'><tbody>
-        <${({each: row}) => {
-          return html`<tr class=${selected.map(sel => sel === row ? "danger": "")}>
-            <td class='col-md-4'><a $onclick=${() => selected.set(row)}>${row.label}</a></td>
-            <td class='col-md-1'><a $onclick=${() => remove(row)}><span class='glyphicon glyphicon-remove' aria-hidden="true" />x</a></td>
-            <td class='col-md-6'/>
-          </tr>`
-        }} each=${array} />
+        ${array}
       </tbody></table>
       <span class='preloadicon glyphicon glyphicon-remove' aria-hidden="true" />
     </div>
