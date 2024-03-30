@@ -323,7 +323,7 @@ export const h = (e, props = {}, ...children) => {
 			}
 
 			if (child) {
-				if (!child.parentElement) e.prepend(child);
+				if (!child.parentElement) e.insertBefore(child, bef());
 				bef = () => child;
 			}
 		});
