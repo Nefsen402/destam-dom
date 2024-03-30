@@ -109,7 +109,7 @@ const parse = node => {
 
 			let {name, value} = attr;
 			if (!value) {
-				value = t.booleanLiteral(true)
+				value = t.booleanLiteral(true);
 			} else if (value.type === 'JSXExpressionContainer') {
 				value = value.expression;
 			}
@@ -124,10 +124,10 @@ const parse = node => {
 
 	const children = transformChildren(node);
 	if (children) {
-		if (children.length) {
+		if (!children.length) {
 			args.push(t.identifier('null'));
 		} else {
-			args.push(children);
+			args.push(...children);
 		}
 	}
 
