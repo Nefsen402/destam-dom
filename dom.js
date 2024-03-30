@@ -317,7 +317,7 @@ export const h = (e, props = {}, ...children) => {
 			}
 
 			if (child) {
-				e.prepend(child);
+				if (!child.parentElement) e.prepend(child);
 				bef = () => child;
 			}
 		});
