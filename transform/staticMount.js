@@ -55,7 +55,7 @@ const computeNode = (rep, node) => {
 				if ([
 					'BooleanLiteral', 'StringLiteral',
 					'NumericLiteral', 'ArrowFunctionExpression',
-					'FunctionExpression',
+					'FunctionExpression', 'BinaryExpression',
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(t.assignmentExpression('=',
 						t.memberExpression(e, name, name.type === 'StringLiteral'),
@@ -150,7 +150,15 @@ const transformBabelAST = (ast) => {
 			let index;
 			while (!block.node.body) {
 				if (block.parentPath.node.body) {
-					index = block.parentPath.node.body.indexOf(block.node);
+					if (!Array.isArray(block.parentPath.node.body)) {
+						index = 0;
+						const b = t.blockStatement([t.returnStatement(block.parentPath.node.body)]);
+						block.parentPath.node.body = b;
+						block = {node: b};
+						break;
+					} else {
+						index = block.parentPath.node.body.indexOf(block.node);
+					}
 				}
 
 				block = block.parentPath;
@@ -182,13 +190,13 @@ const transform = (source, options) => {
 console.log(transform(`
 	let $thing = 0;
 
-	let a = () => {
+	let a = () => h('a', {hello: world});
+
 	mount(h('div', {hello: 'world', $value: 10, num: 10.5, bool: true, $style: {
 		"hello with a space": "world",
 		func: (a) => lol,
 		func2: function () {}
 	}}, "hello", 0, h('br'), h('br')));
-};
 `).code);
 */
 
