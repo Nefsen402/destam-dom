@@ -124,7 +124,7 @@ if (lib in libs) {
 	config = defineConfig({
 		plugins: [
 			...(process.env.N_DEBUG ? [createTransform('assert-remove', assertRemove)] : []),
-			createTransform('transform-literal-html', compileHTMLLiteral),
+			createTransform('transform-literal-html', compileHTMLLiteral, true),
 			{
 				name: 'examples',
 				resolveId (id) {
@@ -148,7 +148,7 @@ if (lib in libs) {
 					});
 				},
 			},
-			...(process.env.STATIC_ANALYZE ? [createTransform('static-mount', staticMount)] : []),
+			...(process.env.STATIC_ANALYZE ? [createTransform('static-mount', staticMount, true)] : []),
 		],
 		esbuild: {
 			jsx: 'preserve',
