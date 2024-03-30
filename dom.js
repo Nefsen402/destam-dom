@@ -138,7 +138,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 			}
 
 			// fast path when adding from an empty array
-			if (len(commit) === len(val)) {
+			if (root.next_ === root) {
 				for (const delta of commit) {
 					const link = delta.network_.link_;
 					link[linkGetter] = addMount(null, delta.value, root);
