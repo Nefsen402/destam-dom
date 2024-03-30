@@ -134,7 +134,7 @@ html`
 `
 ```
 
-Element names can even be expressions! This acts as the way for destam-dom to create refs like in React. In React, because it uses a virtual dom, refs need to have special handling. Because we don't use a virtual dom, we can pass raw html elements directly around.
+Element names can even be expressions! This acts as the way for destam-dom to create refs like in [React](https://react.dev/). In React, because it uses a virtual dom, refs need to have special handling. Because we don't use a virtual dom, we can pass raw html elements directly around.
 
 ```js
 const div = document.createElement(div);
@@ -200,7 +200,7 @@ html`
 
 Note that custom elements can return whatever value is supported by `mount()`.
 
-Custom elements in destam-dom are inspired by functional elements in [React](https://react.dev/). Properties are passed the same way as we would in react:
+Custom elements in destam-dom are inspired by functional elements in React. Properties are passed the same way as we would in react:
 
 ```js
 const Header = ({text}) => {
