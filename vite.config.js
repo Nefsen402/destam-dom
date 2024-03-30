@@ -2,20 +2,21 @@ import { resolve, join } from 'path'
 import { defineConfig } from 'vite'
 import unsafeVars from './transform/unsafeVariables';
 import assertRemove from './transform/assertRemove';
+import staticMount from './transform/staticMount';
 import compileHTMLLiteral from './transform/htmlLiteral';
 import fs from 'fs';
 
-const createAssertRemovePlugin = () => ({
-	name: 'assert-remove',
+const createTransform = (name, transform, jsx) => ({
+	name,
 	transform(code, id) {
-		if (id.endsWith('.js')) {
-			const transform = assertRemove(code, {
+		if (id.endsWith('.js') || (jsx && id.endsWith('.jsx'))) {
+			const transformed = transform(code, {
 				sourceFileName: id,
+				plugins: id.endsWith('.jsx') ? ['jsx'] : [],
 			});
-
 			return {
-				code: transform.code,
-				map: transform.decodedMap,
+				code: transformed.code,
+				map: transformed.decodedMap,
 			};
 		}
 	}
@@ -61,22 +62,8 @@ if (lib in libs) {
 			sourcemap: true,
 			rollupOptions: {
 				plugins: !process.env.N_DEBUG ? [] : [
-					createAssertRemovePlugin(),
-					{
-						name: 'drop-const',
-						transform(code, id) {
-							if (id.endsWith('.js')) {
-								const transform = unsafeVars(code, {
-									sourceFileName: id,
-								});
-
-								return {
-									code: transform.code,
-									map: transform.decodedMap,
-								};
-							}
-						}
-					},
+					createTransform('assert-remove', assertRemove),
+					createTransform('drop-const', unsafeVars),
 				],
 			},
 		},
@@ -136,23 +123,8 @@ if (lib in libs) {
 
 	config = defineConfig({
 		plugins: [
-			...(process.env.N_DEBUG ? [createAssertRemovePlugin()] : []),
-			{
-				name: 'transform-literal-html',
-				transform(code, id) {
-					if (id.endsWith('.js') || id.endsWith('.jsx')) {
-						const transform = compileHTMLLiteral(code, {
-							sourceFileName: id,
-							plugins: id.endsWith('.jsx') ? ['jsx'] : [],
-						});
-
-						return {
-							code: transform.code,
-							map: transform.decodedMap,
-						};
-					}
-				},
-			},
+			...(process.env.N_DEBUG ? [createTransform('assert-remove', assertRemove)] : []),
+			createTransform('transform-literal-html', compileHTMLLiteral),
 			{
 				name: 'examples',
 				resolveId (id) {
@@ -175,7 +147,8 @@ if (lib in libs) {
 						}
 					});
 				},
-			}
+			},
+			...(process.env.STATIC_ANALYZE ? [createTransform('static-mount', staticMount)] : []),
 		],
 		esbuild: {
 			jsx: 'preserve',
