@@ -38,6 +38,13 @@ const computeNode = (rep, node) => {
 		}
 
 		const search = (name, val, e) => {
+			let binaryType = val.type === 'BinaryExpression' &&
+				([
+					'+', '-', '==', '===', '!=',
+					'!==', 'in', 'instanceof',
+					'>', '<', "<=", ">="
+				].includes(val.operator) ? 'bool' : 'other');
+
 			if (val.type === 'ObjectExpression') {
 				for (let ii = 0; ii < val.properties.length; ii++) {
 					const objectProp = val.properties[ii];
@@ -56,7 +63,7 @@ const computeNode = (rep, node) => {
 					'BooleanLiteral', 'StringLiteral',
 					'NumericLiteral', 'ArrowFunctionExpression',
 					'FunctionExpression', 'BinaryExpression',
-					'TemplateLiteral',
+					'TemplateLiteral', 'UpdateExpression',
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(t.assignmentExpression('=',
 						t.memberExpression(e, name, name.type === 'StringLiteral'),
@@ -65,14 +72,17 @@ const computeNode = (rep, node) => {
 
 					return true;
 				}
-			} else if (val.type === 'BooleanLiteral') {
+			} else if (binaryType === 'bool' || val.type === 'BooleanLiteral') {
 				rep.push(t.expressionStatement(t.callExpression(
 					t.memberExpression(e, t.identifier('toggleAttribute')),
 					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
 				)));
 
 				return true;
-			} else if (['StringLiteral', 'NumericLiteral', 'TemplateLiteral'].includes(val.type)) {
+			} else if (binaryType === 'other' || [
+				'StringLiteral', 'NumericLiteral',
+				'TemplateLiteral', 'UpdateExpression',
+			].includes(val.type)) {
 				rep.push(t.expressionStatement(t.callExpression(
 					t.memberExpression(e, t.identifier('setAttribute')),
 					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
@@ -184,7 +194,6 @@ const transform = (source, options) => {
 	}, source);
 };
 
-/*
 console.log(transform(`
 	let $thing = 0;
 	const Button = ({ id, text, fn }) =>
@@ -192,7 +201,7 @@ console.log(transform(`
 	    h('button', {id, "class": 'btn btn-primary btn-block', type: 'button', $onclick: fn}, text)
 	  ))
 
-	let a = () => h('a', {hello: world});
+	let a = () => h('a', {hello: world < 0, thing: value * 2});
 
 	mount(h('div', {hello: 'world', $value: 10, num: 10.5, bool: true, $style: {
 		"hello with a space": "world",
@@ -200,6 +209,5 @@ console.log(transform(`
 		func2: function () {}
 	}}, "hello", 0, h('br'), h('br')));
 `).code);
-*/
 
 export default transform;
