@@ -193,6 +193,10 @@ const transformChildren = node => {
 			flush();
 
 			children.push(...transformChildren(child));
+		} else if (child.type === 'JSXSpreadChild') {
+			flush();
+
+			children.push(t.spreadElement(child.expression));
 		} else {
 			throw new Error("Unknown AST type for JSX child: " + child.type);
 		}
@@ -274,7 +278,7 @@ export const transformBabelAST = (ast) => {
 	if (hasHImport) {
 		babelTraverse.default(ast, {
 			JSXFragment: path => {
-				path.replaceWith(createArray(transformChildren(path.node)));
+				path.replaceWith(t.arrayExpression(transformChildren(path.node)));
 			},
 			JSXElement: path => {
 				path.replaceWith(parse(path.node));
