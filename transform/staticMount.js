@@ -3,12 +3,23 @@ import t from '@babel/types';
 import generate from '@babel/generator';
 import babelTraverse from '@babel/traverse';
 
+const canAppend = Symbol();
+const walked = Symbol();
+
 const createTemporary = i => t.identifier('static_' + i + '_' + Math.random().toString().substring(2));
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
+const createElement = name => {
+	const elem = t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("createElement")), [name]);
+	elem[canAppend] = true;
+	return elem;
+};
 
 const computeNode = (rep, refs, node) => {
+	if (node[walked]) return node;
 	const [name, props, ...children] = node.arguments;
-	const isRef = name.type === 'Identifier' && !name._static_processed && refs.includes(name.name);
+	const isRef = name.type === 'Identifier' && refs.includes(name.name);
+
+	node[walked] = true;
 
 	if (name.type !== 'StringLiteral' && !isRef) {
 		return node;
@@ -18,19 +29,20 @@ const computeNode = (rep, refs, node) => {
 		return node;
 	}
 
-	let temporary;
+	let temporary = null;
+	const getTemp = () => {
+		if (temporary) return temporary;
 
-	if (isRef) {
-		temporary = name;
-	} else {
-		temporary = createTemporary(rep.length);
-		rep.push(declare(temporary, t.callExpression(
-			t.memberExpression(t.identifier("document"), t.identifier("createElement")),
-			[name]
-		)));
-	}
+		if (isRef) {
+			temporary = name;
+		} else {
+			temporary = createTemporary(rep.length);
+			rep.push(declare(temporary, createElement(name)));
+		}
 
-	temporary._static_processed = true;
+		temporary[canAppend] = true;
+		return temporary;
+	};
 
 	if (props) for (let i = 0; i < props.properties.length; i++) {
 		const prop = props.properties[i];
@@ -46,7 +58,7 @@ const computeNode = (rep, refs, node) => {
 			}
 		}
 
-		const search = (name, val, e) => {
+		const search = (name, val, getTemp) => {
 			let binaryType = val.type === 'BinaryExpression' &&
 				([
 					'+', '-', '==', '===', '!=',
@@ -59,7 +71,8 @@ const computeNode = (rep, refs, node) => {
 					const objectProp = val.properties[ii];
 					if (objectProp.type !== 'ObjectProperty') break;
 
-					if (search(objectProp.key, objectProp.value, t.memberExpression(e, name, name.type === 'StringLiteral'))) {
+					if (search(objectProp.key, objectProp.value,
+							() => t.memberExpression(getTemp(), name, name.type === 'StringLiteral'))) {
 						val.properties.splice(ii--, 1);
 					}
 				}
@@ -75,7 +88,7 @@ const computeNode = (rep, refs, node) => {
 					'TemplateLiteral', 'UpdateExpression',
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(t.assignmentExpression('=',
-						t.memberExpression(e, name, name.type === 'StringLiteral'),
+						t.memberExpression(getTemp(), name, name.type === 'StringLiteral'),
 						val
 					)));
 
@@ -83,7 +96,7 @@ const computeNode = (rep, refs, node) => {
 				}
 			} else if (binaryType === 'bool' || val.type === 'BooleanLiteral') {
 				rep.push(t.expressionStatement(t.callExpression(
-					t.memberExpression(e, t.identifier('toggleAttribute')),
+					t.memberExpression(getTemp(), t.identifier('toggleAttribute')),
 					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
 				)));
 
@@ -93,7 +106,7 @@ const computeNode = (rep, refs, node) => {
 				'TemplateLiteral', 'UpdateExpression',
 			].includes(val.type)) {
 				rep.push(t.expressionStatement(t.callExpression(
-					t.memberExpression(e, t.identifier('setAttribute')),
+					t.memberExpression(getTemp(), t.identifier('setAttribute')),
 					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
 				)));
 
@@ -103,7 +116,7 @@ const computeNode = (rep, refs, node) => {
 			return false;
 		};
 
-		if (search(key, prop.value, temporary)) {
+		if (search(key, prop.value, getTemp)) {
 			props.properties.splice(i--, 1);
 		}
 	}
@@ -126,7 +139,7 @@ const computeNode = (rep, refs, node) => {
 				child.callee.type === 'Identifier' && child.callee.name === 'h') {
 			child = computeNode(rep, refs, child);
 
-			if (child.type === 'Identifier') {
+			if (child[canAppend]) {
 				append = true;
 			}
 		}
@@ -134,7 +147,7 @@ const computeNode = (rep, refs, node) => {
 		if (append) {
 			links.push(child);
 			rep.push(t.expressionStatement(t.callExpression(
-				t.memberExpression(temporary, t.identifier('append')),
+				t.memberExpression(getTemp(), t.identifier('append')),
 				[child]
 			)));
 		}
@@ -155,16 +168,20 @@ const computeNode = (rep, refs, node) => {
 	}
 
 	if (children.length === 0 && (!props || props.properties.length === 0)) {
-		return temporary;
+		return temporary || createElement(name);
+	} else {
+		const node = t.callExpression(t.identifier('h'), [temporary || name, props, ...children]);
+		node[walked] = true;
+		return node;
 	}
-
-	return t.callExpression(t.identifier('h'), [temporary, props, ...children]);
 }
 
 const transformBabelAST = (ast) => {
 	babelTraverse.default(ast, {
 		CallExpression: path => {
+			if (path.node[walked]) return;
 			if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'h') return;
+
 
 			let block = path;
 			let index;
@@ -237,7 +254,10 @@ console.log(transform(`
 		func: (a) => lol,
 		func2: function () {}
 	}}, "hello", 0, h('br'), h('br')));
+
+	h('div', {}, h('div'), stuff)
 `).code);
 */
+
 
 export default transform;
