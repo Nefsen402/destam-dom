@@ -194,6 +194,7 @@ const transform = (source, options) => {
 	}, source);
 };
 
+/*
 console.log(transform(`
 	let $thing = 0;
 	const Button = ({ id, text, fn }) =>
@@ -209,5 +210,6 @@ console.log(transform(`
 		func2: function () {}
 	}}, "hello", 0, h('br'), h('br')));
 `).code);
+*/
 
 export default transform;
