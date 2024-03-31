@@ -16,6 +16,7 @@ const nodeMounter = (elem, e, before, _, remove) => {
 
 	return assignFirst(val => {
 		if (val == null) {
+			assert(e.parentElement === elem, "Trying to remove a dom node that has an unexpected parent");
 			e?.remove();
 			if (remove) callAll(remove);
 			e = remove = val;
