@@ -5,13 +5,13 @@ destam-dom is designed to be as simple as possible and only provides two functio
  - html
 
 ## mount
-`mount()` is the entry point for destam-dom to then mount anything it needs onto the real dom. Typically, a mount point of `document.body` will be enough for applications fully written with destam-dom. Let's see a basic example where we mount some text onto the body of the page:
+`mount()` is the entry point for destam-dom to then mount anything it needs onto the real DOM. Typically, a mount point of `document.body` will be enough for applications fully written with destam-dom. Let's see a basic example where we mount some text onto the body of the page:
 
 ```js
 mount(document.body, "Hello, world!");
 ```
 
-`mount()` also supports mounting to null. This can be useful if you want destam to manage the dom elements, but otherwise you want to mount it yourself.
+`mount()` also supports mounting to null. This can be useful if you want destam to manage the DOM nodes, but otherwise you want to mount it yourself.
 
 ```js
 const div = document.createElement('div');
@@ -33,8 +33,8 @@ This will only show the text for one second before removing it.
 
 Mount supports:
  - Strings
- - Html nodes
- - Iterables (common references will be reconciliated)
+ - [DOM nodes](https://developer.mozilla.org/en-US/docs/Web/API/Node)
+ - [Iterables](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols) (common references will be reconciliated)
  - Numbers
  - booleans (will be rendered as the string true/false)
  - `null`
@@ -142,7 +142,7 @@ html`
 `
 ```
 
-Element names can even be expressions! This acts as the way for destam-dom to create refs like in [React](https://react.dev/). In React, because it uses a virtual dom, refs need to have special handling. Because we don't use a virtual dom, we can pass raw html elements directly around.
+Element names can even be expressions! This acts as the way for destam-dom to create refs like in [React](https://react.dev/). In React, because it uses a virtual dom, refs need to have special handling. Because we don't use a virtual dom, we can pass raw dom nodes directly around.
 
 ```js
 const div = document.createElement(div);
@@ -194,7 +194,7 @@ first wrap it in an array.
 
 ## Custom elements
 
-Element names don't just have to be a reference to an html node, they can also be functions to create custom elements.
+Element names don't just have to be a reference to a dom node, they can also be functions to create custom elements.
 
 ```js
 const Header = () => {
@@ -373,7 +373,7 @@ html`
 `
 ```
 
-In this case, the array reconciler will notice that the references are the same, as the references are now just simple strings and prenent unnecessary dom manipulations.
+In this case, the array reconciler will notice that the references are the same, as the references are now just simple strings and prenent unnecessary DOM manipulations.
 
 ```js
 const names = Observer.mutable([
@@ -418,7 +418,7 @@ And of course, prefer to use `OArray` when possible to achieve constant time ins
 ## JSX
 JSX support is provided from the `transform/htmlLiteral` file. This can be hooked up to any build system with a vite example being provided in this repository.
 
-The JSX will be similar the html template literals except when it comes to templating node values. Custom elements and html nodes must be capitalized for the build system to understand that a browser html node is not desired, but instead should be a reference.
+The JSX will be similar the html template literals except when it comes to templating node values. Custom elements and DOM nodes must be capitalized for the build system to understand that a browser DOM node is not desired, but instead should be a reference.
 ```jsx
 const Website = () => {
 	return <p>
