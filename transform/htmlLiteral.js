@@ -180,22 +180,21 @@ const transformChildren = node => {
 					cur += char;
 				}
 			}
-		} else if (child.type === 'JSXElement') {
-			flush();
+
+			continue;
+		}
+
+		flush();
+
+		if (child.type === 'JSXElement') {
 			children.push(parse(child));
 		} else if (child.type === 'JSXExpressionContainer') {
-			flush();
-
 			if (child.expression.type !== 'JSXEmptyExpression') {
 				children.push(child.expression);
 			}
 		} else if (child.type === 'JSXFragment') {
-			flush();
-
 			children.push(...transformChildren(child));
 		} else if (child.type === 'JSXSpreadChild') {
-			flush();
-
 			children.push(t.spreadElement(child.expression));
 		} else {
 			throw new Error("Unknown AST type for JSX child: " + child.type);
