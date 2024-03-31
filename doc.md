@@ -38,7 +38,7 @@ Mount supports:
  - Numbers
  - booleans (will be rendered as the string true/false)
  - `null`
- - Functions (these functions are not the same as what you would see for custom elements, but internally used functions that `html()` generates)
+ - JSX or `html` tagged template literals
 
 ## html
 `html()` is meant to be used with tagged template literals and provides an easy and build-free way to start creating complex dom structures in javascript. Note that for cases like the `br` element, you will have to close those manually.
