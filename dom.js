@@ -318,15 +318,18 @@ export const h = (e, props = {}, ...children) => {
 			if (child == null) return;
 
 			let elem = 1;
-			if (typeof child === 'string') {
-				child = document.createTextNode(child);
-			} else if (child.element_) {
+			if (child.element_) {
 				signals.push(...child.signals_);
 				children.unshift(...child.children_);
 				child = child.element_;
 			} else if (!isInstance(child, Node)) {
 				push(children, [e, child, bef]);
 				bef = child = 0;
+			} else {
+				const type = typeof child;
+				if (type !== 'object' && type !== 'function') {
+					child = document.createTextNode(child);
+				}
 			}
 
 			if (child) {
