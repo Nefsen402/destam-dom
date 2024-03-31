@@ -6,10 +6,11 @@ import babelTraverse from '@babel/traverse';
 const createTemporary = i => t.identifier('static_' + i + '_' + Math.random().toString().substring(2));
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
 
-const computeNode = (rep, node) => {
+const computeNode = (rep, refs, node) => {
 	const [name, props, ...children] = node.arguments;
+	const isRef = name.type === 'Identifier' && !name._static_processed && refs.includes(name.name);
 
-	if (name.type !== 'StringLiteral') {
+	if (name.type !== 'StringLiteral' && !isRef) {
 		return node;
 	}
 
@@ -17,11 +18,19 @@ const computeNode = (rep, node) => {
 		return node;
 	}
 
-	let temporary = createTemporary(rep.length);
-	rep.push(declare(temporary, t.callExpression(
-		t.memberExpression(t.identifier("document"), t.identifier("createElement")),
-		[name]
-	)));
+	let temporary;
+
+	if (isRef) {
+		temporary = name;
+	} else {
+		temporary = createTemporary(rep.length);
+		rep.push(declare(temporary, t.callExpression(
+			t.memberExpression(t.identifier("document"), t.identifier("createElement")),
+			[name]
+		)));
+	}
+
+	temporary._static_processed = true;
 
 	if (props) for (let i = 0; i < props.properties.length; i++) {
 		const prop = props.properties[i];
@@ -115,7 +124,7 @@ const computeNode = (rep, node) => {
 			append = true;
 		} else if (child.type === 'CallExpression' &&
 				child.callee.type === 'Identifier' && child.callee.name === 'h') {
-			child = computeNode(rep, child);
+			child = computeNode(rep, refs, child);
 
 			if (child.type === 'Identifier') {
 				append = true;
@@ -172,8 +181,25 @@ const transformBabelAST = (ast) => {
 				block = block.parentPath;
 			}
 
+			const refs = [];
+
+			// look for ref definitions
+			for (const b of block.node.body) {
+				if (b.type === 'VariableDeclaration' && b.kind === 'const') {
+					for (let decl of b.declarations) {
+						if (decl.type === 'VariableDeclarator' &&
+								decl.init && decl.init.type === 'CallExpression' &&
+								decl.init.callee.type === 'MemberExpression' &&
+								decl.init.callee.object.type === 'Identifier' &&
+								decl.init.callee.object.name === 'document')  {
+							refs.push(decl.id.name)
+						}
+					}
+				}
+			}
+
 			const rep = [];
-			const ret = computeNode(rep, path.node);
+			const ret = computeNode(rep, refs, path.node);
 			if (ret !== path.node || rep.length > 0) {
 				path.replaceWith(ret);
 			}
@@ -204,7 +230,9 @@ console.log(transform(`
 
 	let a = () => h('a', {hello: world < 0, thing: value * 2});
 
-	mount(h('div', {hello: 'world', $value: 10, num: 10.5, bool: true, $style: {
+	const div = document.createElement('div');
+
+	mount(h(div, {hello: 'world', $value: 10, num: 10.5, bool: true, $style: {
 		"hello with a space": "world",
 		func: (a) => lol,
 		func2: function () {}
