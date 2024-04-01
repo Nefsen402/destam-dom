@@ -104,7 +104,11 @@ const parse = node => {
 
 	const args = [
 		name,
-		t.objectExpression(node.openingElement.attributes.map(attr => {
+	];
+
+	const children = transformChildren(node);
+	if (children || node.openingElement.attributes.length) {
+		args.push(t.objectExpression(node.openingElement.attributes.map(attr => {
 			if (attr.type === 'JSXSpreadAttribute') {
 				return t.spreadElement(attr.argument);
 			}
@@ -121,10 +125,9 @@ const parse = node => {
 			}
 
 			return t.objectProperty(t.stringLiteral(name.name), value);
-		})),
-	];
+		})));
+	}
 
-	const children = transformChildren(node);
 	if (children) {
 		if (!children.length) {
 			args.push(t.identifier('null'));
