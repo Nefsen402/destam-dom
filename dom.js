@@ -50,7 +50,7 @@ const insertMap = (map, item) => {
 };
 
 const cleanupArrayMounts = mounts => {
-	if (mounts) for (const arr of mounts.values()) {
+	for (const arr of mounts.values()) {
 		for (const mount of arr) {
 			mount.prev_.next_ = mount.next_;
 			mount.next_.prev_ = mount.prev_;
@@ -185,7 +185,7 @@ const arrayMounter = (elem, val, before) => {
 				}
 			}
 
-			cleanupArrayMounts(orphaned);
+			if (orphaned) cleanupArrayMounts(orphaned);
 		});
 	};
 
