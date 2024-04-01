@@ -7,7 +7,7 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const nodeMounter = (elem, e, before, _, remove) => {
+const nodeMounter = (elem, e, before, remove) => {
 	if (!isInstance(e, Node)) {
 		e = document.createTextNode(e);
 	}
@@ -71,60 +71,67 @@ const destroyArrayMounts = (link, root, linkGetter, orphaned) => {
 	if (!orphaned) root.next_ = root.prev_ = root;
 };
 
-const arrayMounter = (elem, val, before, mounter) => {
-	const root = {first_: before};
-	root.next_ = root.prev_ = root;
-	const addMount = (old, item, next) => {
-		let mounted = old?.get(item)?.pop();
-		if (mounted === next) return mounted;
+const addArrayMount = (elem, mounter, old, item, next) => {
+	let mounted = old?.get(item)?.pop();
+	if (mounted === next) return mounted;
 
-		if (!mounted) {
-			let not;
-			if (!notifyMount) {
-				not = notifyMount = [];
-			}
-
-			mounted = mounter(
-				elem, item,
-				() => (mounted?.next_ || next).first_(),
-			);
-
-			callAllSafe(not);
-			mounted.item_ = item;
-		} else {
-			let mountAt, term;
-			if (elem && (mountAt = next.first_()) !== (term = mounted.next_.first_())) {
-				const a = document.activeElement;
-
-				for (let cur = mounted.first_(); cur != term;) {
-					const n = cur.nextSibling;
-					elem.insertBefore(cur, mountAt);
-					cur = n;
-				}
-
-				if (a) a.focus();
-			}
-
-			mounted.prev_.next_ = mounted.next_;
-			mounted.next_.prev_ = mounted.prev_;
+	if (!mounted) {
+		let not;
+		if (!notifyMount) {
+			not = notifyMount = [];
 		}
 
-		mounted.prev_ = next.prev_;
-		mounted.next_ = next;
-		mounted.prev_.next_ = next.prev_ = mounted;
-		return mounted;
-	};
+		mounted = mounter(
+			elem, item,
+			() => (mounted?.next_ || next).first_(),
+		);
+
+		callAllSafe(not);
+		mounted.item_ = item;
+	} else {
+		let mountAt, term;
+		if (elem && (mountAt = next.first_()) !== (term = mounted.next_.first_())) {
+			const a = document.activeElement;
+
+			for (let cur = mounted.first_(); cur != term;) {
+				const n = cur.nextSibling;
+				elem.insertBefore(cur, mountAt);
+				cur = n;
+			}
+
+			if (a) a.focus();
+		}
+
+		mounted.prev_.next_ = mounted.next_;
+		mounted.next_.prev_ = mounted.prev_;
+	}
+
+	mounted.prev_ = next.prev_;
+	mounted.next_ = next;
+	mounted.prev_.next_ = next.prev_ = mounted;
+	return mounted;
+};
+
+const mounterGetter = Symbol();
+const arrayMounter = (elem, val, before) => {
+	const root = {first_: before};
+	root.next_ = root.prev_ = root;
 
 	const linkGetter = Symbol();
 	let link, arrayListener;
 
 	const mountList = (val, orphaned) => {
+		const mounter = val[mounterGetter] || mount;
+		if (mounter !== mount) {
+			val = val.arr_;
+		}
+
 		const observer = val[observerGetter];
 		const mountAll = orphaned => {
 			link = observer?.linkNext_;
 			let mounted = root;
 			for (const item of val) {
-				mounted = addMount(orphaned, item, mounted.next_);
+				mounted = addArrayMount(elem, mounter, orphaned, item, mounted.next_);
 				if (link) {
 					link[linkGetter] = mounted;
 					link = link.linkNext_;
@@ -173,7 +180,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 			for (let insert of inserts) {
 				let next = insert.linkNext_[linkGetter] || root;
 				for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-					next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
+					next = insert[linkGetter] = addArrayMount(elem, mounter, orphaned, insert.dom_val_, next);
 					delete insert.dom_val_;
 				}
 			}
@@ -199,7 +206,7 @@ const arrayMounter = (elem, val, before, mounter) => {
 	}, () => root.next_.first_());
 };
 
-export const mount = (elem, item, before = noop, mounter = mount) => {
+export const mount = (elem, item, before = noop) => {
 	let lastFunc, mounted = null;
 	const update = () => {
 		const val = isObserver ? item.get() : item;
@@ -223,7 +230,7 @@ export const mount = (elem, item, before = noop, mounter = mount) => {
 		}
 
 		if (!mounted?.(lastFunc === func ? val : null)) {
-			mounted = (lastFunc = func)?.(elem, val, before, mounter);
+			mounted = (lastFunc = func)?.(elem, val, before);
 		}
 
 		callAllSafe(not);
@@ -297,10 +304,16 @@ export const h = (e, props = {}, ...children) => {
 		if (!each) {
 			virtualElement = createMount;
 		} else {
-			assert(isInstance(each, Observer) || typeof each[Symbol.iterator] === 'function',
-				"'each' property is not iterable");
+			const createMap = arr => ({
+				arr_: arr,
+				[mounterGetter]: createMount,
+			});
 
-			virtualElement = (elem, item, before) => mount(elem, each, before, createMount);
+			if (isInstance(each, Observer)) {
+				virtualElement = each.map(createMap);
+			} else {
+				virtualElement = createMap(each);
+			}
 		}
 	} else {
 		assert(isInstance(e, Node) || typeof e === 'string',
@@ -388,7 +401,7 @@ export const h = (e, props = {}, ...children) => {
 				push(remove, m);
 			}
 
-			return nodeMounter(elem, e, before, 0, remove);
+			return nodeMounter(elem, e, before, remove);
 		};
 
 		virtualElement.signals_ = signals;
