@@ -7,9 +7,27 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const nodeMounter = (elem, e, before, remove) => {
+const nodeMounter = (elem, e, before) => {
 	if (!isInstance(e, Node)) {
 		e = document.createTextNode(e);
+	}
+
+	let remove = null;
+	if (e[mounterGetter]) {
+		const [signals, children] = e[mounterGetter];
+
+		remove = signals.map(([val, handler]) => {
+			const listener = shallowListener(val, handler);
+			handler();
+			return listener;
+		});
+
+		let bef;
+		for (let [el, child, pbef] of children) {
+			const m = mount(el, child, pbef || bef);
+			bef = m.first_;
+			push(remove, m);
+		}
 	}
 
 	elem?.insertBefore(e, before());
@@ -269,7 +287,6 @@ export const h = (e, props = {}, ...children) => {
 			"Children must be null or an array");
 	}
 
-	let virtualElement;
 	if (typeof e === 'function') {
 		const each = props.each;
 		const createMount = (elem, item, before) => {
@@ -302,7 +319,8 @@ export const h = (e, props = {}, ...children) => {
 		};
 
 		if (!each) {
-			virtualElement = createMount;
+			assert(createMount.__is_destam_dom_internal_func = true);
+			return createMount;
 		} else {
 			const createMap = arr => ({
 				arr_: arr,
@@ -310,9 +328,9 @@ export const h = (e, props = {}, ...children) => {
 			});
 
 			if (isInstance(each, Observer)) {
-				virtualElement = each.map(createMap);
+				return each.map(createMap);
 			} else {
-				virtualElement = createMap(each);
+				return createMap(each);
 			}
 		}
 	} else {
@@ -331,18 +349,19 @@ export const h = (e, props = {}, ...children) => {
 			assert(child !== undefined, "Cannot mount undefined");
 			if (child == null) return;
 
-			let elem = 1;
-			if (child.element_) {
-				signals.push(...child.signals_);
-				children.unshift(...child.children_);
-				child = child.element_;
-			} else if (!isInstance(child, Node)) {
-				push(children, [e, child, bef]);
-				bef = child = 0;
+			if (isInstance(child, Node)) {
+				if (child[mounterGetter]) {
+					const [sigs, c] = child[mounterGetter];
+					signals.push(...sigs);
+					children.unshift(...c);
+				}
 			} else {
 				const type = typeof child;
 				if (type !== 'object' && type !== 'function') {
 					child = document.createTextNode(child);
+				} else {
+					push(children, [e, child, bef]);
+					bef = child = 0;
 				}
 			}
 
@@ -387,28 +406,7 @@ export const h = (e, props = {}, ...children) => {
 			search(name, val, e);
 		});
 
-		virtualElement = (elem, _, before) => {
-			const remove = signals.map(([val, handler]) => {
-				const listener = shallowListener(val, handler);
-				handler();
-				return listener;
-			});
-
-			let bef;
-			for (let [el, child, pbef] of children) {
-				const m = mount(el, child, pbef || bef);
-				bef = m.first_;
-				push(remove, m);
-			}
-
-			return nodeMounter(elem, e, before, remove);
-		};
-
-		virtualElement.signals_ = signals;
-		virtualElement.children_ = children;
-		virtualElement.element_ = e;
+		e[mounterGetter] = [signals, children];
+		return e;
 	}
-
-	assert(virtualElement.__is_destam_dom_internal_func = true);
-	return virtualElement;
 };
