@@ -144,7 +144,7 @@ const arrayMounter = (elem, val, before) => {
 		arrayListener?.();
 		arrayListener = observer && shallowListener(observer, commit => {
 			// fast path when removing everything
-			if (!len(val)) {
+			if (len(val) === 0) {
 				destroyArrayMounts(link, root, linkGetter);
 				return;
 			}
@@ -193,7 +193,7 @@ const arrayMounter = (elem, val, before) => {
 
 	return assignFirst(val => {
 		if (val) {
-			const orphaned = len(val) ? new Map() : null;
+			const orphaned = new Map();
 			destroyArrayMounts(link, root, linkGetter, orphaned);
 			mountList(val, orphaned);
 			cleanupArrayMounts(orphaned);
@@ -307,7 +307,6 @@ export const h = (e, props = {}, ...children) => {
 			const createMap = arr => ({
 				arr_: arr,
 				[mounterGetter]: createMount,
-				length: len(arr),
 			});
 
 			if (isInstance(each, Observer)) {
