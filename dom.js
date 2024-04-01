@@ -89,7 +89,7 @@ const destroyArrayMounts = (link, root, linkGetter, orphaned) => {
 	if (!orphaned) root.next_ = root.prev_ = root;
 };
 
-const addArrayMount = (elem, mounter, old, item, next) => {
+const addArrayMount = (elem, map, old, item, next) => {
 	let mounted = old?.get(item)?.pop();
 	if (mounted === next) return mounted;
 
@@ -99,8 +99,8 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 			not = notifyMount = [];
 		}
 
-		mounted = mounter(
-			elem, item,
+		mounted = mount(
+			elem, map(item),
 			() => (mounted?.next_ || next).first_(),
 		);
 
@@ -130,6 +130,8 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 	return mounted;
 };
 
+const identity = x => x;
+
 const mounterGetter = Symbol();
 const arrayMounter = (elem, val, before) => {
 	const root = {first_: before};
@@ -139,8 +141,8 @@ const arrayMounter = (elem, val, before) => {
 	let link, arrayListener;
 
 	const mountList = (val, orphaned) => {
-		const mounter = val[mounterGetter] || mount;
-		if (mounter !== mount) {
+		const map = val[mounterGetter] || identity;
+		if (map !== identity) {
 			val = val.arr_;
 		}
 
@@ -149,7 +151,7 @@ const arrayMounter = (elem, val, before) => {
 			link = observer?.linkNext_;
 			let mounted = root;
 			for (const item of val) {
-				mounted = addArrayMount(elem, mounter, orphaned, item, mounted.next_);
+				mounted = addArrayMount(elem, map, orphaned, item, mounted.next_);
 				if (link) {
 					link[linkGetter] = mounted;
 					link = link.linkNext_;
@@ -198,7 +200,7 @@ const arrayMounter = (elem, val, before) => {
 			for (let insert of inserts) {
 				let next = insert.linkNext_[linkGetter] || root;
 				for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-					next = insert[linkGetter] = addArrayMount(elem, mounter, orphaned, insert.dom_val_, next);
+					next = insert[linkGetter] = addArrayMount(elem, map, orphaned, insert.dom_val_, next);
 					delete insert.dom_val_;
 				}
 			}
@@ -224,6 +226,33 @@ const arrayMounter = (elem, val, before) => {
 	}, () => root.next_.first_());
 };
 
+const customMounter = (elem, func, before) => {
+	let dom = null, cleanup = 0;
+
+	try {
+		dom = func(func[mounterGetter] || {}, cb => {
+			assert(typeof cb === 'function', "The cleanup function must be passed a function");
+			push(cleanup || (cleanup = []), cb);
+		}, cb => {
+			assert(typeof cb === 'function', "The mount function must be passed a function");
+			push(notifyMount, cb);
+		});
+	} catch (e) {
+		console.error(e);
+	}
+
+	const m = mount(
+		elem,
+		dom,
+		before,
+	);
+
+	return assignFirst(() => {
+		m();
+		callAllSafe(cleanup);
+	}, m.first_);
+};
+
 export const mount = (elem, item, before = noop) => {
 	let lastFunc, mounted = null;
 	const update = () => {
@@ -232,10 +261,10 @@ export const mount = (elem, item, before = noop) => {
 
 		let type = typeof val;
 		let func;
-		if (val == null || type === 'function') {
-			assert(!val || val.__is_destam_dom_internal_func,
-				"Mount must be passed an initialized element");
-			func = val;
+		if (val == null) {
+			// fallthrough
+		} else if (type === 'function') {
+			func = customMounter;
 		} else if (isInstance(val, Node) || type !== 'object') {
 			func = nodeMounter;
 		} else {
@@ -289,42 +318,23 @@ export const h = (e, props = {}, ...children) => {
 
 	if (typeof e === 'function') {
 		const each = props.each;
-		const createMount = (elem, item, before) => {
-			let dom = null, cleanup = 0;
 
-			try {
-				if (each) props.each = item;
-
-				dom = e(props, cb => {
-					assert(typeof cb === 'function', "The cleanup function must be passed a function");
-					push(cleanup || (cleanup = []), cb);
-				}, cb => {
-					assert(typeof cb === 'function', "The mount function must be passed a function");
-					push(notifyMount, cb);
-				});
-			} catch (e) {
-				console.error(e);
-			}
-
-			const m = mount(
-				elem,
-				dom,
-				before,
-			);
-
-			return assignFirst(() => {
-				m();
-				callAllSafe(cleanup);
-			}, m.first_);
+		let item;
+		const func = (props, cleanup, mounted) => {
+			if (item) props.each = item;
+			return e(props, cleanup, mounted);
 		};
+		func[mounterGetter] = props;
 
 		if (!each) {
-			assert(createMount.__is_destam_dom_internal_func = true);
-			return createMount;
+			return func;
 		} else {
 			const createMap = arr => ({
 				arr_: arr,
-				[mounterGetter]: createMount,
+				[mounterGetter]: item_ => {
+					item = item_
+					return func;
+				},
 			});
 
 			if (isInstance(each, Observer)) {
