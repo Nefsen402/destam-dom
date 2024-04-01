@@ -307,6 +307,7 @@ export const h = (e, props = {}, ...children) => {
 			const createMap = arr => ({
 				arr_: arr,
 				[mounterGetter]: createMount,
+				length: len(arr),
 			});
 
 			if (isInstance(each, Observer)) {
