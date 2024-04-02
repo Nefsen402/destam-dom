@@ -15,29 +15,22 @@ const nodeMounter = (elem, e, before, aux) => {
 		e = document.createTextNode(e);
 	}
 
-	let remove = null;
-	if (aux) {
-		const [signals, children] = aux;
-
-		remove = signals.map(([val, handler]) => {
+	let bef;
+	let remove = aux?.map(([mode, val, handler, pbef]) => {
+		if (mode) {
+			const m = mount(val, handler, pbef || bef);
+			bef = m.first_;
+			return m;
+		} else {
 			const listener = shallowListener(val, handler);
 			handler();
 			return listener;
-		});
-
-		let bef;
-		for (let [el, child, pbef] of children) {
-			const m = mount(el, child, pbef || bef);
-			bef = m.first_;
-			push(remove, m);
 		}
-	}
+	});
 
 	elem?.insertBefore(e, before());
 
 	return assignFirst(val => {
-		assert(e.parentElement === elem, "Trying to remove a dom node that has an unexpected parent");
-
 		if (val == null) {
 			e?.remove();
 			if (remove) callAll(remove);
@@ -349,34 +342,31 @@ export const h = (e, props = {}, ...children) => {
 		let bef = noop, insertLoc = null;
 
 		children = [];
-		props.children?.findLast(child => {
-			assert(child !== undefined, "Cannot mount undefined");
-			if (child == null) return;
-
-			if (child.ident_ === elementIdentifier && isInstance(child.type_, Node)) {
-				const [sigs, c] = child.val_;
-				signals.push(...sigs);
-				children.unshift(...c);
-				child = child.type_;
-			} else if (!isInstance(child, Node)) {
-				const type = typeof child;
-				if (type !== 'object' && type !== 'function') {
-					child = document.createTextNode(child);
-				} else {
-					push(children, [e, child, bef]);
-					bef = child = 0;
-				}
-			}
-
-			if (child) {
-				if (!child.parentElement) e.insertBefore(child, insertLoc);
-				bef = () => child;
-				insertLoc = child;
-			}
-		});
-		delete props.children;
-
 		forEachProp(props, (name, val) => {
+			if (name === 'children') return val.findLast(child => {
+				assert(child !== undefined, "Cannot mount undefined");
+				if (child == null) return;
+
+				if (child.ident_ === elementIdentifier && isInstance(child.type_, Node)) {
+					children.unshift(...child.val_);
+					child = child.type_;
+				} else if (!isInstance(child, Node)) {
+					const type = typeof child;
+					if (type !== 'object' && type !== 'function') {
+						child = document.createTextNode(child);
+					} else {
+						push(children, [1, e, child, bef]);
+						bef = child = 0;
+					}
+				}
+
+				if (child) {
+					if (!child.parentElement) e.insertBefore(child, insertLoc);
+					bef = () => child;
+					insertLoc = child;
+				}
+			});
+
 			let set;
 			if (name[0] === '$') {
 				name = name.substring(1);
@@ -398,7 +388,7 @@ export const h = (e, props = {}, ...children) => {
 
 			const search = (name, val, e) => {
 				if (isInstance(val, Observer)) {
-					push(signals, [val, () => set(name, val.get(), e)]);
+					push(children, [0, val, () => set(name, val.get(), e)]);
 				} else if (typeof val === 'object') {
 					forEachProp(val, search, e[name]);
 				} else {
@@ -409,6 +399,6 @@ export const h = (e, props = {}, ...children) => {
 			search(name, val, e);
 		});
 
-		return createElement(e, [signals, children]);
+		return createElement(e, children);
 	}
 };
