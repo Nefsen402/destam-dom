@@ -74,11 +74,7 @@ const cleanupArrayMounts = mounts => {
 	}
 };
 
-const destroyArrayMounts = (link, root, linkGetter, orphaned) => {
-	for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
-		delete link[linkGetter];
-	}
-
+const destroyArrayMounts = (root, linkGetter, orphaned) => {
 	for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
 		(orphaned ? insertMap : cur)(orphaned, cur);
 	}
@@ -154,7 +150,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 		arrayListener = observer && shallowListener(observer, commit => {
 			// fast path when removing everything
 			if (len(val) === 0) {
-				destroyArrayMounts(link, root, linkGetter);
+				destroyArrayMounts(root, linkGetter);
 				return;
 			}
 
@@ -201,14 +197,18 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 	mountList(val);
 
 	return assignFirst(val => {
+		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
+			delete link[linkGetter];
+		}
+
 		if (val) {
 			const orphaned = new Map();
-			destroyArrayMounts(link, root, linkGetter, orphaned);
+			destroyArrayMounts(root, linkGetter, orphaned);
 			mountList(val, orphaned);
 			cleanupArrayMounts(orphaned);
 		} else {
 			arrayListener?.();
-			destroyArrayMounts(link, root, linkGetter);
+			destroyArrayMounts(root, linkGetter);
 		}
 
 		return val;
