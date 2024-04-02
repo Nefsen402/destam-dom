@@ -2,6 +2,9 @@ import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
+const elementIdentifier = Symbol();
+const createElement = (type, value) => ({ident_: elementIdentifier, type_: type, val_: value});
+
 const assignFirst = (remove, first) => {
 	remove.first_ = first;
 	return remove;
@@ -130,9 +133,6 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 	return mounted;
 };
 
-const identity = x => x;
-
-const mounterGetter = Symbol();
 const arrayMounter = (elem, val, before, mounter = mount) => {
 	const root = {first_: before};
 	root.next_ = root.prev_ = root;
@@ -256,7 +256,7 @@ export const mount = (elem, item, before = noop) => {
 
 		let func, aux;
 		if (val !== null) {
-			if (val.ident_ === mounterGetter) {
+			if (val.ident_ === elementIdentifier) {
 				aux = val.val_;
 				val = val.type_;
 			}
@@ -305,8 +305,6 @@ const forEachProp = (p, e, opt) => {
 	}
 };
 
-const createElement = (type, value) => ({ident_: mounterGetter, type_: type, val_: value});
-
 export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
@@ -354,7 +352,7 @@ export const h = (e, props = {}, ...children) => {
 			assert(child !== undefined, "Cannot mount undefined");
 			if (child == null) return;
 
-			if (child.ident_ === mounterGetter && isInstance(child.type_, Node)) {
+			if (child.ident_ === elementIdentifier && isInstance(child.type_, Node)) {
 				const [sigs, c] = child.val_;
 				signals.push(...sigs);
 				children.unshift(...c);
