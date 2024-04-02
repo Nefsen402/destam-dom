@@ -7,14 +7,14 @@ const assignFirst = (remove, first) => {
 	return remove;
 };
 
-const nodeMounter = (elem, e, before) => {
+const nodeMounter = (elem, e, before, aux) => {
 	if (!isInstance(e, Node)) {
 		e = document.createTextNode(e);
 	}
 
 	let remove = null;
-	if (e[mounterGetter]) {
-		const [signals, children] = e[mounterGetter];
+	if (aux) {
+		const [signals, children] = aux;
 
 		remove = signals.map(([val, handler]) => {
 			const listener = shallowListener(val, handler);
@@ -89,7 +89,7 @@ const destroyArrayMounts = (link, root, linkGetter, orphaned) => {
 	if (!orphaned) root.next_ = root.prev_ = root;
 };
 
-const addArrayMount = (elem, map, old, item, next) => {
+const addArrayMount = (elem, mounter, old, item, next) => {
 	let mounted = old?.get(item)?.pop();
 	if (mounted === next) return mounted;
 
@@ -99,8 +99,8 @@ const addArrayMount = (elem, map, old, item, next) => {
 			not = notifyMount = [];
 		}
 
-		mounted = mount(
-			elem, map(item),
+		mounted = mounter(
+			elem, item,
 			() => (mounted?.next_ || next).first_(),
 		);
 
@@ -133,7 +133,7 @@ const addArrayMount = (elem, map, old, item, next) => {
 const identity = x => x;
 
 const mounterGetter = Symbol();
-const arrayMounter = (elem, val, before) => {
+const arrayMounter = (elem, val, before, mounter = mount) => {
 	const root = {first_: before};
 	root.next_ = root.prev_ = root;
 
@@ -141,17 +141,12 @@ const arrayMounter = (elem, val, before) => {
 	let link, arrayListener;
 
 	const mountList = (val, orphaned) => {
-		const map = val[mounterGetter] || identity;
-		if (map !== identity) {
-			val = val.arr_;
-		}
-
 		const observer = val[observerGetter];
 		const mountAll = orphaned => {
 			link = observer?.linkNext_;
 			let mounted = root;
 			for (const item of val) {
-				mounted = addArrayMount(elem, map, orphaned, item, mounted.next_);
+				mounted = addArrayMount(elem, mounter, orphaned, item, mounted.next_);
 				if (link) {
 					link[linkGetter] = mounted;
 					link = link.linkNext_;
@@ -200,7 +195,7 @@ const arrayMounter = (elem, val, before) => {
 			for (let insert of inserts) {
 				let next = insert.linkNext_[linkGetter] || root;
 				for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-					next = insert[linkGetter] = addArrayMount(elem, map, orphaned, insert.dom_val_, next);
+					next = insert[linkGetter] = addArrayMount(elem, mounter, orphaned, insert.dom_val_, next);
 					delete insert.dom_val_;
 				}
 			}
@@ -226,11 +221,11 @@ const arrayMounter = (elem, val, before) => {
 	}, () => root.next_.first_());
 };
 
-const customMounter = (elem, func, before) => {
+const customMounter = (elem, func, before, aux) => {
 	let dom = null, cleanup = 0;
 
 	try {
-		dom = func(func[mounterGetter] || {}, cb => {
+		dom = func(aux || {}, cb => {
 			assert(typeof cb === 'function', "The cleanup function must be passed a function");
 			push(cleanup || (cleanup = []), cb);
 		}, cb => {
@@ -256,19 +251,24 @@ const customMounter = (elem, func, before) => {
 export const mount = (elem, item, before = noop) => {
 	let lastFunc, mounted = null;
 	const update = () => {
-		const val = isObserver ? item.get() : item;
+		let val = isObserver ? item.get() : item;
 		assert(val !== undefined, "Cannot mount undefined");
 
-		let type = typeof val;
-		let func;
-		if (val == null) {
-			// fallthrough
-		} else if (type === 'function') {
-			func = customMounter;
-		} else if (isInstance(val, Node) || type !== 'object') {
-			func = nodeMounter;
-		} else {
-			func = arrayMounter;
+		let func, aux;
+		if (val !== null) {
+			if (val.ident_ === mounterGetter) {
+				aux = val.val_;
+				val = val.type_;
+			}
+
+			const type = typeof val;
+			if (type === 'function') {
+				func = customMounter;
+			} else if (isInstance(val, Node) || type !== 'object') {
+				func = nodeMounter;
+			} else {
+				func = arrayMounter;
+			}
 		}
 
 		let not;
@@ -277,7 +277,7 @@ export const mount = (elem, item, before = noop) => {
 		}
 
 		if (!mounted?.(lastFunc === func ? val : null)) {
-			mounted = (lastFunc = func)?.(elem, val, before);
+			mounted = (lastFunc = func)?.(elem, val, before, aux);
 		}
 
 		callAllSafe(not);
@@ -305,6 +305,8 @@ const forEachProp = (p, e, opt) => {
 	}
 };
 
+const createElement = (type, value) => ({ident_: mounterGetter, type_: type, val_: value});
+
 export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
@@ -319,23 +321,16 @@ export const h = (e, props = {}, ...children) => {
 	if (typeof e === 'function') {
 		const each = props.each;
 
-		let item;
-		const func = (props, cleanup, mounted) => {
-			if (item) props.each = item;
-			return e(props, cleanup, mounted);
-		};
-		func[mounterGetter] = props;
-
 		if (!each) {
-			return func;
+			return createElement(e, props);
 		} else {
-			const createMap = arr => ({
-				arr_: arr,
-				[mounterGetter]: item_ => {
-					item = item_
-					return func;
+			const createMap = arr => createElement(
+				arr,
+				(elem, item, before) => {
+					props.each = item;
+					return customMounter(elem, e, before, props);
 				},
-			});
+			);
 
 			if (isInstance(each, Observer)) {
 				return each.map(createMap);
@@ -359,7 +354,12 @@ export const h = (e, props = {}, ...children) => {
 			assert(child !== undefined, "Cannot mount undefined");
 			if (child == null) return;
 
-			if (!isInstance(child, Node)) {
+			if (child.ident_ === mounterGetter && isInstance(child.type_, Node)) {
+				const [sigs, c] = child.val_;
+				signals.push(...sigs);
+				children.unshift(...c);
+				child = child.type_;
+			} else if (!isInstance(child, Node)) {
 				const type = typeof child;
 				if (type !== 'object' && type !== 'function') {
 					child = document.createTextNode(child);
@@ -367,10 +367,6 @@ export const h = (e, props = {}, ...children) => {
 					push(children, [e, child, bef]);
 					bef = child = 0;
 				}
-			} else if (child[mounterGetter]) {
-				const [sigs, c] = child[mounterGetter];
-				signals.push(...sigs);
-				children.unshift(...c);
 			}
 
 			if (child) {
@@ -414,7 +410,6 @@ export const h = (e, props = {}, ...children) => {
 			search(name, val, e);
 		});
 
-		e[mounterGetter] = [signals, children];
-		return e;
+		return createElement(e, [signals, children]);
 	}
 };
