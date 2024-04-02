@@ -87,17 +87,11 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 	if (mounted === next) return mounted;
 
 	if (!mounted) {
-		let not;
-		if (!notifyMount) {
-			not = notifyMount = [];
-		}
-
 		mounted = mounter(
 			elem, item,
 			() => (mounted?.next_ || next).first_(),
 		);
 
-		callAllSafe(not);
 		mounted.item_ = item;
 	} else {
 		let mountAt, term;
@@ -154,43 +148,49 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 				return;
 			}
 
+			let not;
+			if (!notifyMount) {
+				not = notifyMount = [];
+			}
+
 			// fast path when adding from an empty array
 			if (root.next_ === root) {
 				mountAll();
-				return;
-			}
+			} else {
+				let orphaned = null;
+				const inserts = [];
 
-			let orphaned = null;
-			const inserts = [];
+				for (const delta of commit) {
+					const isModify = isInstance(delta, Modify);
+					const link = delta.network_.link_;
 
-			for (const delta of commit) {
-				const isModify = isInstance(delta, Modify);
-				const link = delta.network_.link_;
+					if (isModify || isInstance(delta, Delete)) {
+						insertMap(orphaned || (orphaned = new Map()), link[linkGetter]);
+						delete link[linkGetter];
+					}
 
-				if (isModify || isInstance(delta, Delete)) {
-					insertMap(orphaned || (orphaned = new Map()), link[linkGetter]);
-					delete link[linkGetter];
-				}
+					if (isModify || isInstance(delta, Insert)) {
+						link.dom_val_ = delta.value;
+						const next = link.linkNext_;
 
-				if (isModify || isInstance(delta, Insert)) {
-					link.dom_val_ = delta.value;
-					const next = link.linkNext_;
-
-					if (next[linkGetter] || !next.reg_) {
-						inserts.push(link);
+						if (next[linkGetter] || !next.reg_) {
+							inserts.push(link);
+						}
 					}
 				}
-			}
 
-			for (let insert of inserts) {
-				let next = insert.linkNext_[linkGetter] || root;
-				for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-					next = insert[linkGetter] = addArrayMount(elem, mounter, orphaned, insert.dom_val_, next);
-					delete insert.dom_val_;
+				for (let insert of inserts) {
+					let next = insert.linkNext_[linkGetter] || root;
+					for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
+						next = insert[linkGetter] = addArrayMount(elem, mounter, orphaned, insert.dom_val_, next);
+						delete insert.dom_val_;
+					}
 				}
+
+				if (orphaned) cleanupArrayMounts(orphaned);
 			}
 
-			if (orphaned) cleanupArrayMounts(orphaned);
+			callAllSafe(not);
 		});
 	};
 
