@@ -39,6 +39,7 @@ Mount supports:
  - booleans (will be rendered as the string true/false)
  - `null`
  - JSX or `html` tagged template literals
+ - Custom components (they will be given an empty property list)
 
 ## html
 `html()` is meant to be used with tagged template literals and provides an easy and build-free way to start creating complex dom structures in javascript. Note that for cases like the `br` element, you will have to close those manually.
@@ -160,7 +161,7 @@ html`
 `
 ```
 
-It uses similar syntax for setting any other property, except we leave the propery name blank. Property spreading is especially useful for custom elements.
+It uses similar syntax for setting any other property, except we leave the propery name blank. Property spreading is especially useful for custom components.
 
 ## Children prop
 
@@ -192,9 +193,9 @@ cannot be an `OArray` as it will not be reactive. This is done for performance
 reasons. If you wanted to pass an `OArray` or anything else as a single child,
 first wrap it in an array.
 
-## Custom elements
+## Custom components
 
-Element names don't just have to be a reference to a dom node, they can also be functions to create custom elements.
+Element names don't just have to be a reference to a dom node, they can also be functions to create custom components.
 
 ```js
 const Header = () => {
@@ -206,9 +207,9 @@ html`
 `
 ```
 
-Note that custom elements can return whatever value is supported by `mount()`.
+Note that custom components can return whatever value is supported by `mount()`.
 
-Custom elements in destam-dom are inspired by functional elements in React. Properties are passed the same way as we would in react:
+Custom components in destam-dom are inspired by functional elements in React. Properties are passed the same way as we would in react:
 
 ```js
 const Header = ({text}) => {
@@ -243,7 +244,7 @@ html`
 ## Lifetimes
 Since destam-dom does not use a virtual dom, the concept of "re-render"ing does not exist. When a component is mounted, it is invoked once to get a template of what the dom tree should look at and all reactivity is achieved through signals. However, we still have to worry about when a component is mounted and unmounted. This especially critical if you want to create animations.
 
-Custom elements can register callbacks that get invoked when all descendents of the component are mounted/unmounted.
+Custom components can register callbacks that get invoked when all descendents of the component are mounted/unmounted.
 
 When a custom component is first called, that marks the time when the custom component wants to be mounted. Obviously, the children of the component won't yet be on the dom because this is where we are generating the dom elements.
 
@@ -359,7 +360,7 @@ names.push(html`<div>Ford</div>`);
 This also has the added effect that destam-dom does not need to reconcile references. It simply detects that a new item was pushed and adds it to the dom.
 
 ## Custom element each property
-Sometimes, it's inconventient to need to manage an array of components, you might just have a list of arbitrary program state. Custom elements are the basis of how destam-dom manages rendering a list of items with an arbitrary format.
+Sometimes, it's inconventient to need to manage an array of components, you might just have a list of arbitrary program state. Custom components are the basis of how destam-dom manages rendering a list of items with an arbitrary format.
 
 The `each` element property can be used to iterate a list and transform the list into html elements at the same time with a custom element. In the custom component, the `each` property will no longer be the list, but instead an element of the list.
 
@@ -393,7 +394,7 @@ html`
 names.set([...names.get(), 'Ford']);
 ```
 
-Like above when we weren't using custom elements, we can implement naive list reactivity using an observer. This time, we're able to do it with just basic strings. Note that this example will render `Name` exactly 4 times, it will not recompute the first three names.
+Like above when we weren't using custom components, we can implement naive list reactivity using an observer. This time, we're able to do it with just basic strings. Note that this example will render `Name` exactly 4 times, it will not recompute the first three names.
 
 ```js
 const names = OArray([
@@ -418,7 +419,7 @@ And of course, prefer to use `OArray` when possible to achieve constant time ins
 ## JSX
 JSX support is provided from the `transform/htmlLiteral` file. This can be hooked up to any build system with a vite example being provided in this repository.
 
-The JSX will be similar the html template literals except when it comes to templating node values. Custom elements and DOM nodes must be capitalized for the build system to understand that a browser DOM node is not desired, but instead should be a reference.
+The JSX will be similar the html template literals except when it comes to templating node values. Custom components and DOM nodes must be capitalized for the build system to understand that a browser DOM node is not desired, but instead should be a reference.
 ```jsx
 const Website = () => {
 	return <p>
