@@ -26,6 +26,8 @@ const nodeMounter = (elem, e, before, aux) => {
 		}
 	});
 
+	assert(e.parentElement == null,
+		"Cannot mount a dom node that has already been mounted elsewhere.");
 	elem?.insertBefore(e, before());
 
 	return assignFirst(val => {
