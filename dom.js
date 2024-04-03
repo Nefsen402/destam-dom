@@ -18,9 +18,7 @@ const nodeMounter = (elem, e, before, aux) => {
 	let bef;
 	let remove = aux?.map(([mode, val, handler, pbef]) => {
 		if (mode) {
-			const m = mount(val, handler, pbef || bef);
-			bef = m.first_;
-			return m;
+			return bef = mount(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef.first_);
 		} else {
 			const listener = shallowListener(val, handler);
 			handler();
@@ -363,7 +361,7 @@ export const h = (e, props = {}, ...children) => {
 			const def = props[o];
 
 			if (o === 'children') {
-				let bef = noop, insertLoc = null;
+				let bef = 0, insertLoc = null;
 				for (let i = len(def) - 1; i >= 0; i--) {
 					let child = def[i];
 
@@ -379,14 +377,13 @@ export const h = (e, props = {}, ...children) => {
 							child = document.createTextNode(child);
 						} else {
 							push(children, [1, e, child, bef]);
-							bef = child = 0;
+							bef = child = null;
 						}
 					}
 
 					if (child) {
 						if (!child.parentElement) e.insertBefore(child, insertLoc);
-						bef = () => child;
-						insertLoc = child;
+						bef = insertLoc = child;
 					}
 				}
 
