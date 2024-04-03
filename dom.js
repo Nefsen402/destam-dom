@@ -16,7 +16,7 @@ const nodeMounter = (elem, e, before, aux) => {
 	}
 
 	let bef;
-	let remove = aux?.map(([mode, val, handler, pbef]) => {
+	aux = aux?.map(([mode, val, handler, pbef]) => {
 		if (mode) {
 			return bef = mount(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef.first_);
 		} else {
@@ -31,8 +31,8 @@ const nodeMounter = (elem, e, before, aux) => {
 	return assignFirst(val => {
 		if (val == null) {
 			e?.remove();
-			if (remove) callAll(remove);
-			e = remove = val;
+			if (aux) callAll(aux);
+			e = aux = val;
 		} else if (isInstance(val, Node)) {
 			elem?.replaceChild(val, e);
 			e = val;
@@ -391,7 +391,6 @@ export const h = (e, props = {}, ...children) => {
 			}
 
 			let set;
-
 			if (o[0] === '$') {
 				o = o.substring(1);
 
