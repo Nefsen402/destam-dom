@@ -293,9 +293,29 @@ export const mount = (elem, item, before = noop) => {
 	}
 };
 
-const forEachProp = (p, e, opt) => {
-	for (let o in p) {
-		e(o, p[o], opt);
+const propertySetter = (name, val, e) => e[name] = val ?? null;
+const attributeSetter = (name, val, e) => {
+	val = val ?? false;
+	assert(['boolean', 'string', 'number'].includes(typeof val),
+		`type ${typeof val} is used as the attribute: ${name}`);
+
+	if (typeof val === 'boolean') {
+		e.toggleAttribute(name, val);
+	} else {
+		e.setAttribute(name, val);
+	}
+};
+
+const populateSignals = (signals, val, e, name, set) => {
+	if (isInstance(val, Observer)) {
+		push(signals, [0, val, () => set(name, val.get(), e)]);
+	} else if (typeof val !== 'object') {
+		set(name, val, e);
+	} else {
+		for (let o in val) {
+			const def = val[o];
+			populateSignals(signals, val[o], e[name], o, set);
+		}
 	}
 };
 
@@ -338,66 +358,53 @@ export const h = (e, props = {}, ...children) => {
 			e = document.createElement(e);
 		}
 
-		const signals = [];
-		let bef = noop, insertLoc = null;
-
 		children = [];
-		forEachProp(props, (name, val) => {
-			if (name === 'children') return val.findLast(child => {
-				assert(child !== undefined, "Cannot mount undefined");
-				if (child == null) return;
+		for (let o in props) {
+			const def = props[o];
 
-				if (child.ident_ === elementIdentifier && isInstance(child.type_, Node)) {
-					children.unshift(...child.val_);
-					child = child.type_;
-				} else if (!isInstance(child, Node)) {
-					const type = typeof child;
-					if (type !== 'object' && type !== 'function') {
-						child = document.createTextNode(child);
-					} else {
-						push(children, [1, e, child, bef]);
-						bef = child = 0;
+			if (o === 'children') {
+				let bef = noop, insertLoc = null;
+				for (let i = len(def) - 1; i >= 0; i--) {
+					let child = def[i];
+
+					assert(child !== undefined, "Cannot mount undefined");
+					if (child == null) continue;
+
+					if (child.ident_ === elementIdentifier && isInstance(child.type_, Node)) {
+						children.unshift(...child.val_);
+						child = child.type_;
+					} else if (!isInstance(child, Node)) {
+						const type = typeof child;
+						if (type !== 'object' && type !== 'function') {
+							child = document.createTextNode(child);
+						} else {
+							push(children, [1, e, child, bef]);
+							bef = child = 0;
+						}
+					}
+
+					if (child) {
+						if (!child.parentElement) e.insertBefore(child, insertLoc);
+						bef = () => child;
+						insertLoc = child;
 					}
 				}
 
-				if (child) {
-					if (!child.parentElement) e.insertBefore(child, insertLoc);
-					bef = () => child;
-					insertLoc = child;
-				}
-			});
-
-			let set;
-			if (name[0] === '$') {
-				name = name.substring(1);
-
-				set = (name, val, e) => e[name] = val ?? null;
-			} else {
-				set = (name, val, e) => {
-					val = val ?? false;
-					assert(['boolean', 'string', 'number'].includes(typeof val),
-						`type ${typeof val} is used as the attribute: ${name}`);
-
-					if (typeof val === 'boolean') {
-						e.toggleAttribute(name, val);
-					} else {
-						e.setAttribute(name, val);
-					}
-				};
+				continue;
 			}
 
-			const search = (name, val, e) => {
-				if (isInstance(val, Observer)) {
-					push(children, [0, val, () => set(name, val.get(), e)]);
-				} else if (typeof val === 'object') {
-					forEachProp(val, search, e[name]);
-				} else {
-					set(name, val, e);
-				}
-			};
+			let set;
 
-			search(name, val, e);
-		});
+			if (o[0] === '$') {
+				o = o.substring(1);
+
+				set = propertySetter;
+			} else  {
+				set = attributeSetter;
+			}
+
+			populateSignals(children, def, e, o, set);
+		}
 
 		return createElement(e, children);
 	}
