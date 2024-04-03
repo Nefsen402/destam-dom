@@ -23,8 +23,8 @@ const App = () => {
 
       const dom = html`
         <tr class=${selected.map(sel => sel === dom ? "danger": "")}>
-          <td class='col-md-4'><a $onclick=${() => selected.set(dom)}>${label}</a></td>
-          <td class='col-md-1'><a $onclick=${() => remove(dom)}><span class='glyphicon glyphicon-remove' aria-hidden="true" />x</a></td>
+          <td class='col-md-4'><a $onclick=${() => selected.set(dom)} $textContent=${label} /></td>
+          <td class='col-md-1'><a $onclick=${() => remove(dom)}><span class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
           <td class='col-md-6'/>
         </tr>
       `;
