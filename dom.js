@@ -351,10 +351,8 @@ export const h = (e, props = {}, ...children) => {
 			}
 		}
 	} else {
-		assert(isInstance(e, Node) || typeof e === 'string',
-			"Unsupported node type: " + typeof e);
-
 		if (!isInstance(e, Node)) {
+			assert(typeof e === 'string', "Unsupported node: " + typeof e);
 			e = document.createElement(e);
 		}
 
