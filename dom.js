@@ -140,7 +140,6 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 		mountAll(orphaned);
 
-		arrayListener?.();
 		arrayListener = observer && shallowListener(observer, commit => {
 			// fast path when removing everything
 			if (len(val) === 0) {
@@ -201,14 +200,13 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 			delete link[linkGetter];
 		}
 
-		if (val) {
-			const orphaned = new Map();
-			destroyArrayMounts(root, linkGetter, orphaned);
+		arrayListener?.();
+
+		const orphaned = val && new Map();
+		destroyArrayMounts(root, linkGetter, orphaned);
+		if (orphaned) {
 			mountList(val, orphaned);
 			cleanupArrayMounts(orphaned);
-		} else {
-			arrayListener?.();
-			destroyArrayMounts(root, linkGetter);
 		}
 
 		return val;
