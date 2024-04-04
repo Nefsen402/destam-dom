@@ -39,7 +39,7 @@ const nodeMounter = (elem, e, before, aux) => {
 			elem?.replaceChild(val, e);
 			e = val;
 		} else {
-			e.textContent = val;
+			if (e) e.textContent = val;
 		}
 
 		return val;
@@ -288,7 +288,6 @@ export const mount = (elem, item, before = noop) => {
 		return assignFirst(() => {
 			watcher();
 			mounted?.();
-			mounted = null;
 		}, () => (mounted?.first_ || before)());
 	} else {
 		update();
