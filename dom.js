@@ -243,6 +243,9 @@ const customMounter = (elem, func, before, aux) => {
 };
 
 export const mount = (elem, item, before = noop) => {
+	assert(elem === null || isInstance(elem, Node),
+		"The first argument to mount must be null or an dom node");
+
 	let lastFunc, mounted = null;
 	const update = () => {
 		let val = isObserver ? item.get() : item;
