@@ -153,6 +153,58 @@ html`
 `
 ```
 
+### Undefined foot gun
+destam-dom will assert that no value either directly passed or resolved from an observer can be undefined. This is to prevent silly copy paste bugs or just typos. Data that you intend to hide should be null and never undefined.
+
+```js
+const state = Observer.mutable();
+
+html`
+	My state is ${state}
+`
+```
+
+The above example would assert on the fact that state will resolve to undefined. In order to fix this, state must be initilazed with null.
+
+```js
+const state = Observer.mutable(null);
+
+html`
+	My state is ${state}
+`
+```
+
+This also goes with OObject state.
+
+```js
+const state = OObject({});
+
+html`
+	My state value is ${state.observer.path('value')}
+`
+```
+
+state value must be initialized to null.
+
+```js
+const state = OObject({
+	value: null,
+});
+
+html`
+	My state value is ${state.observer.path('value')}
+`
+```
+
+Alternatively, you could map the observer to produce null manually.
+```js
+const state = OObject({});
+
+html`
+	My state value is ${state.observer.path('value').map(val => val ?? null)}
+`
+```
+
 ## Prop spreading
 All properties in an object can be used to populate the props of an element. The syntax for this looks like:
 ```js
