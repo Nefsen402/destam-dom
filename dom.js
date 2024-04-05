@@ -362,7 +362,7 @@ export const h = (e, props = {}, ...children) => {
 
 			if (o === 'children') {
 				let bef = 0, insertLoc = null;
-				for (let i = len(def); i > 0; i--) {
+				if (def) for (let i = len(def); i > 0; i--) {
 					let child = def[i - 1];
 
 					assert(child !== undefined, "Cannot mount undefined");
