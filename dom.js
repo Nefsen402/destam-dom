@@ -268,6 +268,8 @@ export const mount = (elem, item, before = noop) => {
 	const update = () => {
 		let val = isObserver ? item.get() : item;
 		assert(val !== undefined, "Cannot mount undefined");
+		assert(!isInstance(val, Observer),
+			"destam-dom does not support nested observers");
 
 		let func, aux;
 		if (val !== null) {
