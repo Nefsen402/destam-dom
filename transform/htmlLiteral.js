@@ -5,6 +5,18 @@ import t from '@babel/types';
 import util from 'util';
 import htm, {validTags} from '../htm.js';
 
+const createTag = (args) => {
+	const expr = t.callExpression(t.identifier('h'), args);
+	expr.leadingComments = [
+		{
+			type: 'CommentBlock',
+			value: ' @__PURE__ ',
+		}
+	];
+
+	return expr;
+};
+
 const createArray = (items) => {
 	if (items.length === 1) {
 		return items[0];
@@ -52,7 +64,7 @@ const html = htm((name, props, ...children) => {
 		}
 	}));
 
-	return t.callExpression(t.identifier('h'), args);
+	return createTag(args);
 }, (props, obj) => {
 	const key = '~spread-' + Math.random();
 
@@ -136,7 +148,7 @@ const parse = node => {
 		}
 	}
 
-	return t.callExpression(t.identifier('h'), args);
+	return createTag(args);
 };
 
 const transformChildren = node => {
