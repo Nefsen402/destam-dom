@@ -161,7 +161,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 			// fast path when removing everything
 			if (len(val) === 0) {
 				if (elem && elem.firstChild === root.next_(getFirst) && !root()) {
-					elem.innerHTML = '';
+					elem.textContent = '';
 				}
 
 				destroyArrayMounts(root, linkGetter);
