@@ -37,6 +37,10 @@ if (lib in libs) {
 		define: {
 			'process.env.NODE_ENV': '"development"',
 		},
+		plugins: !process.env.N_DEBUG ? [] : [
+			createTransform('assert-remove', assertRemove),
+			createTransform('unsafe-vars', unsafeVars),
+		],
 		build: {
 			minify: 'terser',
 			target: 'es2020',
@@ -60,12 +64,6 @@ if (lib in libs) {
 				formats: ['es', 'iife', 'umd'],
 			},
 			sourcemap: true,
-			rollupOptions: {
-				plugins: !process.env.N_DEBUG ? [] : [
-					createTransform('assert-remove', assertRemove),
-					createTransform('drop-const', unsafeVars),
-				],
-			},
 		},
 	});
 } else {
