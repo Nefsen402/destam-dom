@@ -25,8 +25,6 @@ const nodeMounter = (elem, e, before, aux) => {
 		if (val === getFirst) return e;
 
 		if (!e) return val;
-		assert(elem && e.parentElement === elem,
-			"Refusing to modify node not part of the expected parent");
 
 		if (!val) {
 			e.remove();
@@ -162,6 +160,10 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 		arrayListener = observer && shallowListener(observer, commit => {
 			// fast path when removing everything
 			if (len(val) === 0) {
+				if (elem && elem.firstChild === root.next_(getFirst) && !root()) {
+					elem.innerHTML = '';
+				}
+
 				destroyArrayMounts(root, linkGetter);
 				return;
 			}
