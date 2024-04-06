@@ -332,7 +332,12 @@ const attributeSetter = (name, val, e) => {
 
 const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
-		push(signals, [shallowListener, val, () => set(name, val.get(), e)]);
+		push(signals, [shallowListener, val, () => {
+			const v = val.get();
+			assert(!isInstance(v, Observer),
+				"destam-dom does not support nested observers");
+			set(name, v, e)
+		}]);
 	} else if (typeof val !== 'object') {
 		set(name, val, e);
 	} else {
