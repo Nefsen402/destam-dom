@@ -227,92 +227,86 @@ export const transformBabelAST = (ast) => {
 	let hasHTMLImport = false;
 	let hasHImport = false;
 	let hasObserverImport = false;
-	let usingHTMLImport = false;
-	const checkImport = (node) => {
+	const checkImport = (node, path) => {
 		if (node.type !== "Identifier") {
 			return;
 		}
 
 		if (node.name === 'html') {
-			hasHTMLImport = true;
+			hasHTMLImport = path;
 		} else if (node.name === 'Observer') {
-			hasObserverImport = true;
+			hasObserverImport = path;
 		} else if (node.name === 'h') {
-			hasHImport = true;
+			hasHImport = path;
 		}
 	};
 
 	babelTraverse.default(ast, {
 		ImportSpecifier: path => {
-			checkImport(path.node.imported);
+			checkImport(path.node.imported, path);
 		},
 		ImportDefaultSpecifier: path => {
-			checkImport(path.node.local);
+			checkImport(path.node.local, path);
 		},
-		Identifier: path => {
-			const ignoredTypes = ['TaggedTemplateExpression', 'ImportSpecifier'];
+		TaggedTemplateExpression: path => {
+			if (!hasHTMLImport) return;
 
-			if (path.node.name === 'html' &&
-					!ignoredTypes.includes(path.parent.type)) {
-				usingHTMLImport = true;
+			const node = path.node;
+			if (!node.tag || node.tag.name !== 'html') {
+				return;
 			}
+
+			if (!hasObserverImport || !hasHImport) {
+				const imports = [hasHTMLImport.node];
+				if (!hasObserverImport) {
+					imports.push(t.importSpecifier(t.identifier("Observer"), t.identifier("Observer")));
+				}
+
+				if (!hasHImport) {
+					imports.push(t.importSpecifier(t.identifier("h"), t.identifier("h")));
+				}
+
+				hasHTMLImport.replaceWithMultiple(imports);
+				hasObserverImport = true;
+				hasHImport = true;
+			}
+
+			// handle imports
+			let current = path;
+			if (current) {
+				if (current.node.body) {
+					console.log(current.node.body);
+				}
+
+				current = current.parentPath;
+			}
+
+			const {expressions, quasis} = node.quasi;
+			path.replaceWith(createArray(
+				html(quasis.map(node => node.value.raw), ...expressions.map(exp => {
+					if (exp.type === 'stringLiteral') {
+						return exp.value;
+					}
+
+					return exp;
+				})).map(node => {
+					if (typeof node === 'string') {
+						node = t.stringLiteral(node);
+					}
+
+					return node;
+				})
+			));
+		},
+		JSXFragment: path => {
+			if (!hasHImport) return;
+			path.replaceWith(t.arrayExpression(transformChildren(path.node)));
+		},
+		JSXElement: path => {
+			if (!hasHImport) return;
+			path.replaceWith(parse(path.node));
 		},
 	});
-
-	let transformed = false;
-	if (hasHTMLImport) {
-		babelTraverse.default(ast, {
-			TaggedTemplateExpression: path => {
-				const node = path.node;
-				if (!node.tag || node.tag.name !== 'html') {
-					return;
-				}
-
-				transformed = true;
-				const {expressions, quasis} = node.quasi;
-				path.replaceWith(createArray(
-					html(quasis.map(node => node.value.raw), ...expressions.map(exp => {
-						if (exp.type === 'stringLiteral') {
-							return exp.value;
-						}
-
-						return exp;
-					})).map(node => {
-						if (typeof node === 'string') {
-							node = t.stringLiteral(node);
-						}
-
-						return node;
-					})
-				));
-			},
-		});
-	}
-
-	if (hasHImport) {
-		babelTraverse.default(ast, {
-			JSXFragment: path => {
-				path.replaceWith(t.arrayExpression(transformChildren(path.node)));
-			},
-			JSXElement: path => {
-				path.replaceWith(parse(path.node));
-			}
-		});
-	}
-
-	if (transformed) {
-		babelTraverse.default(ast, {
-			ImportSpecifier: path => {
-				if (path.node.imported.type === 'Identifier' && path.node.imported.name === 'html') {
-					let stuff = [];
-					if (transform) stuff.push(t.importSpecifier(t.identifier("h"), t.identifier("h")));
-					if (!hasObserverImport) stuff.push(t.importSpecifier(t.identifier("Observer"), t.identifier("Observer")));
-					if (usingHTMLImport) stuff.push(path.node);
-					path.replaceWithMultiple(stuff);
-				}
-			},
-		});
-	}
 };
 
 const transform = (source, options) => {
