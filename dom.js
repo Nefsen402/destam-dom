@@ -390,10 +390,8 @@ export const h = (e, props = {}, ...children) => {
 					assert(child !== undefined, "Cannot mount undefined");
 					if (child == null) continue;
 
-					if (child.ident_ === elementIdentifier && isInstance(child.type_, Node)) {
-						children.unshift(...child.val_);
-						child = child.type_;
-					} else if (!isInstance(child, Node)) {
+					const type = child.ident_ === elementIdentifier ? child.type_ : child;
+					if (!isInstance(type, Node)) {
 						const type = typeof child;
 						if (type !== 'object' && type !== 'function') {
 							child = document.createTextNode(child);
@@ -401,6 +399,9 @@ export const h = (e, props = {}, ...children) => {
 							push(children, [mount, e, child, bef]);
 							bef = child = null;
 						}
+					} else if (type !== child) {
+						children.unshift(...child.val_);
+						child = type;
 					}
 
 					if (child) {
