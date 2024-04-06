@@ -15,6 +15,7 @@ const Button = ({ id, text, fn }) => {
 
 const App = () => {
 	let selected = Observer.mutable(null);
+  let duration = Observer.mutable(0);
 	let array = OArray();
 
   const appendData = count => atomic(() => {
@@ -36,21 +37,30 @@ const App = () => {
 
 	const
     run = () => {
+      let now = performance.now();
       array.splice(0, array.length);
       appendData(1000);
+      duration.set(performance.now() - now);
     },
     runLots = () => {
       let now = performance.now();
       array.splice(0, array.length);
       appendData(10000);
-      console.log(performance.now() - now)
+      duration.set(performance.now() - now);
     },
-    add = () => appendData(1000),
+    add = () => {
+      let now = performance.now();
+      appendData(1000);
+      duration.set(performance.now() - now);
+    },
     update = () => {
+      let now = performance.now();
       for(let i = 0, len = array.length; i < len; i += 10)
         array[i].label.set(array[i].label.get() + ' !!!');
+      duration.set(performance.now() - now);
     },
     swapRows = () => {
+      let now = performance.now();
       if (array.length > 998) {
         atomic (() => {
           let tmp = array[1];
@@ -58,13 +68,18 @@ const App = () => {
           array[998] = tmp;
         });
       }
+      duration.set(performance.now() - now);
     },
     clear = () => {
+      let now = performance.now();
       array.splice(0, array.length);
+      duration.set(performance.now() - now);
     },
     remove = row => {
+      let now = performance.now();
       const idx = array.indexOf(row);
       array.splice(idx, 1);
+      duration.set(performance.now() - now);
     };
 
   return html`
@@ -96,6 +111,7 @@ const App = () => {
           font-size: 40px;
       }
     </style>
+    ${duration}
     <div class='container'>
       <div class='jumbotron'><div class='row'>
         <div class='col-md-6'><h1>SolidJS Keyed</h1></div>
