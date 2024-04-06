@@ -33,7 +33,7 @@ const Input = ({value, ref, enter, keydown, cancel}, cleanup, mounted) => {
 
 const Message = ({each: item}) => {
 	return html `
-		${item.observer.path('editing').map(e => e != null).map(editing => {
+		${item.observer.path('editing').map(e => e != null).memo().map(editing => {
 			if (!editing) {
 				return html`${item.observer.path('text')}`;
 			}
