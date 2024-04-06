@@ -34,13 +34,11 @@ const nodeMounter = (elem, e, before, aux) => {
 		if (!val) {
 			e.remove();
 			if (aux) callAll(aux);
-			e = aux = val;
 		} else {
-			e.parentElement?.replaceChild(val, e);
-			e = val;
+			e.replaceWith(val);
 		}
 
-		return val;
+		return e = val;
 	}, () => e);
 };
 
