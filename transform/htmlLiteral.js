@@ -72,6 +72,17 @@ const html = htm((name, props, ...children) => {
 	props[spreadKeys].push(key);
 
 	props[key] = obj;
+}, strings => {
+	return t.callExpression(
+		t.memberExpression(t.arrayExpression(strings.map(string => {
+			if (typeof string === 'string') {
+				string = t.stringLiteral(string);
+			}
+
+			return string;
+		})), t.identifier('join')),
+		[t.stringLiteral("")],
+	);
 });
 
 const parse = node => {

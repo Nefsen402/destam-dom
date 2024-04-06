@@ -1,5 +1,4 @@
 import {push, len, assert, isInstance} from 'destam/util.js';
-import Observer from 'destam/Observer.js';
 
 export const validTags = ['BASE', 'LINK', 'META', 'STYLE', 'TITLE', 'ADDRESS', 'ARTICLE',
 	'ASIDE', 'FOOTER', 'HEADER', 'H1', 'H2', 'H3', 'HGROUP', 'MAIN',
@@ -16,7 +15,7 @@ export const validTags = ['BASE', 'LINK', 'META', 'STYLE', 'TITLE', 'ADDRESS', '
 	'OPTGROUP', 'OPTION', 'OUTPUT', 'PROGRESS', 'SELECT', 'TEXTAREA',
 	'DETAILS', 'DIALOG', 'SUMMARY', 'SLOT', 'TEMPLATE'];
 
-export default (h, assign = Object.assign) => (segments, ...args) => {
+export default (h, assign = Object.assign, join = arr => arr.join('')) => (segments, ...args) => {
 	const special = {'<': {}, '>': {}, '=': {}, '/': {}};
 	const tokens = [];
 	let tag = 1, inString, cur = '';
@@ -49,7 +48,7 @@ export default (h, assign = Object.assign) => (segments, ...args) => {
 			if (inString) {
 				if (char == inString.char) {
 					flush();
-					push(tokens, inString.join(''));
+					push(tokens, join(inString));
 					inString = 0;
 				} else {
 					cur += char;
