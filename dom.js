@@ -11,10 +11,6 @@ const assignFirst = (remove, first) => {
 };
 
 const nodeMounter = (elem, e, before, aux) => {
-	if (!isInstance(e, Node)) {
-		e = document.createTextNode(e);
-	}
-
 	let bef;
 	aux = aux?.map(([func, val, handler, pbef]) => {
 		const listener = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
@@ -31,18 +27,44 @@ const nodeMounter = (elem, e, before, aux) => {
 	elem?.insertBefore(e, before());
 
 	return assignFirst(val => {
-		if (val == null) {
-			e?.remove();
+		if (!e) return val;
+		assert(e.parentElement === elem,
+			"Refusing to modify node not part of the expected parent");
+
+		if (!val) {
+			e.remove();
 			if (aux) callAll(aux);
 			e = aux = val;
-		} else if (isInstance(val, Node)) {
+		} else {
 			elem?.replaceChild(val, e);
 			e = val;
-		} else {
-			if (e) e.textContent = val;
 		}
 
 		return val;
+	}, () => e);
+};
+
+const primitiveMounter = (elem, e, before) => {
+	e = document.createTextNode(e);
+
+	assert(elem, "Trying to mount a primitive to a null mount.");
+	elem.insertBefore(e, before());
+
+	return assignFirst(val => {
+		assert(e.parentElement === elem,
+			"Refusing to modify node not part of the expected parent");
+
+		const isNull = val == null;
+		if (e) {
+			if (isNull) {
+				e.remove();
+				e = val;
+			} else {
+				e.textContent = val;
+			}
+		}
+
+		return isNull;
 	}, () => e);
 };
 
@@ -259,7 +281,9 @@ export const mount = (elem, item, before = noop) => {
 			const type = typeof val;
 			if (type === 'function') {
 				func = customMounter;
-			} else if (isInstance(val, Node) || type !== 'object') {
+			} else if (type !== 'object') {
+				func = primitiveMounter;
+			} else if (isInstance(val, Node)) {
 				func = nodeMounter;
 			} else {
 				func = arrayMounter;
