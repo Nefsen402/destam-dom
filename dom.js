@@ -357,33 +357,36 @@ const populateSignals = (signals, val, e, name, set) => {
 export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
-	if (len(children)) {
-		assert(!("children" in props), "Overwriting children property because element has a body");
-		props.children = children;
-	} else {
+	if (!len(children)) {
 		assert(props.children == null || props.children.constructor === Array,
 			"Children must be null or an array");
+		children = props.children || children;
+	} else {
+		assert(!("children" in props), "Overwriting children property because element has a body");
 	}
 
 	if (typeof e === 'function') {
-		const each = props.each;
+		if (len(children)) {
+			props.children = children;
+		}
 
+		const each = props.each;
 		if (!each) {
 			return createElement(e, props);
-		} else {
-			const createMap = arr => createElement(
-				arr,
-				(elem, item, before) => {
-					props.each = item;
-					return customMounter(elem, e, before, props);
-				},
-			);
+		}
 
-			if (isInstance(each, Observer)) {
-				return each.map(createMap);
-			} else {
-				return createMap(each);
-			}
+		const createMap = arr => createElement(
+			arr,
+			(elem, item, before) => {
+				props.each = item;
+				return customMounter(elem, e, before, props);
+			},
+		);
+
+		if (isInstance(each, Observer)) {
+			return each.map(createMap);
+		} else {
+			return createMap(each);
 		}
 	}
 
@@ -392,40 +395,39 @@ export const h = (e, props = {}, ...children) => {
 		e = document.createElement(e);
 	}
 
-	children = [];
+	const signals = [];
+
+	let bef = 0, insertLoc = null;
+	for (let i = len(children); i > 0; i--) {
+		let child = children[i - 1];
+
+		assert(child !== undefined, "Cannot mount undefined");
+		if (child == null) continue;
+
+		const type = child.ident_ === getFirst ? child.type_ : child;
+		if (!isInstance(type, Node)) {
+			const type = typeof child;
+			if (type !== 'object' && type !== 'function') {
+				child = document.createTextNode(child);
+			} else {
+				push(signals, [mount, e, child, bef]);
+				bef = child = null;
+			}
+		} else if (type !== child) {
+			signals.unshift(...child.val_);
+			child = type;
+		}
+
+		if (child) {
+			if (!child.parentElement) e.insertBefore(child, insertLoc);
+			bef = insertLoc = child;
+		}
+	}
+
+	delete props.children;
+
 	for (let o in props) {
 		const def = props[o];
-
-		if (o === 'children') {
-			let bef = 0, insertLoc = null;
-			if (def) for (let i = len(def); i > 0; i--) {
-				let child = def[i - 1];
-
-				assert(child !== undefined, "Cannot mount undefined");
-				if (child == null) continue;
-
-				const type = child.ident_ === getFirst ? child.type_ : child;
-				if (!isInstance(type, Node)) {
-					const type = typeof child;
-					if (type !== 'object' && type !== 'function') {
-						child = document.createTextNode(child);
-					} else {
-						push(children, [mount, e, child, bef]);
-						bef = child = null;
-					}
-				} else if (type !== child) {
-					children.unshift(...child.val_);
-					child = type;
-				}
-
-				if (child) {
-					if (!child.parentElement) e.insertBefore(child, insertLoc);
-					bef = insertLoc = child;
-				}
-			}
-
-			continue;
-		}
 
 		let set;
 		if (o[0] === '$') {
@@ -436,8 +438,8 @@ export const h = (e, props = {}, ...children) => {
 			set = attributeSetter;
 		}
 
-		populateSignals(children, def, e, o, set);
+		populateSignals(signals, def, e, o, set);
 	}
 
-	return createElement(e, children);
+	return createElement(e, signals);
 };
