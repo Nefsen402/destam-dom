@@ -17,11 +17,11 @@ const nodeMounter = (elem, e, before, aux) => {
 
 	let bef;
 	aux = aux?.map(([func, val, handler, pbef]) => {
-		const listener = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef?.first_);
+		const listener = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 		if (func !== mount) {
 			handler();
 		} else {
-			bef = listener;
+			bef = listener.first_;
 		}
 		return listener;
 	});
