@@ -16,14 +16,14 @@ const nodeMounter = (elem, e, before, aux) => {
 	}
 
 	let bef;
-	aux = aux?.map(([mode, val, handler, pbef]) => {
-		if (mode) {
-			return bef = mount(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef.first_);
-		} else {
-			const listener = shallowListener(val, handler);
+	aux = aux?.map(([func, val, handler, pbef]) => {
+		const listener = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef?.first_);
+		if (func !== mount) {
 			handler();
-			return listener;
+		} else {
+			bef = listener;
 		}
+		return listener;
 	});
 
 	assert(e.parentElement == null,
@@ -308,7 +308,7 @@ const attributeSetter = (name, val, e) => {
 
 const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
-		push(signals, [0, val, () => set(name, val.get(), e)]);
+		push(signals, [shallowListener, val, () => set(name, val.get(), e)]);
 	} else if (typeof val !== 'object') {
 		set(name, val, e);
 	} else {
@@ -376,7 +376,7 @@ export const h = (e, props = {}, ...children) => {
 						if (type !== 'object' && type !== 'function') {
 							child = document.createTextNode(child);
 						} else {
-							push(children, [1, e, child, bef]);
+							push(children, [mount, e, child, bef]);
 							bef = child = null;
 						}
 					}
