@@ -16,13 +16,7 @@ export const validTags = ['BASE', 'LINK', 'META', 'STYLE', 'TITLE', 'ADDRESS', '
 	'OPTGROUP', 'OPTION', 'OUTPUT', 'PROGRESS', 'SELECT', 'TEXTAREA',
 	'DETAILS', 'DIALOG', 'SUMMARY', 'SLOT', 'TEMPLATE'];
 
-export default (h, assign = Object.assign, concatinator = strings => {
-	if (len(strings) === 1) {
-		return strings[0]
-	} else {
-		return Observer.all(strings.map(Observer.immutable)).map(s => s.join(''))
-	}
-}) => (segments, ...args) => {
+export default (h, assign = Object.assign) => (segments, ...args) => {
 	const special = {'<': {}, '>': {}, '=': {}, '/': {}};
 	const tokens = [];
 	let tag = 1, inString, cur = '';
@@ -55,7 +49,7 @@ export default (h, assign = Object.assign, concatinator = strings => {
 			if (inString) {
 				if (char == inString.char) {
 					flush();
-					push(tokens, concatinator(inString));
+					push(tokens, inString.join(''));
 					inString = 0;
 				} else {
 					cur += char;

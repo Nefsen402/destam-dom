@@ -72,32 +72,6 @@ const html = htm((name, props, ...children) => {
 	props[spreadKeys].push(key);
 
 	props[key] = obj;
-}, strings => {
-	if (strings.length === 1) {
-		return strings[0];
-	}
-
-	return t.callExpression(
-		t.memberExpression(t.callExpression(t.memberExpression(t.identifier("Observer"), t.identifier("all")), [
-			t.arrayExpression(strings.map(string => {
-				if (typeof string === 'string') {
-					string = t.stringLiteral(string);
-				}
-
-				return t.callExpression(
-					t.memberExpression(t.identifier("Observer"), t.identifier("immutable")),
-					[string],
-				);
-			})),
-		]), t.identifier('map')), [
-		t.arrowFunctionExpression(
-			[t.identifier('x')],
-			t.callExpression(
-				t.memberExpression(t.identifier('x'), t.identifier('join')),
-				[t.stringLiteral("")]
-			)
-		),
-	]);
 });
 
 const parse = node => {
@@ -226,7 +200,6 @@ const log = stuff => console.log(util.inspect(stuff, {colors: true, depth: null}
 export const transformBabelAST = (ast) => {
 	let hasHTMLImport = false;
 	let hasHImport = false;
-	let hasObserverImport = false;
 	const checkImport = (node, path) => {
 		if (node.type !== "Identifier") {
 			return;
@@ -234,8 +207,6 @@ export const transformBabelAST = (ast) => {
 
 		if (node.name === 'html') {
 			hasHTMLImport = path;
-		} else if (node.name === 'Observer') {
-			hasObserverImport = path;
 		} else if (node.name === 'h') {
 			hasHImport = path;
 		}
@@ -256,18 +227,10 @@ export const transformBabelAST = (ast) => {
 				return;
 			}
 
-			if (!hasObserverImport || !hasHImport) {
-				const imports = [hasHTMLImport.node];
-				if (!hasObserverImport) {
-					imports.push(t.importSpecifier(t.identifier("Observer"), t.identifier("Observer")));
-				}
-
-				if (!hasHImport) {
-					imports.push(t.importSpecifier(t.identifier("h"), t.identifier("h")));
-				}
-
-				hasHTMLImport.replaceWithMultiple(imports);
-				hasObserverImport = true;
+			if (!hasHImport) {
+				hasHTMLImport.replaceWithMultiple([
+					t.importSpecifier(t.identifier("h"), t.identifier("h"))
+				]);
 				hasHImport = true;
 			}
 
