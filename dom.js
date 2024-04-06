@@ -52,17 +52,17 @@ const primitiveMounter = (elem, e, before) => {
 		assert(e.parentElement === elem,
 			"Refusing to modify node not part of the expected parent");
 
-		const isNull = val == null;
+		const isReplacement = val != null;
 		if (e) {
-			if (isNull) {
+			if (isReplacement) {
+				e.textContent = val;
+			} else {
 				e.remove();
 				e = val;
-			} else {
-				e.textContent = val;
 			}
 		}
 
-		return isNull;
+		return isReplacement;
 	}, () => e);
 };
 
