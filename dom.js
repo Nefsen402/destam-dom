@@ -385,59 +385,59 @@ export const h = (e, props = {}, ...children) => {
 				return createMap(each);
 			}
 		}
-	} else {
-		if (!isInstance(e, Node)) {
-			assert(typeof e === 'string', "Unsupported node: " + typeof e);
-			e = document.createElement(e);
-		}
+	}
 
-		children = [];
-		for (let o in props) {
-			const def = props[o];
+	if (!isInstance(e, Node)) {
+		assert(typeof e === 'string', "Unsupported node: " + typeof e);
+		e = document.createElement(e);
+	}
 
-			if (o === 'children') {
-				let bef = 0, insertLoc = null;
-				if (def) for (let i = len(def); i > 0; i--) {
-					let child = def[i - 1];
+	children = [];
+	for (let o in props) {
+		const def = props[o];
 
-					assert(child !== undefined, "Cannot mount undefined");
-					if (child == null) continue;
+		if (o === 'children') {
+			let bef = 0, insertLoc = null;
+			if (def) for (let i = len(def); i > 0; i--) {
+				let child = def[i - 1];
 
-					const type = child.ident_ === getFirst ? child.type_ : child;
-					if (!isInstance(type, Node)) {
-						const type = typeof child;
-						if (type !== 'object' && type !== 'function') {
-							child = document.createTextNode(child);
-						} else {
-							push(children, [mount, e, child, bef]);
-							bef = child = null;
-						}
-					} else if (type !== child) {
-						children.unshift(...child.val_);
-						child = type;
+				assert(child !== undefined, "Cannot mount undefined");
+				if (child == null) continue;
+
+				const type = child.ident_ === getFirst ? child.type_ : child;
+				if (!isInstance(type, Node)) {
+					const type = typeof child;
+					if (type !== 'object' && type !== 'function') {
+						child = document.createTextNode(child);
+					} else {
+						push(children, [mount, e, child, bef]);
+						bef = child = null;
 					}
-
-					if (child) {
-						if (!child.parentElement) e.insertBefore(child, insertLoc);
-						bef = insertLoc = child;
-					}
+				} else if (type !== child) {
+					children.unshift(...child.val_);
+					child = type;
 				}
 
-				continue;
+				if (child) {
+					if (!child.parentElement) e.insertBefore(child, insertLoc);
+					bef = insertLoc = child;
+				}
 			}
 
-			let set;
-			if (o[0] === '$') {
-				o = o.substring(1);
-
-				set = propertySetter;
-			} else  {
-				set = attributeSetter;
-			}
-
-			populateSignals(children, def, e, o, set);
+			continue;
 		}
 
-		return createElement(e, children);
+		let set;
+		if (o[0] === '$') {
+			o = o.substring(1);
+
+			set = propertySetter;
+		} else  {
+			set = attributeSetter;
+		}
+
+		populateSignals(children, def, e, o, set);
 	}
+
+	return createElement(e, children);
 };
