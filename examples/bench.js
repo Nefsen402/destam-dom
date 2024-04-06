@@ -17,12 +17,16 @@ const App = () => {
 	let selected = Observer.mutable(null);
 	let array = OArray();
 
+  const fastMap = (obs, map) => {
+    return Observer(() => map(obs.get()), null, obs.register_);
+  };
+
   const appendData = count => atomic(() => {
     array.push(...Array.from(Array(count), () => {
       let label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
 
       const dom = html`
-        <tr class=${selected.map(sel => sel === dom ? "danger": "")}>
+        <tr class=${fastMap(selected, sel => sel === dom ? "danger": "")}>
           <td class='col-md-4'><a $onclick=${() => selected.set(dom)} $textContent=${label} /></td>
           <td class='col-md-1'><a $onclick=${() => remove(dom)}><span class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
           <td class='col-md-6'/>
