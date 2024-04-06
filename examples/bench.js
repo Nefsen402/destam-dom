@@ -40,8 +40,10 @@ const App = () => {
       appendData(1000);
     },
     runLots = () => {
+      let now = performance.now();
       array.splice(0, array.length);
-      appendData(10000)
+      appendData(10000);
+      console.log(performance.now() - now)
     },
     add = () => appendData(1000),
     update = () => {
