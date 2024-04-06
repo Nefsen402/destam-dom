@@ -28,7 +28,7 @@ const nodeMounter = (elem, e, before, aux) => {
 
 	return assignFirst(val => {
 		if (!e) return val;
-		assert(e.parentElement === elem,
+		assert(elem && e.parentElement === elem,
 			"Refusing to modify node not part of the expected parent");
 
 		if (!val) {
