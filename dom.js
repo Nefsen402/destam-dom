@@ -36,7 +36,7 @@ const nodeMounter = (elem, e, before, aux) => {
 			if (aux) callAll(aux);
 			e = aux = val;
 		} else {
-			elem?.replaceChild(val, e);
+			e.parentElement?.replaceChild(val, e);
 			e = val;
 		}
 
