@@ -59,12 +59,18 @@ const computeNode = (rep, refs, node) => {
 		}
 
 		const search = (name, val, getTemp) => {
-			let binaryType = val.type === 'BinaryExpression' &&
+			const binaryType = val.type === 'BinaryExpression' &&
 				([
 					'+', '-', '==', '===', '!=',
 					'!==', 'in', 'instanceof',
 					'>', '<', "<=", ">="
 				].includes(val.operator) ? 'bool' : 'other');
+
+			const isJoinPattern = val.type === 'CallExpression' &&
+				val.callee.type === 'MemberExpression' &&
+				val.callee.property.type === 'Identifier' &&
+				val.callee.property.name === 'join' &&
+				val.callee.object.type === 'ArrayExpression';
 
 			if (val.type === 'ObjectExpression') {
 				for (let ii = 0; ii < val.properties.length; ii++) {
@@ -81,7 +87,7 @@ const computeNode = (rep, refs, node) => {
 					return true;
 				}
 			} else if (isRawSetter) {
-				if ([
+				if (isJoinPattern || [
 					'BooleanLiteral', 'StringLiteral',
 					'NumericLiteral', 'ArrowFunctionExpression',
 					'FunctionExpression', 'BinaryExpression',
@@ -101,7 +107,7 @@ const computeNode = (rep, refs, node) => {
 				)));
 
 				return true;
-			} else if (binaryType === 'other' || [
+			} else if (binaryType === 'other' || isJoinPattern || [
 				'StringLiteral', 'NumericLiteral',
 				'TemplateLiteral', 'UpdateExpression',
 			].includes(val.type)) {
@@ -237,7 +243,6 @@ const transform = (source, options) => {
 	}, source);
 };
 
-/*
 console.log(transform(`
 	let $thing = 0;
 	const Button = ({ id, text, fn }) =>
@@ -252,12 +257,12 @@ console.log(transform(`
 	mount(h(div, {hello: 'world', $value: 10, num: 10.5, bool: true, $style: {
 		"hello with a space": "world",
 		func: (a) => lol,
-		func2: function () {}
+		func2: function () {},
+		class: ["hello"].join('')
 	}}, "hello", 0, h('br'), h('br')));
 
 	h('div', {}, h('div'), stuff)
 `).code);
-*/
 
 
 export default transform;
