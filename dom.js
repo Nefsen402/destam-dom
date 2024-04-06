@@ -2,13 +2,8 @@ import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
-const elementIdentifier = Symbol();
-const createElement = (type, value) => ({ident_: elementIdentifier, type_: type, val_: value});
-
-const assignFirst = (remove, first) => {
-	remove.first_ = first;
-	return remove;
-};
+const getFirst = {};
+const createElement = (type, value) => ({ident_: getFirst, type_: type, val_: value});
 
 const nodeMounter = (elem, e, before, aux) => {
 	let bef;
@@ -17,16 +12,18 @@ const nodeMounter = (elem, e, before, aux) => {
 		if (func !== mount) {
 			handler();
 		} else {
-			bef = listener.first_;
+			bef = listener;
 		}
 		return listener;
 	});
 
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
-	elem?.insertBefore(e, before());
+	elem?.insertBefore(e, before(getFirst));
 
-	return assignFirst(val => {
+	return val => {
+		if (val === getFirst) return e;
+
 		if (!e) return val;
 		assert(elem && e.parentElement === elem,
 			"Refusing to modify node not part of the expected parent");
@@ -39,16 +36,18 @@ const nodeMounter = (elem, e, before, aux) => {
 		}
 
 		return e = val;
-	}, () => e);
+	};
 };
 
 const primitiveMounter = (elem, e, before) => {
 	e = document.createTextNode(e);
 
 	assert(elem, "Trying to mount a primitive to a null mount.");
-	elem.insertBefore(e, before());
+	elem.insertBefore(e, before(getFirst));
 
-	return assignFirst(val => {
+	return val => {
+		if (val === getFirst) return e;
+
 		const isReplacement = val != null;
 		if (e) {
 			assert(e.parentElement === elem,
@@ -63,7 +62,7 @@ const primitiveMounter = (elem, e, before) => {
 		}
 
 		return isReplacement;
-	}, () => e);
+	};
 };
 
 let notifyMount;
@@ -109,16 +108,16 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 	if (!mounted) {
 		mounted = mounter(
 			elem, item,
-			() => (mounted?.next_ || next).first_(),
+			() => (mounted?.next_ || next)(getFirst),
 		);
 
 		mounted.item_ = item;
 	} else {
 		let mountAt, term;
-		if (elem && (mountAt = next.first_()) !== (term = mounted.next_.first_())) {
+		if (elem && (mountAt = next(getFirst)) !== (term = mounted.next_(getFirst))) {
 			const a = document.activeElement;
 
-			for (let cur = mounted.first_(); cur != term;) {
+			for (let cur = mounted(getFirst); cur != term;) {
 				const n = cur.nextSibling;
 				elem.insertBefore(cur, mountAt);
 				cur = n;
@@ -138,7 +137,7 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 };
 
 const arrayMounter = (elem, val, before, mounter = mount) => {
-	const root = {first_: before};
+	const root = () => before(getFirst);
 	root.next_ = root.prev_ = root;
 
 	const linkGetter = Symbol();
@@ -215,7 +214,9 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 	mountList(val);
 
-	return assignFirst(val => {
+	return val => {
+		if (val === getFirst) return root.next_(getFirst);
+
 		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
 			delete link[linkGetter];
 		}
@@ -230,7 +231,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 		}
 
 		return val;
-	}, () => root.next_.first_());
+	};
 };
 
 const customMounter = (elem, func, before, aux) => {
@@ -254,10 +255,11 @@ const customMounter = (elem, func, before, aux) => {
 		before,
 	);
 
-	return assignFirst(() => {
+	return arg => {
+		if (arg === getFirst) return m(getFirst);
 		m();
 		callAllSafe(cleanup);
-	}, m.first_);
+	};
 };
 
 export const mount = (elem, item, before = noop) => {
@@ -273,7 +275,7 @@ export const mount = (elem, item, before = noop) => {
 
 		let func, aux;
 		if (val !== null) {
-			if (val.ident_ === elementIdentifier) {
+			if (val.ident_ === getFirst) {
 				aux = val.val_;
 				val = val.type_;
 			}
@@ -307,13 +309,15 @@ export const mount = (elem, item, before = noop) => {
 		const watcher = shallowListener(item, update);
 		update();
 
-		return assignFirst(() => {
+		return arg => {
+			if (arg === getFirst) return (mounted || before)(getFirst);
+
 			watcher();
 			mounted?.();
-		}, () => (mounted?.first_ || before)());
+		};
 	} else {
 		update();
-		return mounted || assignFirst(() => {}, before);
+		return mounted || before;
 	}
 };
 
@@ -337,7 +341,7 @@ const populateSignals = (signals, val, e, name, set) => {
 			assert(!isInstance(v, Observer),
 				"destam-dom does not support nested observers");
 			set(name, v, e)
-		}]);
+		}, 0]);
 	} else if (typeof val !== 'object') {
 		set(name, val, e);
 	} else {
@@ -397,7 +401,7 @@ export const h = (e, props = {}, ...children) => {
 					assert(child !== undefined, "Cannot mount undefined");
 					if (child == null) continue;
 
-					const type = child.ident_ === elementIdentifier ? child.type_ : child;
+					const type = child.ident_ === getFirst ? child.type_ : child;
 					if (!isInstance(type, Node)) {
 						const type = typeof child;
 						if (type !== 'object' && type !== 'function') {
