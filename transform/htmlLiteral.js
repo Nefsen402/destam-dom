@@ -73,6 +73,10 @@ const html = htm((name, props, ...children) => {
 
 	props[key] = obj;
 }, strings => {
+	if (strings.length === 1) {
+		return strings[0]
+	}
+
 	return t.callExpression(
 		t.memberExpression(t.arrayExpression(strings.map(string => {
 			if (typeof string === 'string') {
