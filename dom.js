@@ -36,22 +36,19 @@ const primitiveMounter = (elem, e, before) => {
 	elem.insertBefore(e, before(getFirst));
 
 	return val => {
-		if (val === getFirst) return e;
+		if (!e || val === getFirst) return e;
 
-		const isReplacement = val != null;
-		if (e) {
-			assert(e.parentElement === elem,
-				"Refusing to modify node not part of the expected parent");
+		assert(e.parentElement === elem,
+			"Refusing to modify node not part of the expected parent");
 
-			if (isReplacement) {
-				e.textContent = val;
-			} else {
-				e.remove();
-				e = val;
-			}
+		if (val != null) {
+			e.textContent = val;
+			return 1;
+		} else {
+			e.remove();
+			e = val;
+			return 0;
 		}
-
-		return isReplacement;
 	};
 };
 
