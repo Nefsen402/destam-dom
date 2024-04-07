@@ -248,7 +248,10 @@ const customMounter = (elem, func, before, aux) => {
 
 	return arg => {
 		const ret = m(arg);
-		if (arg !== getFirst) callAllSafe(cleanup);
+		if (arg !== getFirst) {
+			callAllSafe(cleanup);
+			cleanup = 0;
+		}
 		return ret;
 	};
 };
