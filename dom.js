@@ -22,9 +22,7 @@ const nodeMounter = (elem, e, before, aux) => {
 	elem?.insertBefore(e, before(getFirst));
 
 	return val => {
-		if (val === getFirst) return e;
-
-		if (!e) return val;
+		if (!e || val === getFirst) return e
 
 		if (!val) {
 			e.remove();
@@ -258,9 +256,9 @@ const customMounter = (elem, func, before, aux) => {
 	);
 
 	return arg => {
-		if (arg === getFirst) return m(getFirst);
-		m();
-		callAllSafe(cleanup);
+		const ret = m(arg);
+		if (arg !== getFirst) callAllSafe(cleanup);
+		return ret;
 	};
 };
 
@@ -315,7 +313,7 @@ export const mount = (elem, item, before = noop) => {
 			if (arg === getFirst) return (mounted || before)(getFirst);
 
 			watcher();
-			mounted?.();
+			return mounted?.();
 		};
 	} else {
 		update();
