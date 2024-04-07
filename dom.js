@@ -336,7 +336,7 @@ const populateSignals = (signals, val, e, name, set) => {
 			const v = val.get();
 			assert(!isInstance(v, Observer),
 				"destam-dom does not support nested observers");
-			set(name, v, e)
+			return set(name, v, e);
 		}, 0]);
 	} else if (typeof val !== 'object') {
 		set(name, val, e);
@@ -384,6 +384,8 @@ export const h = (e, props = {}, ...children) => {
 		}
 	}
 
+	delete props.children;
+
 	if (!isInstance(e, Node)) {
 		assert(typeof e === 'string', "Unsupported node: " + typeof e);
 		e = document.createElement(e);
@@ -408,7 +410,7 @@ export const h = (e, props = {}, ...children) => {
 				bef = child = null;
 			}
 		} else if (type !== child) {
-			signals.unshift(...child.val_);
+			signals.push(...child.val_);
 			child = type;
 		}
 
@@ -417,8 +419,6 @@ export const h = (e, props = {}, ...children) => {
 			bef = insertLoc = child;
 		}
 	}
-
-	delete props.children;
 
 	for (let o in props) {
 		const def = props[o];
