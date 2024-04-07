@@ -1,4 +1,4 @@
-import {Observer, html, mount, OArray } from '/index.js';
+import {html, mount, OArray, Observer} from '/index.js';
 import {atomic} from 'destam/Network';
 
 const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint", "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly", "adorable", "important", "inexpensive", "cheap", "expensive", "fancy"],
@@ -7,33 +7,25 @@ const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", 
 
 function _random (max) { return Math.round(Math.random() * 1000) % max; };
 
-const Button = ({ id, text, fn }) => {
-  return html `<div class='col-sm-6 smallpad'>
+const Button = (id, text, fn) => {
+  return html`<div class='col-sm-6 smallpad'>
     <button id=${id} class='btn btn-primary btn-block' type='button' $onclick=${fn}>${text}</button>
   </div>`
 };
 
-const App = () => {
+const App = ({}, cleanup) => {
 	let selected = Observer.mutable(null);
   let duration = Observer.mutable(0);
 	let array = OArray();
 
-  const appendData = count => atomic(() => {
-    array.push(...Array.from(Array(count), () => {
-      let label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
+  const appendData = count => {
+    let arr = [];
+    for (let i = 0; i < count; i++) {
+      arr.push(Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`));
+    }
 
-      const dom = html`
-        <tr class=${selected.map(sel => sel === dom ? "danger": "")}>
-          <td class='col-md-4'><a $onclick=${() => selected.set(dom)} $textContent=${label} /></td>
-          <td class='col-md-1'><a $onclick=${() => remove(dom)}><span class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
-          <td class='col-md-6'/>
-        </tr>
-      `;
-
-      dom.label = label;
-      return dom;
-    }));
-  });
+    array.push(...arr);
+  };
 
 	const
     run = () => {
@@ -56,7 +48,7 @@ const App = () => {
     update = () => {
       let now = performance.now();
       for(let i = 0, len = array.length; i < len; i += 10)
-        array[i].label.set(array[i].label.get() + ' !!!');
+        array[i].set(array[i].get() + ' !!!');
       duration.set(performance.now() - now);
     },
     swapRows = () => {
@@ -81,6 +73,16 @@ const App = () => {
       array.splice(idx, 1);
       duration.set(performance.now() - now);
     };
+
+  const Item = ({each: label}, cleanup) => {
+    return html`
+      <tr class=${selected.map(sel => sel === label ? "danger" : "")}>
+        <td class='col-md-4'><a $onclick=${() => selected.set(label)} $textContent=${label} /></td>
+        <td class='col-md-1'><a $onclick=${() => remove(label)}><span class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
+        <td class='col-md-6'/>
+      </tr>
+    `;
+  }
 
   return html`
     <style>
@@ -116,20 +118,20 @@ const App = () => {
       <div class='jumbotron'><div class='row'>
         <div class='col-md-6'><h1>SolidJS Keyed</h1></div>
         <div class='col-md-6'><div class='row'>
-          <${Button} id='run' text='Create 1,000 rows' fn=${run} />
-          <${Button} id='runlots' text='Create 10,000 rows' fn=${runLots} />
-          <${Button} id='add' text='Append 1,000 rows' fn=${add} />
-          <${Button} id='update' text='Update every 10th row' fn=${update} />
-          <${Button} id='clear' text='Clear' fn=${clear} />
-          <${Button} id='swaprows' text='Swap Rows' fn=${swapRows} />
+          ${Button('run', 'Create 1,000 rows', run)}
+          ${Button('runlots', 'Create 10,000 rows', runLots)}
+          ${Button('add', 'Append 1,000 rows', add)}
+          ${Button('update', 'Update every 10th row', update)}
+          ${Button('clear', 'Clear', clear)}
+          ${Button('swaprows', 'Swap Rows', swapRows)}
         </div></div>
       </div></div>
       <table class='table table-hover table-striped test-data'><tbody>
-        ${array}
+        <${Item} each=${array} />
       </tbody></table>
       <span class='preloadicon glyphicon glyphicon-remove' aria-hidden="true" />
     </div>
   `;
 }
 
-mount(document.body, App());
+mount(document.body, App);
