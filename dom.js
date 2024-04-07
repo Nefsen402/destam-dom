@@ -441,5 +441,9 @@ export const h = (e, props = {}, ...children) => {
 		populateSignals(signals, def, e, o, set);
 	}
 
+	if (!len(signals)) {
+		return e;
+	}
+
 	return createElement(e, signals);
 };
