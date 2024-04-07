@@ -8,12 +8,7 @@ const createElement = (type, value) => ({ident_: getFirst, type_: type, val_: va
 const nodeMounter = (elem, e, before, aux) => {
 	let bef;
 	aux = aux?.map(([func, val, handler, pbef]) => {
-		const listener = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
-		if (func !== mount) {
-			handler();
-		}
-
-		return bef = listener;
+		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 	});
 
 	assert(e.parentElement == null,
@@ -333,9 +328,14 @@ const attributeSetter = (name, val, e) => {
 	}
 };
 
+const propertySignal = (val, handler) => {
+	const remove = shallowListener(val, handler);
+	handler();
+	return remove;
+};
 const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
-		push(signals, [shallowListener, val, () => {
+		push(signals, [propertySignal, val, () => {
 			const v = val.get();
 			assert(!isInstance(v, Observer),
 				"destam-dom does not support nested observers");
