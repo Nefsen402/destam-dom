@@ -11,10 +11,9 @@ const nodeMounter = (elem, e, before, aux) => {
 		const listener = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 		if (func !== mount) {
 			handler();
-		} else {
-			bef = listener;
 		}
-		return listener;
+
+		return bef = listener;
 	});
 
 	assert(e.parentElement == null,
@@ -22,7 +21,7 @@ const nodeMounter = (elem, e, before, aux) => {
 	elem?.insertBefore(e, before(getFirst));
 
 	return val => {
-		if (!e || val === getFirst) return e
+		if (!e || val === getFirst) return e;
 
 		if (!val) {
 			e.remove();
