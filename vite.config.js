@@ -6,13 +6,14 @@ import staticMount from './transform/staticMount';
 import compileHTMLLiteral from './transform/htmlLiteral';
 import fs from 'fs';
 
-const createTransform = (name, transform, jsx) => ({
+const createTransform = (name, transform, jsx, options) => ({
 	name,
 	transform(code, id) {
 		if (id.endsWith('.js') || (jsx && id.endsWith('.jsx'))) {
 			const transformed = transform(code, {
 				sourceFileName: id,
 				plugins: id.endsWith('.jsx') ? ['jsx'] : [],
+				...options,
 			});
 			return {
 				code: transformed.code,
@@ -146,7 +147,9 @@ if (lib in libs) {
 					});
 				},
 			},
-			...(process.env.STATIC_ANALYZE ? [createTransform('static-mount', staticMount, true)] : []),
+			...(process.env.STATIC_ANALYZE ? [createTransform('static-mount', staticMount, true, {
+				util_import: ''
+			})] : []),
 		],
 		esbuild: {
 			jsx: 'preserve',

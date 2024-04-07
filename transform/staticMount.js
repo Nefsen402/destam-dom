@@ -87,15 +87,26 @@ const computeNode = (rep, refs, node) => {
 					return true;
 				}
 			} else if (isRawSetter) {
+				const create = val => t.assignmentExpression('=',
+					t.memberExpression(getTemp(), name, name.type === 'StringLiteral'),
+					val
+				);
+
 				if (isJoinPattern || [
 					'BooleanLiteral', 'StringLiteral',
 					'NumericLiteral', 'ArrowFunctionExpression',
 					'FunctionExpression', 'BinaryExpression',
 					'TemplateLiteral', 'UpdateExpression',
+					'NullLiteral'
 				].includes(val.type)) {
-					rep.push(t.expressionStatement(t.assignmentExpression('=',
-						t.memberExpression(getTemp(), name, name.type === 'StringLiteral'),
-						val
+					rep.push(t.expressionStatement(create(val)));
+
+					return true;
+				} else if (rep.cleanup) {
+					const param = t.identifier('_');
+					rep.push(t.expressionStatement(t.callExpression(
+						rep.importer('watch'),
+						[rep.cleanup, val, t.arrowFunctionExpression([param], create(param))]
 					)));
 
 					return true;
@@ -107,16 +118,29 @@ const computeNode = (rep, refs, node) => {
 				)));
 
 				return true;
-			} else if (binaryType === 'other' || isJoinPattern || [
-				'StringLiteral', 'NumericLiteral',
-				'TemplateLiteral', 'UpdateExpression',
-			].includes(val.type)) {
-				rep.push(t.expressionStatement(t.callExpression(
+			} else {
+				const create = val => t.callExpression(
 					t.memberExpression(getTemp(), t.identifier('setAttribute')),
 					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
-				)));
+				);
 
-				return true;
+				if (binaryType === 'other' || isJoinPattern || [
+					'StringLiteral', 'NumericLiteral',
+					'TemplateLiteral', 'UpdateExpression',
+					'NullLiteral'
+				].includes(val.type)) {
+					rep.push(t.expressionStatement(create(val)));
+
+					return true;
+				} else if (rep.cleanup) {
+					const param = t.identifier('_');
+					rep.push(t.expressionStatement(t.callExpression(
+						rep.importer('watch'),
+						[rep.cleanup, val, t.arrowFunctionExpression([param], create(param))]
+					)));
+
+					return true;
+				}
 			}
 
 			return false;
@@ -127,9 +151,14 @@ const computeNode = (rep, refs, node) => {
 		}
 	}
 
-	const links = [];
-	for (let i = 0; i < children.length; i++) {
+	let prevChild = null;
+	for (let i = children.length - 1; i >= 0; i--) {
 		let child = children[i];
+
+		if (child.type === 'NullLiteral') {
+			children.splice(i, 1);
+			continue;
+		}
 
 		let append = false;
 		if (['StringLiteral', 'BooleanLiteral', 'NumericLiteral'].includes(child.type)) {
@@ -151,25 +180,35 @@ const computeNode = (rep, refs, node) => {
 		}
 
 		if (append) {
-			links.push(child);
 			rep.push(t.expressionStatement(t.callExpression(
-				t.memberExpression(getTemp(), t.identifier('append')),
+				t.memberExpression(getTemp(), t.identifier('prepend')),
 				[child]
 			)));
+
+			prevChild = child;
+			child = null;
+		} else if (rep.cleanup) {
+			let temporary = createTemporary(rep.length);
+
+			const mountArguments = [getTemp(), child];
+
+			if (prevChild) {
+				mountArguments.push(prevChild[canAppend] ? t.arrowFunctionExpression([], prevChild) : prevChild);
+			}
+
+			rep.push(declare(temporary, t.callExpression(rep.importer('mount'), mountArguments)));
+			rep.push(t.expressionStatement(t.callExpression(rep.cleanup, [temporary])));
+
+			prevChild = temporary;
+			child = null;
+		} else if (prevChild) {
+			children.splice(i + 1, 0, prevChild);
 		}
 
 		if (!child) {
-			children.splice(i--, 1);
+			children.splice(i, 1);
 		} else {
 			children[i] = child;
-		}
-	}
-
-	for (let i = 0; i < children.length; i++) {
-		if (links.includes(children[i])) {
-			children.splice(i--, 1);
-		} else {
-			while (++i < children.length && !links.includes(children[i]));
 		}
 	}
 
@@ -182,12 +221,34 @@ const computeNode = (rep, refs, node) => {
 	}
 }
 
-const transformBabelAST = (ast) => {
+const transformBabelAST = (ast, options) => {
+	let importer;
+
 	babelTraverse.default(ast, {
+		Program: path => {
+			if (!('util_import' in options)) return;
+
+			const table = new Map();
+			const decls = [];
+
+			importer = name => {
+				if (table.has(name)) {
+					return table.get(name);
+				}
+
+				if (table.size === 0)  {
+					path.node.body.unshift(t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)));
+				}
+
+				const temp = createTemporary(0);
+				decls.push(t.importSpecifier(temp, t.identifier(name)));
+				table.set(name, temp);
+				return temp;
+			};
+		},
 		CallExpression: path => {
 			if (path.node[walked]) return;
 			if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'h') return;
-
 
 			let block = path;
 			let index;
@@ -222,6 +283,20 @@ const transformBabelAST = (ast) => {
 			}
 
 			const rep = [];
+
+			if (importer) {
+				rep.importer = importer;
+
+				if (block.container?.params) {
+					for (let p of block.container?.params) {
+						if (p.type === 'Identifier' && p.name === 'cleanup') {
+							rep.cleanup = p;
+							break;
+						}
+					}
+				}
+			}
+
 			const ret = computeNode(rep, refs, path.node);
 			if (ret !== path.node || rep.length > 0) {
 				path.replaceWith(ret);
@@ -232,10 +307,10 @@ const transformBabelAST = (ast) => {
 	});
 };
 
-const transform = (source, options) => {
+const transform = (source, options = {}) => {
 	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
 
-	transformBabelAST(ast);
+	transformBabelAST(ast, options);
 
 	return generate.default(ast, {
 		sourceMaps: true,
@@ -263,8 +338,9 @@ console.log(transform(`
 	}}, "hello", 0, h('br'), h('br')));
 
 	h('div', {}, h('div'), stuff)
-`).code);
-*/
 
+	const Component = ({}, cleanup) => h('div', {hello}, null, one, two, three, "hello");
+`, {util_import: 'destam-dom'}).code);
+*/
 
 export default transform;
