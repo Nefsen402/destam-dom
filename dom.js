@@ -275,23 +275,27 @@ export const mount = (elem, item, before = noop) => {
 		assert(!isInstance(val, Observer),
 			"destam-dom does not support nested observers");
 
-		let func, aux;
-		if (val !== null) {
-			if (val.ident_ === getFirst) {
-				aux = val.val_;
-				val = val.type_;
-			}
+		if (val === null) {
+			mounted?.()
+			mounted = lastFunc = val;
+			return;
+		}
 
-			const type = typeof val;
-			if (type === 'function') {
-				func = customMounter;
-			} else if (type !== 'object') {
-				func = primitiveMounter;
-			} else if (isInstance(val, Node)) {
-				func = nodeMounter;
-			} else {
-				func = arrayMounter;
-			}
+		let func, aux;
+		if (val.ident_ === getFirst) {
+			aux = val.val_;
+			val = val.type_;
+		}
+
+		const type = typeof val;
+		if (type === 'function') {
+			func = customMounter;
+		} else if (type !== 'object') {
+			func = primitiveMounter;
+		} else if (isInstance(val, Node)) {
+			func = nodeMounter;
+		} else {
+			func = arrayMounter;
 		}
 
 		let not;
@@ -300,7 +304,7 @@ export const mount = (elem, item, before = noop) => {
 		}
 
 		if (!mounted?.(lastFunc === func ? val : null, aux)) {
-			mounted = (lastFunc = func)?.(elem, val, before, aux);
+			mounted = (lastFunc = func)(elem, val, before, aux);
 		}
 
 		callAllSafe(not);
