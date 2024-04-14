@@ -7,13 +7,13 @@ const createElement = (type, value) => ({ident_: getFirst, type_: type, val_: va
 
 const mapNode = aux => {
 	let bef;
-	return aux.map(([func, val, handler, pbef]) => {
+	return aux?.map(([func, val, handler, pbef]) => {
 		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 	});
 };
 
 const nodeMounter = (elem, e, before, aux) => {
-	if (aux) aux = mapNode(aux);
+	aux = mapNode(aux);
 
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
@@ -276,7 +276,7 @@ export const mount = (elem, item, before = noop) => {
 			"destam-dom does not support nested observers");
 
 		if (val === null) {
-			mounted?.()
+			mounted?.();
 			mounted = lastFunc = val;
 			return;
 		}
