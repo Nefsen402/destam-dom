@@ -8,7 +8,7 @@ export const validTags = ['BASE', 'LINK', 'META', 'STYLE', 'TITLE', 'ADDRESS', '
 	'EM', 'I', 'KBD', 'MARK', 'Q', 'RP', 'RT', 'RUBY', 'S', 'SAMP',
 	'SMALL', 'SPAN', 'STRONG', 'SUB', 'SUP', 'TIME', 'U', 'VAR',
 	'WBR', 'AREA', 'AUDIO', 'IMG', 'MAP', 'TRACK', 'VIDEO', 'EMBED',
-	'IFRAME', 'OBJECT', 'PICTURE', 'PORTAL', 'SOURCE', 'SVG', 'MATH',
+	'IFRAME', 'OBJECT', 'PICTURE', 'PORTAL', 'SOURCE', 'MATH',
 	'CANVAS', 'NOSCRIPT', 'DEL', 'INS', 'CAPTION', 'COL', 'COLGROUP',
 	'TABLE', 'TBODY', 'TD', 'TFOOT', 'TH', 'THEAD', 'TR', 'BUTTON',
 	'DATALIST', 'FIELDSET', 'FORM', 'INPUT', 'LABEL', 'LEGEND', 'METER',
