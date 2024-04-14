@@ -1,4 +1,4 @@
-import {html, mount} from '/index.js';
+import {html, mount, Observer} from '/index.js';
 
 const text = Observer.mutable('');
 
