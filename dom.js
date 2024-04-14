@@ -211,8 +211,9 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 	mountList(val);
 
-	return val => {
+	return (val, aux) => {
 		if (val === getFirst) return root.next_(getFirst);
+		if (mounter !== (aux || mount)) val = null;
 
 		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
 			delete link[linkGetter];
