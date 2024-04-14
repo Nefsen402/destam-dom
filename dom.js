@@ -5,25 +5,31 @@ import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 const getFirst = {};
 const createElement = (type, value) => ({ident_: getFirst, type_: type, val_: value});
 
-const nodeMounter = (elem, e, before, aux) => {
+const mapNode = aux => {
 	let bef;
-	aux = aux?.map(([func, val, handler, pbef]) => {
+	return aux.map(([func, val, handler, pbef]) => {
 		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 	});
+};
+
+const nodeMounter = (elem, e, before, aux) => {
+	if (aux) aux = mapNode(aux);
 
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
 	elem?.insertBefore(e, before(getFirst));
 
-	return val => {
+	return (val, newAux) => {
 		if (!e || val === getFirst) return e;
 
 		if (!val) {
 			e.remove();
-			if (aux) callAll(aux);
 		} else {
 			e.replaceWith(val);
 		}
+
+		if (aux) callAll(aux);
+		if (val) aux = mapNode(newAux);
 
 		return e = val;
 	};
@@ -291,7 +297,7 @@ export const mount = (elem, item, before = noop) => {
 			not = notifyMount = [];
 		}
 
-		if (!mounted?.(lastFunc === func ? val : null)) {
+		if (!mounted?.(lastFunc === func ? val : null, aux)) {
 			mounted = (lastFunc = func)?.(elem, val, before, aux);
 		}
 
