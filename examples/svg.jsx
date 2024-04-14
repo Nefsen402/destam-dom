@@ -7,7 +7,9 @@ const svg = (name, prop, ...children) => {
 };
 
 mount(document.body,
-	<svg:svg viewBox="0 0 100 100">
-		<svg:circle cx="50" cy="50" r="50" />
-	</svg:svg>
+	<div style="width: 250px">
+		<svg:svg viewBox="0 0 100 100">
+			<svg:circle cx="50" cy="50" r="50" />
+		</svg:svg>
+	</div>
 );
