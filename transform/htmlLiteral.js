@@ -5,8 +5,9 @@ import t from '@babel/types';
 import util from 'util';
 import htm, {validTags} from '../htm.js';
 
-const createTag = (args) => {
-	const expr = t.callExpression(t.identifier('h'), args);
+let currentTag = 'h';
+const createTag = (args, tagName) => {
+	const expr = t.callExpression(t.identifier(tagName), args);
 	expr.leadingComments = [
 		{
 			type: 'CommentBlock',
@@ -64,7 +65,7 @@ const html = htm((name, props, ...children) => {
 		}
 	}));
 
-	return createTag(args);
+	return createTag(args, currentTag);
 }, (props, obj) => {
 	const key = '~spread-' + Math.random();
 
@@ -89,18 +90,28 @@ const html = htm((name, props, ...children) => {
 	);
 });
 
-const parse = node => {
-	let name = node.openingElement.name;
-	if (name.type === 'JSXIdentifier') {
-		if (name.name[0].toLowerCase() !== name.name[0]) {
-			name = t.identifier(name.name);
-		} else {
-			if (!validTags.includes(name.name.toUpperCase()) && !name.name.includes('-')) {
-				throw new Error("Invalid tag name: " + name.name);
-			}
-
-			name = t.stringLiteral(name.name);
+const jsxName = (name, check) => {
+	if (name[0].toLowerCase() !== name[0]) {
+		return t.identifier(name);
+	} else {
+		if (check && !validTags.includes(name.toUpperCase()) && !name.includes('-')) {
+			throw new Error("Invalid tag name: " + name);
 		}
+
+		return t.stringLiteral(name);
+	}
+};
+
+const parse = node => {
+	let impl = 'h';
+	let name = node.openingElement.name;
+	if (name.type === 'JSXNamespacedName') {
+		impl = name.namespace.name;
+		name = jsxName(name.name.name, false);
+	}
+
+	if (name.type === 'JSXIdentifier') {
+		name = jsxName(name.name, true);
 	}
 
 	const args = [
@@ -137,7 +148,7 @@ const parse = node => {
 		}
 	}
 
-	return createTag(args);
+	return createTag(args, impl);
 };
 
 const transformChildren = node => {
@@ -210,21 +221,18 @@ const transformChildren = node => {
 	return children;
 };
 
-const log = stuff => console.log(util.inspect(stuff, {colors: true, depth: null}));
+export const transformBabelAST = (ast, options) => {
+	const globalTags = options.tags || {
+		'html': 'h',
+	};
 
-export const transformBabelAST = (ast) => {
-	let hasHTMLImport = false;
-	let hasHImport = false;
+	const imports = new Map();
 	const checkImport = (node, path) => {
 		if (node.type !== "Identifier") {
 			return;
 		}
 
-		if (node.name === 'html') {
-			hasHTMLImport = path;
-		} else if (node.name === 'h') {
-			hasHImport = path;
-		}
+		imports.set(node.name, path);
 	};
 
 	babelTraverse.default(ast, {
@@ -234,29 +242,61 @@ export const transformBabelAST = (ast) => {
 		ImportDefaultSpecifier: path => {
 			checkImport(path.node.local, path);
 		},
-		TaggedTemplateExpression: path => {
-			if (!hasHTMLImport) return;
+		VariableDeclaration: path => {
+			if (!imports.has('htm')) return;
 
+			let tags = null;
+
+			for (let i = 0; i < path.node.declarations.length; i++) {
+				const decl = path.node.declarations[i];
+				if (decl.id.type === 'Identifier' &&
+						decl.init.type === 'CallExpression' &&
+						decl.init.callee.type === 'Identifier' &&
+						decl.init.callee.name === 'htm' &&
+						decl.init.arguments.length === 1 &&
+						decl.init.arguments[0].type === 'Identifier') {
+					(tags || (tags = {}))[decl.id.name] = decl.init.arguments[0].name;
+					path.node.declarations.splice(i--, 1);
+				}
+			}
+
+			if (path.node.declarations.length === 0) {
+				path.replaceWithMultiple([]);
+			}
+
+			if (tags) path.parentPath.destam_tags = tags;
+		},
+		TaggedTemplateExpression: path => {
 			const node = path.node;
-			if (!node.tag || node.tag.name !== 'html') {
+			if (!node.tag) {
 				return;
 			}
 
-			if (!hasHImport) {
-				hasHTMLImport.replaceWithMultiple([
-					t.importSpecifier(t.identifier("h"), t.identifier("h"))
-				]);
-				hasHImport = true;
+			let tags = {...globalTags};
+
+			if (!imports.has(node.tag.name)) {
+				// check local variables
+				let current = path;
+				while (current) {
+					if (current.destam_tags) tags = {...tags, ...current.destam_tags};
+					current = current.parentPath;
+				}
 			}
 
-			// handle imports
-			let current = path;
-			if (current) {
-				if (current.node.body) {
-					console.log(current.node.body);
-				}
+			if (!(node.tag.name in tags)) {
+				return;
+			}
 
-				current = current.parentPath;
+			currentTag = tags[node.tag.name];
+			if (node.tag.name in globalTags && !imports.get(currentTag)) {
+				const im = imports.get(node.tag.name);
+
+				im.replaceWithMultiple([
+					t.importSpecifier(t.identifier(currentTag), t.identifier(currentTag))
+				]);
+
+				imports.delete(node.tag.name);
+				imports.set(tags[node.tag.name], im);
 			}
 
 			const {expressions, quasis} = node.quasi;
@@ -277,20 +317,18 @@ export const transformBabelAST = (ast) => {
 			));
 		},
 		JSXFragment: path => {
-			if (!hasHImport) return;
 			path.replaceWith(t.arrayExpression(transformChildren(path.node)));
 		},
 		JSXElement: path => {
-			if (!hasHImport) return;
 			path.replaceWith(parse(path.node));
 		},
 	});
 };
 
-const transform = (source, options) => {
+const transform = (source, options = {}) => {
 	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
 
-	transformBabelAST(ast);
+	transformBabelAST(ast, options);
 
 	return generate.default(ast, {
 		sourceMaps: true,
