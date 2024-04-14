@@ -268,7 +268,9 @@ export const mount = (elem, item, before = noop) => {
 
 	let lastFunc, mounted = null;
 	const update = () => {
-		let val = isObserver ? item.get() : item;
+		if (mode === 2) return;
+
+		let val = mode ? item.get() : item;
 		assert(val !== undefined, "Cannot mount undefined");
 		assert(!isInstance(val, Observer),
 			"destam-dom does not support nested observers");
@@ -304,8 +306,8 @@ export const mount = (elem, item, before = noop) => {
 		callAllSafe(not);
 	};
 
-	const isObserver = isInstance(item, Observer);
-	if (isObserver) {
+	let mode = isInstance(item, Observer);
+	if (mode) {
 		const watcher = shallowListener(item, update);
 		update();
 
@@ -313,6 +315,7 @@ export const mount = (elem, item, before = noop) => {
 			if (arg === getFirst) return (mounted || before)(getFirst);
 
 			watcher();
+			mode = 2;
 			return mounted?.();
 		};
 	} else {
