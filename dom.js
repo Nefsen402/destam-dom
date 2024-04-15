@@ -256,7 +256,7 @@ const customMounter = (elem, func, before, aux) => {
 
 		m();
 		callAllSafe(cleanup);
-		cleanup = 0;
+		return cleanup = 0;
 	};
 };
 
