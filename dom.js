@@ -36,10 +36,8 @@ const nodeMounter = (elem, e, before, aux) => {
 };
 
 const primitiveMounter = (elem, e, before) => {
-	e = document.createTextNode(e);
-
 	assert(elem, "Trying to mount a primitive to a null mount.");
-	elem.insertBefore(e, before(getFirst));
+	elem.insertBefore(e = document.createTextNode(e), before(getFirst));
 
 	return val => {
 		if (!e || val === getFirst) return e;
