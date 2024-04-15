@@ -13,10 +13,10 @@ const mapNode = aux => {
 };
 
 const nodeMounter = (elem, e, before, aux) => {
-	aux = mapNode(aux);
-
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
+
+	aux = mapNode(aux);
 	elem?.insertBefore(e, before(getFirst));
 
 	return (val, newAux) => {
