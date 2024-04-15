@@ -221,7 +221,7 @@ const transformChildren = node => {
 	return children;
 };
 
-export const transformBabelAST = (ast, options) => {
+export const transformBabelAST = (ast, options = {}) => {
 	const globalTags = options.tags || {
 		'html': 'h',
 	};
