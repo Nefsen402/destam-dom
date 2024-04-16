@@ -99,7 +99,7 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 	if (!mounted) {
 		mounted = mounter(
 			elem, item,
-			() => (mounted?.next_ || next)(getFirst),
+			() => (next || mounted.next_)(getFirst),
 		);
 
 		mounted.item_ = item;
@@ -124,6 +124,7 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 	mounted.prev_ = next.prev_;
 	mounted.next_ = next;
 	mounted.prev_.next_ = next.prev_ = mounted;
+	next = 0;
 	return mounted;
 };
 
