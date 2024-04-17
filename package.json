@@ -24,6 +24,6 @@
     "vite": "^5.2.6"
   },
   "peerDependencies": {
-    "destam": "^0.1.1"
+    "destam": "^0.1.2"
   }
 }
