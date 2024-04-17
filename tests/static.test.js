@@ -115,3 +115,18 @@ test("mount div with property", () => {
 		}],
 	});
 });
+
+test ("mount custom element", () => {
+	const elem = document.createElement("body");
+
+	const custom = () => {
+		return "hello";
+	};
+
+	mount(elem, h(custom));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["hello"],
+	});
+});
