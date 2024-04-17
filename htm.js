@@ -18,7 +18,7 @@ export const validTags = ['BASE', 'LINK', 'META', 'STYLE', 'TITLE', 'ADDRESS', '
 export default (h, assign = Object.assign, join = arr => arr.join('')) => (segments, ...args) => {
 	const special = {'<': {}, '>': {}, '=': {}, '/': {}};
 	const tokens = [];
-	let tag = 1, inString, cur = '';
+	let tag = 9, inString, cur = '';
 
 	for (let i = 0; i < len(segments); i++) {
 		const str = segments[i];
