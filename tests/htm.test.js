@@ -52,3 +52,60 @@ test("parse div nested", () => {
 		[{name: 'div', children: [{name: 'div'}]}]
 	);
 });
+
+test("newline whitespace divs", () => {
+	assert.deepEqual(
+		h`
+		<div/>
+		<div/>
+		<div/>
+		`,
+		[{name: 'div'}, {name: 'div'}, {name: 'div'}]
+	);
+});
+
+test("same line whitespace divs", () => {
+	assert.deepEqual(
+		h`
+		<div/> <div/> <div/>
+		`,
+		[{name: 'div'}, " ", {name: 'div'}, " ", {name: 'div'}]
+	);
+});
+
+test("same line whitespace", () => {
+	assert.deepEqual(
+		h`  a  b  `,
+		[" a b "]
+	);
+});
+
+test("newline whitespace", () => {
+	assert.deepEqual(
+		h`
+a
+b
+		`,
+		["a b"]
+	);
+});
+
+test("whitespace mixed divs and text", () => {
+	assert.deepEqual(
+		h`
+		<div/>
+		a
+		<div/>
+		`,
+		[{name: 'div'}, "a", {name: 'div'}]
+	);
+});
+
+test("whitespace mixed divs and text sameline", () => {
+	assert.deepEqual(
+		h`
+		<div/> a <div/>
+		`,
+		[{name: 'div'}, " a ", {name: 'div'}]
+	);
+});
