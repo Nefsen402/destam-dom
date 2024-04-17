@@ -70,8 +70,8 @@ global.Node = class Node {
 	}
 
 	replaceWith (node) {
-		if (this.parentElement) throw new Error("does not belong to a parent");
-		this.parentElement.replaceChild(this, node);
+		if (!this.parentElement) throw new Error("does not belong to a parent");
+		this.parentElement.replaceChild(node, this);
 	}
 
 	setAttribute (name, val) {
@@ -114,6 +114,11 @@ global.Node = class Node {
 
 global.document = {
 	createElement: name => new Node(name),
+	createElementNS: (space, name) => {
+		const node = new Node(name);
+		node.namespace = space;
+		return node;
+	},
 	createTextNode: text => {
 		const node = new Node('');
 		node.textContent = text;
