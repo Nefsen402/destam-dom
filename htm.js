@@ -20,19 +20,19 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 	const tokens = [];
 	let tag = 9, inString, cur = '';
 
+	const flush = () => {
+		if (tag) {
+			if ((tag & 2) && !(tag & 4)) cur += ' ';
+			tag = 9;
+		}
+
+		if (cur) push(inString || tokens, cur);
+		cur = '';
+	};
+
 	for (let i = 0; i < len(segments); i++) {
 		const str = segments[i];
 		let parsingWhitespace;
-
-		const flush = () => {
-			if (tag) {
-				if ((tag & 2) && !(tag & 4)) cur += ' ';
-				tag = 9;
-			}
-
-			if (cur) push(inString || tokens, cur);
-			cur = '';
-		};
 
 		// when scanning the string, extract special characters and simplify whitespace
 		for (let ii = 0; ii < len(str); ii++) {
@@ -97,7 +97,7 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 		}
 	}
 
-	if (cur) push(tokens, cur);
+	if (cur) flush();
 
 	let i = 0;
 	const parse = (tagName) => {
