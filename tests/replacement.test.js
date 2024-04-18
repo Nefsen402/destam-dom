@@ -112,3 +112,55 @@ test("mount changing custom element", () => {
 		children: ["hello3"],
 	});
 });
+
+test("mount div with changing attribute", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(1);
+
+	mount(elem, h('div', {val: o}));
+	o.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {val: '2'}
+		}],
+	});
+});
+
+test("mount div with changing property", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(1);
+
+	mount(elem, h('div', {$val: o}));
+
+	o.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			val: 2,
+		}],
+	});
+});
+
+test("mount div with nested changing property", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(1);
+
+	mount(elem, h('div', {$style: {hello: o}}));
+
+	o.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			style: {
+				hello: 2,
+			}
+		}],
+	});
+});

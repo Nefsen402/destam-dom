@@ -116,6 +116,22 @@ test("mount div with property", () => {
 	});
 });
 
+test("mount div with nested property", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {$style: {hello: 'world'}}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			style: {
+				hello: 'world',
+			}
+		}],
+	});
+});
+
 test ("mount custom element", () => {
 	const elem = document.createElement("body");
 
