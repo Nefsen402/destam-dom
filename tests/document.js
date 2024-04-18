@@ -24,12 +24,36 @@ global.Node = class Node {
 		throw new Error("not supported");
 	}
 
+	get firstChild () {
+		return this.children[0];
+	}
+
+	get lastChild () {
+		return this.children[this.children.length - 1];
+	}
+
+	get nextSibling () {
+		if (!this.parentElement) throw new Error("does not belong to a parent");
+		let c = this.parentElement.children;
+		let i = c.indexOf(this);
+		return c[i + 1];
+	}
+
+	get previousSibling () {
+		if (!this.parentElement) throw new Error("does not belong to a parent");
+		let c = this.parentElement.children;
+		let i = c.indexOf(this);
+		return c[i - 1];
+	}
+
 	append (node) {
+		node.remove();
 		node.parentElement = this;
 		this.children.push(node);
 	}
 
 	prepend (node) {
+		node.remove();
 		node.parentElement = this;
 		this.children.unshift(node);
 	}
@@ -40,6 +64,7 @@ global.Node = class Node {
 			return;
 		}
 
+		node.remove();
 		node.parentElement = this;
 
 		const i = this.children.indexOf(before);
@@ -51,6 +76,7 @@ global.Node = class Node {
 		const i = this.children.indexOf(before);
 		if (i === -1) throw new Error("node not found");
 
+		node.remove();
 		node.parentElement = this;
 		before.parentElement = null;
 		this.children[i] = node;
