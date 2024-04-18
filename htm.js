@@ -97,7 +97,7 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 		}
 	}
 
-	if (cur) flush();
+	flush();
 
 	let i = 0;
 	const parse = (tagName) => {
