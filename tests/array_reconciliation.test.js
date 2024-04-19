@@ -56,3 +56,19 @@ test("array reuse duplicates", () => {
 	});
 	assert(count === 3);
 });
+
+test("array keep focus", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([document.createElement("a"), document.createElement("a")]);
+
+	mount(elem, arr);
+
+	arr.get()[0].focus();
+	arr.set([arr.get()[1], arr.get()[0]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: "a"}, {name: "a"}]
+	});
+	assert(document.activeElement === arr.get()[1]);
+});
