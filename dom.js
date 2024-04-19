@@ -384,18 +384,15 @@ export const h = (e, props = {}, ...children) => {
 			return createElement(e, props);
 		}
 
-		const createMap = arr => createElement(
-			arr,
-			(elem, item, before) => {
-				props.each = item;
-				return customMounter(elem, e, before, props);
-			},
-		);
+		const mounter = (elem, item, before) => {
+			props.each = item;
+			return customMounter(elem, e, before, props);
+		};
 
 		if (isInstance(each, Observer)) {
-			return each.map(createMap);
+			return each.map(each => createElement(each, mounter));
 		} else {
-			return createMap(each);
+			return createElement(each, mounter);
 		}
 	}
 
