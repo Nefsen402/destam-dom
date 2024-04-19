@@ -11,7 +11,7 @@ destam-dom is designed to be as simple as possible and only provides two functio
 mount(document.body, "Hello, world!");
 ```
 
-`mount()` also supports mounting to null. This can be useful if you want destam to manage the DOM nodes, but otherwise you want to mount it yourself.
+`mount()` also supports mounting to null. This can be useful if you want destam-dom to manage the DOM nodes, but otherwise you want to mount it yourself.
 
 ```js
 const div = document.createElement('div');
@@ -20,7 +20,7 @@ mount(null, html`
 	<${div}>Hello, world!</>
 `);
 
-document.body.appendChild(div);
+document.body.append(div);
 ```
 
 `mount()` will return a function pointer that can be called to then later unmount. It's likely to see this omitted if the app's lifetime is the same as the mount such as for applications written entirely in destam-dom.
