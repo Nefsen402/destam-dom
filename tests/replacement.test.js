@@ -67,6 +67,31 @@ test("mount changing node between", () => {
 	});
 });
 
+test("mount changing node between nested", () => {
+	const elem = document.createElement("body");
+	const obs = Observer.mutable(document.createTextNode(0));
+
+	mount(elem, h('div', {},
+		'first',
+		h('div', {}, obs),
+		'second',
+	));
+
+	obs.set(document.createTextNode(1));
+	obs.set(document.createTextNode(2));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["first", {
+				name: 'div',
+				children: ["2"]
+			}, "second"]
+		}],
+	});
+});
+
 test("mount changing node between in array", () => {
 	const elem = document.createElement("body");
 	const obs = Observer.mutable(document.createTextNode(0));
@@ -146,6 +171,30 @@ test("mount div with changing property", () => {
 	});
 });
 
+test("mount div with toggle atttribute", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(true);
+
+	mount(elem, h('div', {val: o}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {val: ""},
+		}],
+	});
+
+	o.set(false);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+		}],
+	});
+});
+
 test("mount div with nested changing property", () => {
 	const elem = document.createElement("body");
 	const o = Observer.mutable(1);
@@ -162,5 +211,19 @@ test("mount div with nested changing property", () => {
 				hello: 2,
 			}
 		}],
+	});
+});
+
+test("replacement remove", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(1);
+
+	const remove = mount(elem, o);
+
+	remove();
+	o.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
 	});
 });

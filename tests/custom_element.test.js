@@ -1,0 +1,121 @@
+import {test} from 'node:test';
+import assert from 'node:assert';
+import './document.js';
+
+import {mount, h} from '../index.js';
+
+const silence = (cb) => () => {
+	const orig = console.error;
+	console.error = () => {};
+	cb();
+	console.error = orig;
+};
+
+test("custom element", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, () => {
+		return "hello world";
+	});
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["hello world"],
+	});
+});
+
+test("custom element cleanup", () => {
+	const elem = document.createElement("body");
+
+	let cleaned = false;
+	let cleanup = mount(elem, ({}, cleanup) => {
+		cleanup(() => {
+			cleaned = true;
+		});
+
+		return "hello world";
+	});
+
+	cleanup();
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+
+	assert(cleaned);
+});
+
+test("custom element mounted", () => {
+	const elem = document.createElement("body");
+
+	let mounted = false;
+	let cleanup = mount(elem, ({}, cleanup, mounted_) => {
+		mounted_(() => {
+			mounted = true;
+		});
+
+		return "hello world";
+	});
+
+	assert(mounted);
+});
+
+test("custom element mounted tree", () => {
+	const elem = document.createElement("body");
+
+	let mounted = false;
+	let cleanup = mount(elem, h('div', {}, ({}, cleanup, mounted_) => {
+		mounted_(() => {
+			assert.deepEqual(elem.tree(), {
+				name: 'body',
+				children: [{
+					name: 'div',
+					children: ["hello world"]
+				}]
+			});
+			mounted = true;
+		});
+
+		return "hello world";
+	}));
+
+	assert(mounted);
+});
+
+
+test("custom element children", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h(({children}) => {
+		return children;
+	}, {}, 1, 2));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2"]
+	});
+});
+
+test("custom element custom children", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h(({children}) => {
+		return children;
+	}, {children: [1, 2]}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2"]
+	});
+});
+
+test("custom element throw error", silence(() => {
+	const elem = document.createElement("body");
+
+	mount(elem, h(({children}) => {
+		throw new Error();
+	}, {children: [1, 2]}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+}));

@@ -132,6 +132,17 @@ test("mount div with nested property", () => {
 	});
 });
 
+test("mount div with nested property removal", () => {
+	const elem = document.createElement("body");
+
+	const remove = mount(elem, h('div', {$style: {hello: 'world'}}));
+	remove();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test ("mount custom element", () => {
 	const elem = document.createElement("body");
 
