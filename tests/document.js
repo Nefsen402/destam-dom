@@ -90,6 +90,8 @@ global.Node = class Node {
 	}
 
 	remove () {
+		if (document.activeElement === this) document.activeElement = null;
+
 		if (this.parentElement) {
 			this.parentElement.removeChild(this);
 		}
@@ -110,6 +112,10 @@ global.Node = class Node {
 		} else {
 			this.attributes[name] = '';
 		}
+	}
+
+	focus () {
+		document.activeElement = this;
 	}
 
 	tree () {
