@@ -26,6 +26,25 @@ test("mount changing text between", () => {
 	});
 });
 
+test("mount changing text between removal", () => {
+	const elem = document.createElement("body");
+	const obs = Observer.mutable(0);
+
+	const remove = mount(elem, h('div', {},
+		'first',
+		obs,
+		'second',
+	));
+
+	obs.set(1);
+	obs.set(2);
+	remove();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("mount changing text between in array", () => {
 	const elem = document.createElement("body");
 	const obs = Observer.mutable(0);
@@ -225,5 +244,49 @@ test("replacement remove", () => {
 
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
+	});
+});
+
+test("replacement array impl", () => {
+	const elem = document.createElement("body");
+	const arr = [1, 2, 3];
+
+	const o = Observer.mutable(({each}) => each);
+	mount(elem, o.map(o => h(o, {each: arr})));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['1', '2', '3']
+	});
+
+	o.set(({each}) => each + 1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['2', '3', '4']
+	});
+});
+
+
+test("replacement node with deps", () => {
+	const elem = document.createElement("body");
+
+	const prop = Observer.mutable(1);
+	const o = Observer.mutable({
+		val: prop
+	});
+	mount(elem, o.map(o => h('div', o)));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div', attributes: {val: 1}}]
+	});
+
+	o.set({val2: prop});
+	prop.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div', attributes: {val2: 2}}]
 	});
 });

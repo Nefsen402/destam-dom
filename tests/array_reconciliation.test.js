@@ -37,3 +37,22 @@ test("array reuse", () => {
 	});
 	assert(count === 2);
 });
+
+test("array reuse duplicates", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([1, 1]);
+
+	let count = 0;
+	mount(elem, h(({each}) => {
+		count++;
+		return each;
+	}, {each: arr}));
+
+	arr.set([2, 1, 1]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["2", "1", "1"]
+	});
+	assert(count === 3);
+});

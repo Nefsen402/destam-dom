@@ -4,6 +4,16 @@ import './document.js';
 
 import {mount, h} from '../index.js';
 
+test("mount null", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, null);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("mount text", () => {
 	const elem = document.createElement("body");
 
@@ -60,6 +70,28 @@ test("mount node", () => {
 		children: [{
 			name: 'div',
 		}],
+	});
+});
+
+test("mount null in node", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {}, null));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
+test("mount node null children", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {children: null}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
 	});
 });
 
@@ -155,5 +187,28 @@ test ("mount custom element", () => {
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
 		children: ["hello"],
+	});
+});
+
+test ("mount to null", () => {
+	const div = document.createElement("div");
+
+	mount(null, h(div, {prop: 'prop'}));
+
+	assert.deepEqual(div.tree(), {
+		name: 'div',
+		attributes: {prop: 'prop'},
+	});
+});
+
+test ("mount to null and remove", () => {
+	const div = document.createElement("div");
+
+	const remove = mount(null, h(div, {prop: 'prop'}));
+	remove();
+
+	assert.deepEqual(div.tree(), {
+		name: 'div',
+		attributes: {prop: 'prop'},
 	});
 });
