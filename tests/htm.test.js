@@ -109,3 +109,38 @@ test("whitespace mixed divs and text sameline", () => {
 		[{name: 'div'}, " a ", {name: 'div'}]
 	);
 });
+
+test("htm spreading", () => {
+	assert.deepEqual(
+		h`<div =${{one: '1', two: '2'}} />`,
+		[{name: 'div', props: {one: '1', two: '2'}}]
+	);
+});
+
+test("htm string parsing quote", () => {
+	assert.deepEqual(
+		h`<div 'key with spaces'='value with spaces' />`,
+		[{name: 'div', props: {"key with spaces": 'value with spaces'}}]
+	);
+});
+
+test("htm string parsing double quote", () => {
+	assert.deepEqual(
+		h`<div "key with spaces"="value with spaces" />`,
+		[{name: 'div', props: {"key with spaces": 'value with spaces'}}]
+	);
+});
+
+test("htm comments", () => {
+	assert.deepEqual(
+		h`<div/><!-- this is a comment --><div />`,
+		[{name: 'div'}, {name: 'div'}]
+	);
+});
+
+test("htm comments with spaces", () => {
+	assert.deepEqual(
+		h`<div/> <!-- this is a comment --> <div />`,
+		[{name: 'div'}, " ", {name: 'div'}]
+	);
+});

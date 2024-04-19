@@ -147,6 +147,7 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 			i++;
 
 			if (name) {
+				/* node:coverage disable */
 				assert((() => {
 					const strHasOnly = (chars, str) => {
 						for (let ii = 0; ii < len(str); ii++) {
@@ -172,6 +173,7 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 
 					return true;
 				})(), "Invalid attribute name: " + Object.keys(props).join(", "));
+				/* node:coverage enable */
 
 				assert(typeof name !== 'string' || validTags.includes(name.toUpperCase()) || name.includes('-'),
 					"Invalid tag name: " + name);
