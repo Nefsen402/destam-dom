@@ -510,6 +510,19 @@ if converted to JSX would look like this:
 </div>
 ```
 
+JSX also includes a special shorthand for creating nodes. Because destam-dom does not use a virtual dom and JSX will directly create nodes, for non reactive nodes, the pure node can be returned.
+
+Instead of:
+```js
+const element = documen.createElement('div');
+element.setAttribute('class', 'my-div');
+```
+
+A JSX shorthand can be used instead:
+```jsx
+const element = <div class="my-div" />;
+```
+
 ### Namespaces
 Namespaces are also supported through JSX. If you need special handling for certain elements such as SVG, namespaces can be used to use a different hyperscript implementation. If no namespace is specified, `h` is assumed.
 ```jsx
