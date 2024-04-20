@@ -104,11 +104,13 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 
 		mounted.item_ = item;
 	} else {
-		let mountAt, term;
-		if (elem && (mountAt = next(getFirst)) !== (term = mounted.next_(getFirst))) {
+		let mountAt, term, cur;
+		if (elem &&
+				(mountAt = next(getFirst)) !== (term = mounted.next_(getFirst)) &&
+				mountAt !== (cur = mounted(getFirst))) {
 			const a = document.activeElement;
 
-			for (let cur = mounted(getFirst); cur != term;) {
+			while (cur !== term) {
 				const n = cur.nextSibling;
 				elem.insertBefore(cur, mountAt);
 				cur = n;
