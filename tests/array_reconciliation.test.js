@@ -127,7 +127,7 @@ test.only("array replace empty", () => {
 	});
 });
 
-test.only("array replace empty multiple", () => {
+test("array replace empty multiple", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([[], [h('a'), h('b')]]);
 
