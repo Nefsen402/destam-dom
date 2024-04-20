@@ -155,3 +155,31 @@ test.only("array replace empty multiple with trailer", () => {
 		children: [{name: 'a'}, {name: 'b'}, {name: 'div'}]
 	});
 });
+
+test.only("array replace empty with trailer inverted", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([h('a'), [], h('div')]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0], arr.get()[2]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'a'}, {name: 'div'}]
+	});
+});
+
+test.only("array replace empty multiple with trailer inverted", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([[h('a'), h('b')], [], h('div')]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0], arr.get()[2]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'a'}, {name: 'b'}, {name: 'div'}]
+	});
+});

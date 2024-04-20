@@ -212,3 +212,7 @@ test ("mount to null and remove", () => {
 		attributes: {prop: 'prop'},
 	});
 });
+
+test ("static h tag returns node", () => {
+	assert(h('div') instanceof Node);
+});
