@@ -26,6 +26,27 @@ test("mount changing text between", () => {
 	});
 });
 
+test("mount changing type", () => {
+	const elem = document.createElement("body");
+	const obs = Observer.mutable(0);
+
+	mount(elem, h('div', {},
+		'first',
+		obs,
+		'second',
+	));
+
+	obs.set(h('div'));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["first", {name: 'div'}, "second"]
+		}],
+	});
+});
+
 test("mount changing text between removal", () => {
 	const elem = document.createElement("body");
 	const obs = Observer.mutable(0);

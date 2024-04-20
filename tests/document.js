@@ -64,6 +64,10 @@ global.Node = class Node {
 			return;
 		}
 
+		if (node === before) {
+			return;
+		}
+
 		node.remove();
 		node.parentElement = this;
 

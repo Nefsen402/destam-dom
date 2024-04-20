@@ -72,3 +72,86 @@ test("array keep focus", () => {
 	});
 	assert(document.activeElement === arr.get()[1]);
 });
+
+test("array move empty", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([[], []]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
+test("array move empty with trailer", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([[], [], h('div')]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0], arr.get()[2]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
+test.only("array replace empty", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([[], h('div')]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
+test.only("array replace empty multiple", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([[], [h('a'), h('b')]]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'a'}, {name: 'b'}]
+	});
+});
+
+test.only("array replace empty with trailer", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([[], h('a'), h('div')]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0], arr.get()[2]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'a'}, {name: 'div'}]
+	});
+});
+
+test.only("array replace empty multiple with trailer", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([[], [h('a'), h('b')], h('div')]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0], arr.get()[2]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'a'}, {name: 'b'}, {name: 'div'}]
+	});
+});

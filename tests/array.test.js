@@ -5,17 +5,45 @@ import './document.js';
 import {Observer, OArray, mount, h} from '../index.js';
 import {atomic} from 'destam/Network.js';
 
-test("array add", () => {
+test("array", () => {
+	const elem = document.createElement("body");
+	const items = OArray([1, 2]);
+
+	mount(elem, items);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2"],
+	});
+});
+
+test("array push", () => {
 	const elem = document.createElement("body");
 	const items = OArray();
 
 	mount(elem, items);
 
-	items.push(1, 2);
+	items.push(1);
+	items.push(2);
 
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
 		children: ["1", "2"],
+	});
+});
+
+test("array unshift", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, items);
+
+	items.push(1);
+	items.unshift(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["2", "1"],
 	});
 });
 
@@ -59,6 +87,36 @@ test("array clear", () => {
 
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
+	});
+});
+
+test("array clear with trailer", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, [items, h('div')]);
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
+test("array clear with header", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, [h('div'), items]);
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
 	});
 });
 
