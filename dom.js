@@ -25,6 +25,7 @@ const nodeMounter = (elem, e, before, aux) => {
 		if (!val) {
 			e.remove();
 		} else {
+			assert(isInstance(val, Node));
 			e.replaceWith(val);
 		}
 
