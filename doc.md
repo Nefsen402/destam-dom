@@ -526,9 +526,9 @@ const element = <div class="my-div" />;
 ### Namespaces
 Namespaces are also supported through JSX. If you need special handling for certain elements such as SVG, namespaces can be used to use a different hyperscript implementation. If no namespace is specified, `h` is assumed.
 ```jsx
-	const myCustomHyperscript = (name, props, ...children) => {
-		return document.createElement(name);
-	};
+const myCustomHyperscript = (name, props, ...children) => {
+	return document.createElement(name);
+};
 
-	<myCustomHyperscript:div />;
+<myCustomHyperscript:div />;
 ```
