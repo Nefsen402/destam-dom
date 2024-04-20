@@ -1,3 +1,5 @@
+/* node:coverage disable */
+
 global.Node = class Node {
 	constructor (name) {
 		this.name = name;
