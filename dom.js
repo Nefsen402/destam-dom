@@ -155,9 +155,11 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 		mountAll(orphaned);
 
 		arrayListener = observer && shallowListener(observer, commit => {
+			assert(elem, "Cannot move mount on an empty mount");
+
 			// fast path when removing everything
 			if (len(val) === 0) {
-				if (elem && elem.firstChild === root.next_(getFirst) && !root()) {
+				if (elem.firstChild === root.next_(getFirst) && !root()) {
 					elem.textContent = '';
 				}
 
