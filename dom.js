@@ -84,14 +84,6 @@ const cleanupArrayMounts = mounts => {
 	}
 };
 
-const destroyArrayMounts = (root, linkGetter, orphaned) => {
-	for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
-		(orphaned ? insertMap : cur)(orphaned, cur);
-	}
-
-	if (!orphaned) root.next_ = root.prev_ = root;
-};
-
 const addArrayMount = (elem, mounter, old, item, next) => {
 	let mounted = old?.get(item)?.pop();
 	if (mounted === next) return mounted;
@@ -138,6 +130,18 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 	const linkGetter = Symbol();
 	let link, arrayListener;
 
+	const destroy = orphaned => {
+		if (!orphaned && elem.firstChild === root.next_(getFirst) && !root()) {
+			elem.textContent = '';
+		}
+
+		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
+			(orphaned ? insertMap : cur)(orphaned, cur);
+		}
+
+		if (!orphaned) root.next_ = root.prev_ = root;
+	};
+
 	const mountList = (val, orphaned) => {
 		const observer = val[observerGetter];
 		const mountAll = orphaned => {
@@ -159,11 +163,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 			// fast path when removing everything
 			if (len(val) === 0) {
-				if (elem.firstChild === root.next_(getFirst) && !root()) {
-					elem.textContent = '';
-				}
-
-				destroyArrayMounts(root, linkGetter);
+				destroy();
 				return;
 			}
 
@@ -225,8 +225,8 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 		arrayListener?.();
 
-		const orphaned = val && new Map();
-		destroyArrayMounts(root, linkGetter, orphaned);
+		const orphaned = val && len(val) !== 0 ? new Map() : null;
+		destroy(orphaned);
 		if (orphaned) {
 			mountList(val, orphaned);
 			cleanupArrayMounts(orphaned);
