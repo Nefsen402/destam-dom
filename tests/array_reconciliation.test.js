@@ -113,7 +113,7 @@ test("array move empty with trailer", () => {
 	});
 });
 
-test.only("array replace empty", () => {
+test("array replace empty", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([[], h('div')]);
 
@@ -141,7 +141,7 @@ test("array replace empty multiple", () => {
 	});
 });
 
-test.only("array replace empty with trailer", () => {
+test("array replace empty with trailer", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([[], h('a'), h('div')]);
 
@@ -155,7 +155,7 @@ test.only("array replace empty with trailer", () => {
 	});
 });
 
-test.only("array replace empty multiple with trailer", () => {
+test("array replace empty multiple with trailer", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([[], [h('a'), h('b')], h('div')]);
 
@@ -169,7 +169,7 @@ test.only("array replace empty multiple with trailer", () => {
 	});
 });
 
-test.only("array replace empty with trailer inverted", () => {
+test("array replace empty with trailer inverted", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([h('a'), [], h('div')]);
 
@@ -183,7 +183,7 @@ test.only("array replace empty with trailer inverted", () => {
 	});
 });
 
-test.only("array replace empty multiple with trailer inverted", () => {
+test("array replace empty multiple with trailer inverted", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([[h('a'), h('b')], [], h('div')]);
 

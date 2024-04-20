@@ -216,3 +216,7 @@ test ("mount to null and remove", () => {
 test ("static h tag returns node", () => {
 	assert(h('div') instanceof Node);
 });
+
+test ("static h tag returns node with attribute", () => {
+	assert(h('div', {class: 'test'}) instanceof Node);
+});
