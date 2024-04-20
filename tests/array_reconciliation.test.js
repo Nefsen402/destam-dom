@@ -19,6 +19,19 @@ test("array replace", () => {
 	});
 });
 
+test("array clear", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([1, 2, 3]);
+
+	mount(elem, arr);
+
+	arr.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("array reuse", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([1]);
