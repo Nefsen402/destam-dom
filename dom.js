@@ -104,9 +104,10 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 
 		mounted.item_ = item;
 	} else {
+		assert(elem, "Cannot move mount on an empty mount");
+
 		let mountAt, term, cur;
-		if (elem &&
-				(mountAt = next(getFirst)) !== (term = mounted.next_(getFirst)) &&
+		if ((mountAt = next(getFirst)) !== (term = mounted.next_(getFirst)) &&
 				mountAt !== (cur = mounted(getFirst))) {
 			const a = document.activeElement;
 
