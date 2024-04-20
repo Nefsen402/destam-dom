@@ -514,7 +514,7 @@ JSX also includes a special shorthand for creating nodes. Because destam-dom doe
 
 Instead of:
 ```js
-const element = documen.createElement('div');
+const element = document.createElement('div');
 element.setAttribute('class', 'my-div');
 ```
 
