@@ -283,36 +283,35 @@ export const mount = (elem, item, before = noop) => {
 		if (val === null) {
 			mounted?.();
 			mounted = lastFunc = val;
-			return;
-		}
-
-		let func, aux;
-		if (val.ident_ === getFirst) {
-			aux = val.val_;
-			val = val.type_;
-		}
-
-		const type = typeof val;
-		if (type === 'function') {
-			func = customMounter;
-		} else if (type !== 'object') {
-			func = primitiveMounter;
-		} else if (isInstance(val, Node)) {
-			func = nodeMounter;
 		} else {
-			func = arrayMounter;
-		}
+			let func, aux;
+			if (val.ident_ === getFirst) {
+				aux = val.val_;
+				val = val.type_;
+			}
 
-		let not;
-		if (!notifyMount) {
-			not = notifyMount = [];
-		}
+			const type = typeof val;
+			if (type === 'function') {
+				func = customMounter;
+			} else if (type !== 'object') {
+				func = primitiveMounter;
+			} else if (isInstance(val, Node)) {
+				func = nodeMounter;
+			} else {
+				func = arrayMounter;
+			}
 
-		if (!mounted?.(lastFunc === func ? val : null, aux)) {
-			mounted = (lastFunc = func)(elem, val, before, aux);
-		}
+			let not;
+			if (!notifyMount) {
+				not = notifyMount = [];
+			}
 
-		callAllSafe(not);
+			if (!mounted?.(lastFunc === func ? val : null, aux)) {
+				mounted = (lastFunc = func)(elem, val, before, aux);
+			}
+
+			callAllSafe(not);
+		}
 	};
 
 	let mode = isInstance(item, Observer);
