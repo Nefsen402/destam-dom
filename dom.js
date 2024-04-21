@@ -252,12 +252,7 @@ const customMounter = (elem, func, before, aux) => {
 		console.error(e);
 	}
 
-	const m = mount(
-		elem,
-		dom,
-		before,
-	);
-
+	const m = mount(elem, dom, before);
 	return arg => {
 		if (arg === getFirst) return m(getFirst);
 
