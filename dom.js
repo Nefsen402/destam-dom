@@ -194,7 +194,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 						const next = link.linkNext_;
 
 						if (next[linkGetter] || !next.reg_) {
-							inserts.push(link);
+							push(inserts, link);
 						}
 					}
 				}
