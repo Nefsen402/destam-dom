@@ -200,3 +200,30 @@ test("array mount order consistency", () => {
 		children: "0 1 2 3 4 5 0".split(" "),
 	});
 });
+
+test("array modify from mount", () => {
+	const elem = document.createElement("body");
+
+	const items = OArray();
+	let count = 0;
+
+	mount(elem, [
+		({}, _, mounted) => {
+			mounted(() => count++);
+
+			return items;
+		},
+		({}, _, mounted) => {
+			mounted(() => count++);
+
+			items.push(1, 2, 3);
+			return null;
+		}
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['1', '2', '3']
+	});
+	assert(count === 2)
+});
