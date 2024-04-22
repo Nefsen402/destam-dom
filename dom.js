@@ -104,7 +104,7 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 				mountAt !== (cur = mounted(getFirst))) {
 			const a = document.activeElement;
 
-			while (cur !== term) {
+			while (cur != term) {
 				const n = cur.nextSibling;
 				elem.insertBefore(cur, mountAt);
 				cur = n;
