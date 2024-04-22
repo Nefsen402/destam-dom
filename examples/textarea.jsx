@@ -17,7 +17,7 @@ const Textarea = ({value, style}, _, mounted) => {
 
 				return value.map(val => {
 					// dynamically change the height of the textarea depending on the value
-					let elem = <textarea $value={val} $style={{
+					let elem = <textarea rows={1} $value={val} $style={{
 						resize: 'none',
 						paddingTop: '0px',
 						paddingBottom: '0px',
