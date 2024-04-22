@@ -17,7 +17,6 @@ const Textarea = ({value, style}, _, mounted) => {
 
 				return value.map(val => {
 					const textAreaWidth = Ref.clientWidth;
-					console.log(textAreaWidth);
 
 					// dynamically change the height of the textarea depending on the value
 					let elem = <textarea $value={val} rows={1} $style={{
