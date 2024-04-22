@@ -1,31 +1,46 @@
 import {mount, h, Observer} from '..';
 
-const Textarea = ({value, style}) => {
-	return <textarea
+const Textarea = ({value, style}, _, mounted) => {
+	const Ref = <textarea />;
+
+	const isMounted = Observer.mutable(false);
+	mounted(() => isMounted.set(true));
+
+	return <Ref
 		$value={value}
 		$oninput={e => value.set(e.target.value)}
 		$style={{
 			resize: 'none',
 			...style,
-			height: value.map(val => {
-				// dynamically change the height of the textarea depending on the value
-				let elem = <textarea $value={val} rows={1} $style={{
-					resize: 'none',
-					padding: '0px',
-					...style
-				}} />;
+			height: isMounted.map(mounted => {
+				if (!mounted) return 'auto';
 
-				document.body.appendChild(elem);
-				const height = elem.scrollHeight;
-				document.body.removeChild(elem);
+				return value.map(val => {
+					const textAreaWidth = Ref.clientWidth;
+					console.log(textAreaWidth);
 
-				return height + 'px';
-			}),
+					// dynamically change the height of the textarea depending on the value
+					let elem = <textarea $value={val} rows={1} $style={{
+						resize: 'none',
+						paddingTop: '0px',
+						paddingBottom: '0px',
+						boxSizing: 'border-box',
+						...style,
+						width: textAreaWidth + 'px'
+					}} />;
+
+					document.body.appendChild(elem);
+					const height = elem.scrollHeight;
+					document.body.removeChild(elem);
+
+					return height + 'px';
+				}).memo();
+			}).unwrap(),
 		}}
 	/>;
 };
 
-const val = Observer.mutable('');
+const val = Observer.mutable('This destam-dom example has a textarea with text that will wrap');
 
 mount(document.body, <div style={`
 	position: absolute;
@@ -35,7 +50,7 @@ mount(document.body, <div style={`
 	align-items: center;
 	flex-direction: column;
 `}>
-	<div style="padding-bottom: 10px">The text area will automatically expand as type type</div>
+	<div style="padding-bottom: 10px">The text area will automatically expand as you type</div>
 	<Textarea value={val} style={{
 		width: '300px'
 	}} />
