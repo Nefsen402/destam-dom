@@ -16,16 +16,14 @@ const Textarea = ({value, style}, _, mounted) => {
 				if (!mounted) return 'auto';
 
 				return value.map(val => {
-					const textAreaWidth = Ref.clientWidth;
-
 					// dynamically change the height of the textarea depending on the value
-					let elem = <textarea $value={val} rows={1} $style={{
+					let elem = <textarea $value={val} $style={{
 						resize: 'none',
 						paddingTop: '0px',
 						paddingBottom: '0px',
 						boxSizing: 'border-box',
 						...style,
-						width: textAreaWidth + 'px'
+						width: Ref.clientWidth + 'px'
 					}} />;
 
 					document.body.appendChild(elem);
