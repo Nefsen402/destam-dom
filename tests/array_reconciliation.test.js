@@ -70,9 +70,23 @@ test("array reuse duplicates", () => {
 	assert(count === 3);
 });
 
+test("array swap elements", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([document.createElement("a"), document.createElement("b")]);
+
+	mount(elem, arr);
+
+	arr.set([arr.get()[1], arr.get()[0]]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: "b"}, {name: "a"}]
+	});
+});
+
 test("array keep focus", () => {
 	const elem = document.createElement("body");
-	const arr = Observer.mutable([document.createElement("a"), document.createElement("a")]);
+	const arr = Observer.mutable([document.createElement("a"), document.createElement("b")]);
 
 	mount(elem, arr);
 
@@ -81,7 +95,7 @@ test("array keep focus", () => {
 
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
-		children: [{name: "a"}, {name: "a"}]
+		children: [{name: "b"}, {name: "a"}]
 	});
 	assert(document.activeElement === arr.get()[1]);
 });

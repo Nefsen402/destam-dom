@@ -27,25 +27,25 @@ global.Node = class Node {
 	}
 
 	get firstChild () {
-		return this.children[0];
+		return this.children[0] ?? null;
 	}
 
 	get lastChild () {
-		return this.children[this.children.length - 1];
+		return this.children[this.children.length - 1] ?? null;
 	}
 
 	get nextSibling () {
 		if (!this.parentElement) throw new Error("does not belong to a parent");
 		let c = this.parentElement.children;
 		let i = c.indexOf(this);
-		return c[i + 1];
+		return c[i + 1] ?? null;
 	}
 
 	get previousSibling () {
 		if (!this.parentElement) throw new Error("does not belong to a parent");
 		let c = this.parentElement.children;
 		let i = c.indexOf(this);
-		return c[i - 1];
+		return c[i - 1] ?? null;
 	}
 
 	append (node) {
