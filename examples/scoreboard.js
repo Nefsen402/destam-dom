@@ -1,4 +1,4 @@
-import {html, mount, OArray, OObject} from '/index.js';
+import {html, mount, OArray, OObject, Observer} from '/index.js';
 
 const scores = OArray([
 	OObject({ name: "Mark", score: 3 }),
