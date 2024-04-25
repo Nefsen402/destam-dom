@@ -14,6 +14,49 @@ const createElement = name => {
 	return elem;
 };
 
+const createWatcher = (rep, val, create) => {
+	let param = t.identifier('_');
+	let setter = param;
+
+	if (val.type === 'CallExpression' &&
+			val.callee.type === 'MemberExpression' &&
+			val.callee.property.type === 'Identifier' &&
+			val.callee.property.name === 'map' &&
+			val.arguments.length === 1 &&
+			val.arguments[0].type === 'ArrowFunctionExpression' &&
+			val.arguments[0].params.length === 1) {
+
+		param = val.arguments[0].params[0];
+
+		if (val.arguments[0].body.type === 'BlockStatement') {
+			setter = val.arguments[0].body;
+
+			const traverse = node => {
+				if (node.type === 'ReturnStatement') {
+					node.argument = create(node.argument || t.identifier('undefined'));
+				} else if (Array.isArray(node.body) && !node.type.includes("Function")) {
+					for (let thing of node.body) {
+						traverse(thing);
+					}
+				}
+			};
+
+			traverse(setter);
+		} else {
+			setter = create(val.arguments[0].body);
+		}
+
+		val = val.callee.object;
+	} else {
+		setter = create(setter);
+	}
+
+	return t.expressionStatement(t.callExpression(
+		rep.importer('watch'),
+		[rep.cleanup, val, t.arrowFunctionExpression([param], setter)]
+	));
+};
+
 const computeNode = (rep, refs, node) => {
 	if (node[walked]) return node;
 	const [name, props, ...children] = node.arguments;
@@ -97,17 +140,13 @@ const computeNode = (rep, refs, node) => {
 					'NumericLiteral', 'ArrowFunctionExpression',
 					'FunctionExpression', 'BinaryExpression',
 					'TemplateLiteral', 'UpdateExpression',
-					'NullLiteral'
+					'NullLiteral', 'BigIntLiteral',
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(create(val)));
 
 					return true;
 				} else if (rep.cleanup) {
-					const param = t.identifier('_');
-					rep.push(t.expressionStatement(t.callExpression(
-						rep.importer('watch'),
-						[rep.cleanup, val, t.arrowFunctionExpression([param], create(param))]
-					)));
+					rep.push(createWatcher(rep, val, create));
 
 					return true;
 				}
@@ -127,17 +166,13 @@ const computeNode = (rep, refs, node) => {
 				if (binaryType === 'other' || isJoinPattern || [
 					'StringLiteral', 'NumericLiteral',
 					'TemplateLiteral', 'UpdateExpression',
-					'NullLiteral'
+					'NullLiteral', 'BigIntLiteral',
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(create(val)));
 
 					return true;
 				} else if (rep.cleanup) {
-					const param = t.identifier('_');
-					rep.push(t.expressionStatement(t.callExpression(
-						rep.importer('watch'),
-						[rep.cleanup, val, t.arrowFunctionExpression([param], create(param))]
-					)));
+					rep.push(createWatcher(rep, val, create));
 
 					return true;
 				}
@@ -332,6 +367,7 @@ console.log(transform(`
 
 	mount(h(div, {hello: 'world', $value: 10, num: 10.5, bool: true, $style: {
 		"hello with a space": "world",
+		val: 10n,
 		func: (a) => lol,
 		func2: function () {},
 		class: ["hello"].join('')
@@ -340,6 +376,15 @@ console.log(transform(`
 	h('div', {}, h('div'), stuff)
 
 	const Component = ({}, cleanup) => h('div', {hello}, null, one, two, three, "hello");
+
+	const Comp2 = ({}, cleanup) => {
+		h('div', {
+			class: observer.map(e => e * 2),
+			classBody: observer.map(e => {
+				return 2;
+			})
+		})
+	};
 `, {util_import: 'destam-dom'}).code);
 */
 
