@@ -237,31 +237,6 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 	};
 };
 
-const customMounter = (elem, func, before, aux) => {
-	let dom = null, cleanup = 0;
-
-	try {
-		dom = func(aux || {}, cb => {
-			assert(typeof cb === 'function', "The cleanup function must be passed a function");
-			push(cleanup || (cleanup = []), cb);
-		}, cb => {
-			assert(typeof cb === 'function', "The mount function must be passed a function");
-			push(notifyMount, cb);
-		});
-	} catch (e) {
-		console.error(e);
-	}
-
-	const m = mount(elem, dom, before);
-	return arg => {
-		if (arg === getFirst) return m(getFirst);
-
-		m();
-		callAllSafe(cleanup);
-		return cleanup = 0;
-	};
-};
-
 export const mount = (elem, item, before = noop) => {
 	assert(elem === null || isInstance(elem, Node),
 		"The first argument to mount must be null or an dom node");
@@ -287,7 +262,9 @@ export const mount = (elem, item, before = noop) => {
 
 			const type = typeof val;
 			if (type === 'function') {
-				func = customMounter;
+				assert(!val || val.__is_destam_dom_internal_func,
+					"Mount must be passed an initialized element");
+				func = val;
 			} else if (type !== 'object') {
 				func = primitiveMounter;
 			} else if (isInstance(val, Node)) {
@@ -380,16 +357,36 @@ export const h = (e, props = {}, ...children) => {
 		}
 
 		const each = props.each;
-		if (!each) {
-			return createElement(e, props);
-		}
-
 		const mounter = (elem, item, before) => {
-			props.each = item;
-			return customMounter(elem, e, before, props);
+			let dom = null, cleanup = 0;
+			if (each) props.each = item;
+
+			try {
+				dom = e(props, cb => {
+					assert(typeof cb === 'function', "The cleanup function must be passed a function");
+					push(cleanup || (cleanup = []), cb);
+				}, cb => {
+					assert(typeof cb === 'function', "The mount function must be passed a function");
+					push(notifyMount, cb);
+				});
+			} catch (e) {
+				console.error(e);
+			}
+
+			const m = mount(elem, dom, before);
+			return arg => {
+				if (arg === getFirst) return m(getFirst);
+
+				m();
+				callAllSafe(cleanup);
+				return cleanup = 0;
+			};
 		};
 
-		if (isInstance(each, Observer)) {
+		assert(mounter.__is_destam_dom_internal_func = true);
+		if (!each) {
+			return mounter;
+		} else if (isInstance(each, Observer)) {
 			return each.map(each => createElement(each, mounter));
 		} else {
 			return createElement(each, mounter);
