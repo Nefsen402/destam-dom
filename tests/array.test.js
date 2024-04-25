@@ -47,6 +47,36 @@ test("array unshift", () => {
 	});
 });
 
+test("array modify", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, items);
+
+	items.push(1);
+	items[0] = 2;
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["2"],
+	});
+});
+
+test("array splice modify", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, items);
+
+	items.push(1);
+	items.splice(0, 1, [2]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["2"],
+	});
+});
+
 test("array removal", () => {
 	const elem = document.createElement("body");
 	const items = OArray();

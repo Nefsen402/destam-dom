@@ -81,6 +81,7 @@ const OArray = init => {
 		sort: undefined,
 		reverse: undefined,
 	}, (obj, prop, value) => {
+		/* node:coverage disable */
 		assert((() => {
 			for (let i = 0; i < prop.length; i++){
 				const code = prop.charCodeAt(i);
@@ -91,6 +92,7 @@ const OArray = init => {
 			}
 			return true;
 		})(), "invalid array property: " + prop);
+		/* node:coverage enable */
 
 		const num = parseInt(prop);
 		const old = init[num];
