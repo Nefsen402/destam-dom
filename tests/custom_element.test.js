@@ -14,9 +14,9 @@ const silence = (cb) => () => {
 test("custom element", () => {
 	const elem = document.createElement("body");
 
-	mount(elem, () => {
+	mount(elem, h(() => {
 		return "hello world";
-	});
+	}));
 
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
@@ -28,13 +28,13 @@ test("custom element cleanup", () => {
 	const elem = document.createElement("body");
 
 	let cleaned = false;
-	let cleanup = mount(elem, ({}, cleanup) => {
+	let cleanup = mount(elem, h(({}, cleanup) => {
 		cleanup(() => {
 			cleaned = true;
 		});
 
 		return "hello world";
-	});
+	}));
 
 	cleanup();
 	assert.deepEqual(elem.tree(), {
@@ -48,13 +48,13 @@ test("custom element mounted", () => {
 	const elem = document.createElement("body");
 
 	let mounted = false;
-	let cleanup = mount(elem, ({}, cleanup, mounted_) => {
+	let cleanup = mount(elem, h(({}, cleanup, mounted_) => {
 		mounted_(() => {
 			mounted = true;
 		});
 
 		return "hello world";
-	});
+	}));
 
 	assert(mounted);
 });
@@ -63,7 +63,7 @@ test("custom element mounted tree", () => {
 	const elem = document.createElement("body");
 
 	let mounted = false;
-	let cleanup = mount(elem, h('div', {}, ({}, cleanup, mounted_) => {
+	let cleanup = mount(elem, h('div', {}, h(({}, cleanup, mounted_) => {
 		mounted_(() => {
 			assert.deepEqual(elem.tree(), {
 				name: 'body',
@@ -76,7 +76,7 @@ test("custom element mounted tree", () => {
 		});
 
 		return "hello world";
-	}));
+	})));
 
 	assert(mounted);
 });

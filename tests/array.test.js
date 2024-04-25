@@ -283,17 +283,17 @@ test("array modify from mount", () => {
 	let count = 0;
 
 	mount(elem, [
-		({}, _, mounted) => {
+		h(({}, _, mounted) => {
 			mounted(() => count++);
 
 			return items;
-		},
-		({}, _, mounted) => {
+		}),
+		h(({}, _, mounted) => {
 			mounted(() => count++);
 
 			items.push(1, 2, 3);
 			return null;
-		}
+		})
 	]);
 
 	assert.deepEqual(elem.tree(), {
