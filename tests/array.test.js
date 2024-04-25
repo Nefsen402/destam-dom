@@ -77,6 +77,51 @@ test("array splice modify", () => {
 	});
 });
 
+test("array fill", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, items);
+
+	items.push(1, 2, 3);
+	items.fill('a');
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['a', 'a', 'a'],
+	});
+});
+
+test("array pop", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, items);
+
+	items.push(1, 2, 3);
+	items.pop();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['1', '2'],
+	});
+});
+
+test("array shift", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, items);
+
+	items.push(1, 2, 3);
+	items.shift();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['2', '3'],
+	});
+});
+
 test("array removal", () => {
 	const elem = document.createElement("body");
 	const items = OArray();
