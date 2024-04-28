@@ -278,6 +278,8 @@ export const mount = (elem, item, before = noop) => {
 
 			if (!mounted?.(lastFunc === func ? val : null, aux)) {
 				mounted = (lastFunc = func)(elem, val, before, aux);
+				assert(typeof mounted === 'function',
+					"Mount function must return a higher order destroy callback");
 			}
 
 			callAllSafe(not);
