@@ -24,8 +24,8 @@ const App = () => {
       const label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
       const dom = html`
         <tr class=${selected.map(sel => sel === label ? "danger" : "")}>
-          <td class='col-md-4'><a $click=danger $textContent=${label} /></td>
-          <td class='col-md-1'><a><span $click=remove class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
+          <td class='col-md-4'><a $click=${select} $textContent=${label} /></td>
+          <td class='col-md-1'><a><span $click=${remove} class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
           <td class='col-md-6'/>
         </tr>
       `;
@@ -77,10 +77,15 @@ const App = () => {
       array.splice(0, array.length);
       duration.set(performance.now() - now);
     },
-    remove = row => {
+    remove = idx => {
+      console.log(idx);
       let now = performance.now();
-      const idx = array.indexOf(row);
       array.splice(idx, 1);
+      duration.set(performance.now() - now);
+    },
+    select = idx => {
+      let now = performance.now();
+      selected.set(array[idx]);
       duration.set(performance.now() - now);
     };
 
@@ -130,14 +135,9 @@ const App = () => {
         if (!ev.target.click) return;
 
         let e = ev.target;
-        while (e.parentElement.tagName !== "TBODY") e = e.parentElement;
+        while (e && e.parentElement?.tagName !== "TBODY") e = e.parentElement;
         let i = Array.prototype.indexOf.call(e.parentElement.children, e);
-
-        if (ev.target.click === 'remove') {
-          array.splice(i, 1);
-        } else if (ev.target.click === 'danger') {
-          selected.set(array[i]);
-        }
+        ev.target.click(i);
       }}>
         <tbody>
           ${array}
