@@ -24,8 +24,8 @@ const App = () => {
       const label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
       const dom = html`
         <tr class=${selected.map(sel => sel === label ? "danger" : "")}>
-          <td class='col-md-4'><a $click=${select} $textContent=${label} /></td>
-          <td class='col-md-1'><a><span $click=${remove} class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
+          <td class='col-md-4'><a $clickHandler=${1} $textContent=${label} /></td>
+          <td class='col-md-1'><a><span $clickHandler=${2} class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
           <td class='col-md-6'/>
         </tr>
       `;
@@ -78,7 +78,6 @@ const App = () => {
       duration.set(performance.now() - now);
     },
     remove = idx => {
-      console.log(idx);
       let now = performance.now();
       array.splice(idx, 1);
       duration.set(performance.now() - now);
@@ -132,12 +131,12 @@ const App = () => {
         </div></div>
       </div></div>
       <table class='table table-hover table-striped test-data' $onclick=${ev => {
-        if (!ev.target.click) return;
+        if (!ev.target.clickHandler) return;
 
         let e = ev.target;
         while (e && e.parentElement?.tagName !== "TBODY") e = e.parentElement;
         let i = Array.prototype.indexOf.call(e.parentElement.children, e);
-        ev.target.click(i);
+        [null, select, remove][ev.target.clickHandler](i);
       }}>
         <tbody>
           ${array}
