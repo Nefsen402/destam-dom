@@ -306,6 +306,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 					t.binaryExpression('===', arg, rep.importer('getFirst')),
 					t.returnStatement(ret)
 				),
+				t.expressionStatement(t.callExpression(t.memberExpression(ret, t.identifier('remove')), [])),
 				...idents.map(ident => t.expressionStatement(t.callExpression(ident, [])))
 			])))
 		]));
