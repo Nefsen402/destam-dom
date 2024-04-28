@@ -355,7 +355,7 @@ const transformBabelAST = (ast, options) => {
 					path.node.body.unshift(t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)));
 				}
 
-				const temp = createTemporary(0);
+				const temp = createTemporary(table.size);
 				decls.push(t.importSpecifier(temp, t.identifier(name)));
 				table.set(name, temp);
 				return temp;
