@@ -17,9 +17,10 @@ mount(document.body, html`
 
 ## No virtual dom
 Virtual doms were a mistake:
-- they make a lot of garbage for the garbage collector to collect
+- they allocate a lot of memory just to represent the dom
+- they make it impossible to make static analysis tools to unroll dom descriptions into vanillajs
 - they require a lot of magic called "reconciliation" in order to actually work
-- they have horrible performance with lists
+- they have horrible performance with lists as virtual dom implementations are forced to iterate the entire tree
 
 destam-dom relies on the idea of signals, but destam-dom does not attempt to re-invent another state library, it's built on the existing destam library. Destam provides primitives that generate deltas whenever they are mutated, and destam-dom takes those deltas and interprets them as dom manipluations. This approach achieves true constant time insertion, deletion and modification to dom children.
 
