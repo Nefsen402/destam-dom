@@ -8,8 +8,13 @@ const walked = Symbol();
 
 const createTemporary = i => t.identifier('static_' + i + '_' + Math.random().toString().substring(2));
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
-const createElement = name => {
-	const elem = t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("createElement")), [name]);
+const createElement = (importer, name) => {
+	let elem;
+	if (importer) {
+		elem = t.callExpression(importer('createElement'), [name]);
+	} else {
+		elem = t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("createElement")), [name]);
+	}
 	elem[canAppend] = true;
 	return elem;
 };
@@ -82,7 +87,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			temporary = name;
 		} else {
 			temporary = createTemporary(rep.length);
-			rep.push(declare(temporary, createElement(name)));
+			rep.push(declare(temporary, createElement(rep.importer, name)));
 		}
 
 		temporary[canAppend] = true;
@@ -221,9 +226,17 @@ const computeNode = (rep, refs, cleanup, node) => {
 	for (let i = children.length - 1; i >= 0; i--) {
 		let child = children[i];
 
-		if (child.type === 'ArrayExpression') {
-			children.splice(i, 1, ...child.elements);
-			i += child.elements.length;
+		if (child.type === 'ArrayExpression' && child.elements.find(e => e.type !== 'SpreadElement')) {
+			const elms = child.elements.map(e => {
+				if (e.type === 'SpreadElement') {
+					return t.arrayExpression([e]);
+				}
+
+				return e;
+			});
+
+			children.splice(i, 1, ...elms);
+			i += elms.length;
 			continue;
 		}
 
@@ -233,10 +246,14 @@ const computeNode = (rep, refs, cleanup, node) => {
 		}
 
 		let append = false;
-		if (['StringLiteral', 'BooleanLiteral', 'NumericLiteral'].includes(child.type)) {
+		if ([
+			'StringLiteral', 'BooleanLiteral',
+			'NumericLiteral', 'BigIntLiteral'
+		].includes(child.type)) {
 			let temporary = createTemporary(rep.length);
 			rep.push(declare(temporary, t.callExpression(
-				t.memberExpression(t.identifier("document"), t.identifier("createTextNode")),
+				rep.importer?.("createTextNode") ||
+					t.memberExpression(t.identifier("document"), t.identifier("createTextNode")),
 				[child]
 			)));
 
@@ -252,8 +269,8 @@ const computeNode = (rep, refs, cleanup, node) => {
 		}
 
 		if (append) {
-			rep.push(t.expressionStatement(t.callExpression(
-				t.memberExpression(getTemp(), t.identifier('prepend')),
+			rep.unshift(t.expressionStatement(t.callExpression(
+				t.memberExpression(getTemp(), t.identifier('append')),
 				[child]
 			)));
 
@@ -292,7 +309,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 		const val = t.identifier('val');
 		const before = t.identifier('before');
 		const arg = t.identifier('arg');
-		const ret = temporary || createElement(name);
+		const ret = temporary || createElement(rep.importer, name);
 
 		const idents = cleanup.map((_, i) => _.temporary || createTemporary(rep.length + i));
 		return t.arrowFunctionExpression([elem, val, before], t.blockStatement([
@@ -311,7 +328,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			])))
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
-		return temporary || createElement(name);
+		return temporary || createElement(rep.importer, name);
 	} else {
 		const node = t.callExpression(t.identifier('h'), [temporary || name, props, ...children]);
 		node[walked] = true;
@@ -391,6 +408,15 @@ const transformBabelAST = (ast, options) => {
 			if (ret !== path.node || rep.length > 0 || rep.cleanup.length > 0) {
 				path.replaceWith(ret);
 			}
+
+			// reorder all variable declarations to the top
+			const decls = [];
+			for (let i = 0; i < rep.length; i++) {
+				if (rep[i].type !== 'VariableDeclaration') continue;
+				decls.push(rep[i]);
+				rep.splice(i--, 1);
+			}
+			rep.unshift(...decls);
 
 			block.node.body.splice(block.node.body.indexOf(child), 0, ...rep);
 		}
