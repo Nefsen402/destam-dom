@@ -8,13 +8,6 @@ import htm, {validTags} from '../htm.js';
 let currentTag = 'h';
 const createTag = (args, tagName) => {
 	const expr = t.callExpression(t.identifier(tagName), args);
-	expr.leadingComments = [
-		{
-			type: 'CommentBlock',
-			value: ' @__PURE__ ',
-		}
-	];
-
 	return expr;
 };
 
