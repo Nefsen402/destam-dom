@@ -80,4 +80,4 @@ const Form = ({}, cleanup) => {
 	</>;
 };
 
-mount(document.body, Form);
+mount(document.body, <Form />);

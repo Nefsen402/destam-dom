@@ -34,4 +34,4 @@ const Cats = suspense(Loading, async () => {
 	});
 });
 
-mount(document.body, Cats);
+mount(document.body, <Cats />);
