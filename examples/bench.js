@@ -13,7 +13,7 @@ const Button = (id, text, fn) => {
   </div>`
 };
 
-const App = ({}, cleanup) => {
+const App = () => {
 	let selected = Observer.mutable(null);
   let duration = Observer.mutable(0);
 	let array = OArray();
@@ -21,7 +21,17 @@ const App = ({}, cleanup) => {
   const appendData = count => {
     let arr = [];
     for (let i = 0; i < count; i++) {
-      arr.push(Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`));
+      const label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
+      const dom = html`
+        <tr class=${selected.map(sel => sel === label ? "danger" : "")}>
+          <td class='col-md-4'><a $click=danger $textContent=${label} /></td>
+          <td class='col-md-1'><a><span $click=remove class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
+          <td class='col-md-6'/>
+        </tr>
+      `;
+
+      dom.label = label;
+      arr.push(dom);
     }
 
     array.push(...arr);
@@ -48,7 +58,7 @@ const App = ({}, cleanup) => {
     update = () => {
       let now = performance.now();
       for(let i = 0, len = array.length; i < len; i += 10)
-        array[i].set(array[i].get() + ' !!!');
+        array[i].label.set(array[i].label.get() + ' !!!');
       duration.set(performance.now() - now);
     },
     swapRows = () => {
@@ -73,16 +83,6 @@ const App = ({}, cleanup) => {
       array.splice(idx, 1);
       duration.set(performance.now() - now);
     };
-
-  const Item = ({each: label}, cleanup) => {
-    return html`
-      <tr class=${selected.map(sel => sel === label ? "danger" : "")}>
-        <td class='col-md-4'><a $onclick=${() => selected.set(label)} $textContent=${label} /></td>
-        <td class='col-md-1'><a $onclick=${() => remove(label)}><span class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
-        <td class='col-md-6'/>
-      </tr>
-    `;
-  }
 
   return html`
     <style>
@@ -126,12 +126,26 @@ const App = ({}, cleanup) => {
           ${Button('swaprows', 'Swap Rows', swapRows)}
         </div></div>
       </div></div>
-      <table class='table table-hover table-striped test-data'><tbody>
-        <${Item} each=${array} />
-      </tbody></table>
+      <table class='table table-hover table-striped test-data' $onclick=${ev => {
+        if (!ev.target.click) return;
+
+        let e = ev.target;
+        while (e.parentElement.tagName !== "TBODY") e = e.parentElement;
+        let i = Array.prototype.indexOf.call(e.parentElement.children, e);
+
+        if (ev.target.click === 'remove') {
+          array.splice(i, 1);
+        } else if (ev.target.click === 'danger') {
+          selected.set(array[i]);
+        }
+      }}>
+        <tbody>
+          ${array}
+        </tbody>
+      </table>
       <span class='preloadicon glyphicon glyphicon-remove' aria-hidden="true" />
     </div>
   `;
 }
 
-mount(document.body, App);
+mount(document.body, App());

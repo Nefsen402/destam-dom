@@ -2,7 +2,7 @@ import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
-const getFirst = {};
+export const getFirst = {};
 const createElement = (type, value) => ({ident_: getFirst, type_: type, val_: value});
 
 const mapNode = aux => {
@@ -262,8 +262,6 @@ export const mount = (elem, item, before = noop) => {
 
 			const type = typeof val;
 			if (type === 'function') {
-				assert(!val || val.__is_destam_dom_internal_func,
-					"Mount must be passed an initialized element");
 				func = val;
 			} else if (type !== 'object') {
 				func = primitiveMounter;
@@ -383,7 +381,6 @@ export const h = (e, props = {}, ...children) => {
 			};
 		};
 
-		assert(mounter.__is_destam_dom_internal_func = true);
 		if (!each) {
 			return mounter;
 		} else if (isInstance(each, Observer)) {

@@ -1,12 +1,14 @@
 import Observer, {shallowListener} from 'destam/Observer.js';
-import {isInstance} from 'destam/util.js';
-export { mount } from './dom.js';
+import {isInstance, noop} from 'destam/util.js';
+export { mount, getFirst } from './dom.js';
 
-export const watch = (cleanup, obs, cb) => {
+export const watch = (obs, cb) => {
 	if (isInstance(obs, Observer)) {
-		cleanup(shallowListener(obs, () => cb(obs.get())));
+		const l = shallowListener(obs, () => cb(obs.get()));
 		cb(obs.get());
+		return l;
 	} else {
 		cb(obs);
+		return noop;
 	}
 };

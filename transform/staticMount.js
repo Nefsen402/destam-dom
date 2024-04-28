@@ -25,7 +25,6 @@ const createWatcher = (rep, val, create) => {
 			val.arguments.length === 1 &&
 			val.arguments[0].type === 'ArrowFunctionExpression' &&
 			val.arguments[0].params.length === 1) {
-
 		param = val.arguments[0].params[0];
 
 		if (val.arguments[0].body.type === 'BlockStatement') {
@@ -51,13 +50,13 @@ const createWatcher = (rep, val, create) => {
 		setter = create(setter);
 	}
 
-	return t.expressionStatement(t.callExpression(
+	return t.callExpression(
 		rep.importer('watch'),
-		[rep.cleanup, val, t.arrowFunctionExpression([param], setter)]
-	));
+		[val, t.arrowFunctionExpression([param], setter)]
+	);
 };
 
-const computeNode = (rep, refs, node) => {
+const computeNode = (rep, refs, cleanup, node) => {
 	if (node[walked]) return node;
 	const [name, props, ...children] = node.arguments;
 	const isRef = name.type === 'Identifier' && refs.includes(name.name);
@@ -71,6 +70,9 @@ const computeNode = (rep, refs, node) => {
 	if (props && props.type !== 'ObjectExpression') {
 		return node;
 	}
+
+	const isBase = !cleanup;
+	cleanup = cleanup || [];
 
 	let temporary = null;
 	const getTemp = () => {
@@ -86,6 +88,35 @@ const computeNode = (rep, refs, node) => {
 		temporary[canAppend] = true;
 		return temporary;
 	};
+
+	let canLower = true;
+	if (props) for (let i = 0; i < props.properties.length && canLower; i++) {
+		const prop = props.properties[i];
+		if (prop.type !== 'ObjectProperty') {
+			canLower = false;
+			break;
+		}
+
+		const search = val => {
+			if (val.type === 'ObjectExpression') {
+				for (let ii = 0; ii < val.properties.length; ii++) {
+					const objectProp = val.properties[ii];
+					if (objectProp.type !== 'ObjectProperty') {
+						canLower = false;
+						break;
+					}
+
+					search(objectProp.value);
+				}
+
+				if (val.properties.length === 0) {
+					return true;
+				}
+			}
+		};
+
+		search(prop.value);
+	}
 
 	if (props) for (let i = 0; i < props.properties.length; i++) {
 		const prop = props.properties[i];
@@ -145,8 +176,8 @@ const computeNode = (rep, refs, node) => {
 					rep.push(t.expressionStatement(create(val)));
 
 					return true;
-				} else if (rep.cleanup) {
-					rep.push(createWatcher(rep, val, create));
+				} else if (rep.importer && canLower) {
+					cleanup.push(createWatcher(rep, val, create));
 
 					return true;
 				}
@@ -171,8 +202,8 @@ const computeNode = (rep, refs, node) => {
 					rep.push(t.expressionStatement(create(val)));
 
 					return true;
-				} else if (rep.cleanup) {
-					rep.push(createWatcher(rep, val, create));
+				} else if (rep.importer && canLower) {
+					cleanup.push(createWatcher(rep, val, create));
 
 					return true;
 				}
@@ -189,6 +220,12 @@ const computeNode = (rep, refs, node) => {
 	let prevChild = null;
 	for (let i = children.length - 1; i >= 0; i--) {
 		let child = children[i];
+
+		if (child.type === 'ArrayExpression') {
+			children.splice(i, 1, ...child.elements);
+			i += child.elements.length;
+			continue;
+		}
 
 		if (child.type === 'NullLiteral') {
 			children.splice(i, 1);
@@ -207,7 +244,7 @@ const computeNode = (rep, refs, node) => {
 			append = true;
 		} else if (child.type === 'CallExpression' &&
 				child.callee.type === 'Identifier' && child.callee.name === 'h') {
-			child = computeNode(rep, refs, child);
+			child = computeNode(rep, refs, cleanup, child);
 
 			if (child[canAppend]) {
 				append = true;
@@ -222,7 +259,7 @@ const computeNode = (rep, refs, node) => {
 
 			prevChild = child;
 			child = null;
-		} else if (rep.cleanup) {
+		} else if (rep.importer && canLower) {
 			let temporary = createTemporary(rep.length);
 
 			const mountArguments = [getTemp(), child];
@@ -231,8 +268,9 @@ const computeNode = (rep, refs, node) => {
 				mountArguments.push(prevChild[canAppend] ? t.arrowFunctionExpression([], prevChild) : prevChild);
 			}
 
-			rep.push(declare(temporary, t.callExpression(rep.importer('mount'), mountArguments)));
-			rep.push(t.expressionStatement(t.callExpression(rep.cleanup, [temporary])));
+			const mount = t.callExpression(rep.importer('mount'), mountArguments);
+			mount.temporary = temporary;
+			cleanup.push(mount);
 
 			prevChild = temporary;
 			child = null;
@@ -247,7 +285,31 @@ const computeNode = (rep, refs, node) => {
 		}
 	}
 
-	if (children.length === 0 && (!props || props.properties.length === 0)) {
+	if (rep.importer && cleanup.length && isBase) {
+		if (children.length) throw new Error("Run into an impossible state");
+
+		const elem = t.identifier('elem');
+		const val = t.identifier('val');
+		const before = t.identifier('before');
+		const arg = t.identifier('arg');
+		const ret = temporary || createElement(name);
+
+		const idents = cleanup.map((_, i) => _.temporary || createTemporary(rep.length + i));
+		return t.arrowFunctionExpression([elem, val, before], t.blockStatement([
+			...cleanup.map((cleanup, i) => declare(idents[i], cleanup)),
+			t.expressionStatement(t.callExpression(
+				t.memberExpression(elem, t.identifier('insertBefore'), false, true),
+				[ret, t.callExpression(before, [rep.importer('getFirst')])]
+			)),
+			t.returnStatement(t.arrowFunctionExpression([arg], t.blockStatement([
+				t.ifStatement(
+					t.binaryExpression('===', arg, rep.importer('getFirst')),
+					t.returnStatement(ret)
+				),
+				...idents.map(ident => t.expressionStatement(t.callExpression(ident, [])))
+			])))
+		]));
+	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
 		return temporary || createElement(name);
 	} else {
 		const node = t.callExpression(t.identifier('h'), [temporary || name, props, ...children]);
@@ -286,14 +348,14 @@ const transformBabelAST = (ast, options) => {
 			if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'h') return;
 
 			let block = path;
-			let index;
+			let child;
 			while (!block.node.body) {
 				if (block.parentPath.node.body) {
 					if (!Array.isArray(block.parentPath.node.body)) {
 						block.replaceWith(t.blockStatement([t.returnStatement(block.node)]));
 						return;
 					} else {
-						index = block.parentPath.node.body.indexOf(block.node);
+						child = block.node;
 					}
 				}
 
@@ -321,23 +383,15 @@ const transformBabelAST = (ast, options) => {
 
 			if (importer) {
 				rep.importer = importer;
-
-				if (block.container?.params) {
-					for (let p of block.container?.params) {
-						if (p.type === 'Identifier' && p.name === 'cleanup') {
-							rep.cleanup = p;
-							break;
-						}
-					}
-				}
+				rep.cleanup = [];
 			}
 
-			const ret = computeNode(rep, refs, path.node);
-			if (ret !== path.node || rep.length > 0) {
+			const ret = computeNode(rep, refs, null, path.node);
+			if (ret !== path.node || rep.length > 0 || rep.cleanup.length > 0) {
 				path.replaceWith(ret);
 			}
 
-			block.node.body.splice(index, 0, ...rep);
+			block.node.body.splice(block.node.body.indexOf(child), 0, ...rep);
 		}
 	});
 };
