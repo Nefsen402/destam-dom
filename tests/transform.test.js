@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {describe, it} from 'node:test';
 import {transformBabelAST as staticMount} from '../transform/staticMount.js';
 import {transformBabelAST as htmlLiteral} from '../transform/htmlLiteral.js';
@@ -7,14 +9,15 @@ import parser from '@babel/parser';
 import t from '@babel/types';
 import generate from '@babel/generator';
 
-const files = fs.readdirSync('./tests');
+
+const files = fs.readdirSync(path.resolve(fileURLToPath(import.meta.url), '..'));
 
 for (const file of files) {
 	if (file === 'transform.test.js') continue;
 	if (!file.endsWith('.test.js') && !file.endsWith('.test.jsx')) continue;
 
 	describe("transform " + file, async () => {
-		let source = fs.readFileSync('./tests/' + file).toString();
+		let source = fs.readFileSync(path.resolve(fileURLToPath(import.meta.url), '..', file)).toString();
 		const ast = parser.parse(source, {
 			sourceType: 'module',
 			code: false,
