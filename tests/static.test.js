@@ -213,6 +213,18 @@ test ("mount to null and remove", () => {
 	});
 });
 
+test ("mount node as child", () => {
+	const div = document.createElement("div");
+
+	const remove = mount(null, h(div, {}, document.createTextNode(0)));
+	remove();
+
+	assert.deepEqual(div.tree(), {
+		name: 'div',
+		children: ["0"],
+	});
+});
+
 test ("static h tag returns node", () => {
 	assert(h('div') instanceof Node);
 });
