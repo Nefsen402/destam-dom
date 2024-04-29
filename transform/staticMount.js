@@ -63,7 +63,7 @@ const createWatcher = (rep, val, create) => {
 
 const computeNode = (rep, refs, cleanup, node) => {
 	if (node[walked]) return node;
-	const [name, props, ...children] = node.arguments;
+	let [name, props, ...children] = node.arguments;
 	const isRef = name.type === 'Identifier' && refs.includes(name.name);
 
 	node[walked] = true;
@@ -217,7 +217,11 @@ const computeNode = (rep, refs, cleanup, node) => {
 			return false;
 		};
 
-		if (search(key, prop.value, getTemp)) {
+		if (key.name === 'children') {
+			if (prop.value.type !== 'NullLiteral') {
+				children = prop.value;
+			}
+		} else if (search(key, prop.value, getTemp)) {
 			props.properties.splice(i--, 1);
 		}
 	}
@@ -328,7 +332,9 @@ const computeNode = (rep, refs, cleanup, node) => {
 			])))
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
-		return temporary || createElement(rep.importer, name);
+		if (temporary) return temporary;
+		if (name.type === 'Identifier') return name;
+		return createElement(rep.importer, name);
 	} else {
 		const node = t.callExpression(t.identifier('h'), [temporary || name, props, ...children]);
 		node[walked] = true;
@@ -336,7 +342,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 	}
 }
 
-const transformBabelAST = (ast, options = {}) => {
+export const transformBabelAST = (ast, options = {}) => {
 	let importer;
 
 	babelTraverse.default(ast, {
@@ -405,7 +411,7 @@ const transformBabelAST = (ast, options = {}) => {
 			}
 
 			const ret = computeNode(rep, refs, null, path.node);
-			if (ret !== path.node || rep.length > 0 || rep.cleanup.length > 0) {
+			if (ret !== path.node || rep.length > 0 || rep.cleanup?.length > 0) {
 				path.replaceWith(ret);
 			}
 
