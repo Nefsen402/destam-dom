@@ -388,7 +388,7 @@ export const h = (e, props = {}, ...children) => {
 				const mount = arrayMounter(elem, each.get(), before, mounter);
 				return () => {
 					listener();
-					mount();
+					return mount();
 				};
 			};
 		} else {
