@@ -2,24 +2,23 @@ import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
-export const getFirst = {};
-const createElement = (type, value) => ({ident_: getFirst, type_: type, val_: value});
+export const getFirst = Symbol();
 
 const mapNode = aux => {
 	let bef;
-	return aux?.map(([func, val, handler, pbef]) => {
+	return aux[getFirst]?.map(([func, val, handler, pbef]) => {
 		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 	});
 };
 
-const nodeMounter = (elem, e, before, aux) => {
+const nodeMounter = (elem, e, before) => {
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
 
-	aux = mapNode(aux);
+	let remove = mapNode(e);
 	elem?.insertBefore(e, before(getFirst));
 
-	return (val, newAux) => {
+	return val => {
 		if (!e || val === getFirst) return e;
 
 		if (!val) {
@@ -29,8 +28,8 @@ const nodeMounter = (elem, e, before, aux) => {
 			e.replaceWith(val);
 		}
 
-		if (aux) callAll(aux);
-		if (val) aux = mapNode(newAux);
+		if (remove) callAll(remove);
+		if (val) remove = mapNode(val);
 
 		return e = val;
 	};
@@ -216,9 +215,8 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 	mountList(val);
 
-	return (val, aux) => {
+	return val => {
 		if (val === getFirst) return root.next_(getFirst);
-		if (mounter !== (aux || mount)) val = null;
 
 		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
 			delete link[linkGetter];
@@ -254,12 +252,7 @@ export const mount = (elem, item, before = noop) => {
 			mounted?.();
 			mounted = lastFunc = val;
 		} else {
-			let func, aux;
-			if (val.ident_ === getFirst) {
-				aux = val.val_;
-				val = val.type_;
-			}
-
+			let func;
 			const type = typeof val;
 			if (type === 'function') {
 				func = val;
@@ -276,8 +269,8 @@ export const mount = (elem, item, before = noop) => {
 				not = notifyMount = [];
 			}
 
-			if (!mounted?.(lastFunc === func ? val : null, aux)) {
-				mounted = (lastFunc = func)(elem, val, before, aux);
+			if (!mounted?.(lastFunc === func ? val : null)) {
+				mounted = (lastFunc = func)(elem, val, before);
 				assert(typeof mounted === 'function',
 					"Mount function must return a higher order destroy callback");
 			}
@@ -374,6 +367,10 @@ export const h = (e, props = {}, ...children) => {
 			}
 
 			const m = mount(elem, dom, before);
+			if (!cleanup) {
+				return m;
+			}
+
 			return arg => {
 				if (arg === getFirst) return m(getFirst);
 
@@ -386,9 +383,16 @@ export const h = (e, props = {}, ...children) => {
 		if (!each) {
 			return mounter;
 		} else if (isInstance(each, Observer)) {
-			return each.map(each => createElement(each, mounter));
+			return (elem, val, before) => {
+				const listener = shallowListener(each, () => mount(each.get()));
+				const mount = arrayMounter(elem, each.get(), before, mounter);
+				return () => {
+					listener();
+					mount();
+				};
+			};
 		} else {
-			return createElement(each, mounter);
+			return (elem, val, before) => arrayMounter(elem, each, before, mounter);
 		}
 	}
 
@@ -408,8 +412,7 @@ export const h = (e, props = {}, ...children) => {
 		assert(child !== undefined, "Cannot mount undefined");
 		if (child == null) continue;
 
-		const type = child.ident_ === getFirst ? child.type_ : child;
-		if (!isInstance(type, Node)) {
+		if (!isInstance(child, Node)) {
 			const type = typeof child;
 			if (type !== 'object' && type !== 'function') {
 				child = document.createTextNode(child);
@@ -417,9 +420,8 @@ export const h = (e, props = {}, ...children) => {
 				push(signals, [mount, e, child, bef]);
 				bef = child = null;
 			}
-		} else if (type !== child) {
-			signals.push(...child.val_);
-			child = type;
+		} else {
+			signals.push(...child[getFirst]);
 		}
 
 		if (child) {
@@ -443,9 +445,6 @@ export const h = (e, props = {}, ...children) => {
 		populateSignals(signals, def, e, o, set);
 	}
 
-	if (len(signals)) {
-		return createElement(e, signals);
-	} else {
-		return e;
-	}
+	if (len(signals)) e[getFirst] = signals;
+	return e;
 };
