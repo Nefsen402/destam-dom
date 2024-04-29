@@ -15,3 +15,12 @@ export const watch = (obs, cb) => {
 		return noop;
 	}
 };
+
+export const setAttribute = (e, name, val) => {
+	val = val ?? false;
+	if (typeof val === 'boolean') {
+		e.toggleAttribute(name, val);
+	} else {
+		e.setAttribute(name, val);
+	}
+};

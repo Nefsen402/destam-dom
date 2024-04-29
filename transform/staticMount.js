@@ -194,21 +194,23 @@ const computeNode = (rep, refs, cleanup, node) => {
 
 				return true;
 			} else {
-				const create = val => t.callExpression(
-					t.memberExpression(getTemp(), t.identifier('setAttribute')),
-					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
-				);
-
 				if (binaryType === 'other' || isJoinPattern || [
 					'StringLiteral', 'NumericLiteral',
 					'TemplateLiteral', 'UpdateExpression',
 					'NullLiteral', 'BigIntLiteral',
 				].includes(val.type)) {
-					rep.push(t.expressionStatement(create(val)));
+					rep.push(t.expressionStatement(t.callExpression(
+						t.memberExpression(getTemp(), t.identifier('setAttribute')),
+						[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
+					)));
 
 					return true;
 				} else if (rep.importer && canLower) {
-					cleanup.push(createWatcher(rep, val, create));
+					cleanup.push(createWatcher(rep, val, val => t.callExpression(rep.importer('setAttribute'), [
+						getTemp(),
+						name.type === 'Identifier' ? t.stringLiteral(name.name) : name,
+						val
+					])));
 
 					return true;
 				}
@@ -249,7 +251,6 @@ const computeNode = (rep, refs, cleanup, node) => {
 			continue;
 		}
 
-		let append = false;
 		if ([
 			'StringLiteral', 'BooleanLiteral',
 			'NumericLiteral', 'BigIntLiteral'
@@ -262,17 +263,13 @@ const computeNode = (rep, refs, cleanup, node) => {
 			)));
 
 			child = temporary;
-			append = true;
+			child[canAppend] = true;
 		} else if (child.type === 'CallExpression' &&
 				child.callee.type === 'Identifier' && child.callee.name === 'h') {
 			child = computeNode(rep, refs, cleanup, child);
-
-			if (child[canAppend]) {
-				append = true;
-			}
 		}
 
-		if (append) {
+		if (child[canAppend]) {
 			rep.unshift(t.expressionStatement(t.callExpression(
 				t.memberExpression(getTemp(), t.identifier('append')),
 				[child]
@@ -318,9 +315,10 @@ const computeNode = (rep, refs, cleanup, node) => {
 		const idents = cleanup.map((_, i) => _.temporary || createTemporary(rep.length + i));
 		return t.arrowFunctionExpression([elem, val, before], t.blockStatement([
 			...cleanup.map((cleanup, i) => declare(idents[i], cleanup)),
-			t.expressionStatement(t.callExpression(
-				t.memberExpression(elem, t.identifier('insertBefore'), false, true),
-				[ret, t.callExpression(before, [rep.importer('getFirst')])]
+			t.expressionStatement(t.optionalCallExpression(
+				t.optionalMemberExpression(elem, t.identifier('insertBefore'), false, true),
+				[ret, t.callExpression(before, [rep.importer('getFirst')])],
+				false
 			)),
 			t.returnStatement(t.arrowFunctionExpression([arg], t.blockStatement([
 				t.ifStatement(
