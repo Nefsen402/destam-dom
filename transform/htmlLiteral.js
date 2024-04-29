@@ -209,8 +209,7 @@ const transformChildren = node => {
 		}
 	}
 
-	if (cur) children.push(t.stringLiteral(cur));
-
+	flush();
 	return children;
 };
 
