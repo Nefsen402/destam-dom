@@ -336,7 +336,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 	}
 }
 
-const transformBabelAST = (ast, options) => {
+const transformBabelAST = (ast, options = {}) => {
 	let importer;
 
 	babelTraverse.default(ast, {
