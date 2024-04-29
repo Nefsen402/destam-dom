@@ -2,9 +2,8 @@ import Observer, {shallowListener} from 'destam/Observer.js';
 import {isInstance, noop} from 'destam/util.js';
 export { mount, getFirst } from './dom.js';
 
-const doc = document;
-export const createElement = doc.createElement.bind(doc);
-export const createTextNode = doc.createTextNode.bind(doc);
+export const createElement = elem => document.createElement(elem);
+export const createTextNode = text => document.createTextNode(text);
 
 export const watch = (obs, cb) => {
 	if (isInstance(obs, Observer)) {
