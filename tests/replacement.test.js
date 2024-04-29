@@ -348,3 +348,19 @@ test("replacement of array as each observer", () => {
 		children: ["1", "2", "3"]
 	});
 });
+
+test("replacement of array as each observer remove", () => {
+	const elem = document.createElement("body");
+	let each = Observer.mutable([1, 2, 3]);
+
+	const custom1 = ({each}) => {
+		return each;
+	};
+	const val = Observer.mutable(h(custom1, {each}));
+	const remove = mount(elem, val);
+	remove();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
