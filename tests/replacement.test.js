@@ -26,6 +26,28 @@ test("mount changing text between", () => {
 	});
 });
 
+test("mount changing text between with map", () => {
+	const elem = document.createElement("body");
+	const obs = Observer.mutable(0);
+
+	mount(elem, h('div', {},
+		'first',
+		obs.map(x => x * 2),
+		'second',
+	));
+
+	obs.set(1);
+	obs.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["first", "4", "second"]
+		}],
+	});
+});
+
 test("mount changing type", () => {
 	const elem = document.createElement("body");
 	const obs = Observer.mutable(0);
@@ -194,6 +216,40 @@ test("mount div with changing attribute", () => {
 	});
 });
 
+test("mount div with changing attribute with map", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(1);
+
+	mount(elem, h('div', {val: o.map(o => o * 2)}));
+	o.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {val: '4'}
+		}],
+	});
+});
+
+test("mount div with changing attribute with block map", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(1);
+
+	mount(elem, h('div', {val: o.map(o => {
+		return o * 2;
+	})}));
+	o.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {val: '4'}
+		}],
+	});
+});
+
 test("mount div with changing property", () => {
 	const elem = document.createElement("body");
 	const o = Observer.mutable(1);
@@ -207,6 +263,23 @@ test("mount div with changing property", () => {
 		children: [{
 			name: 'div',
 			val: 2,
+		}],
+	});
+});
+
+test("mount div with changing property with map", () => {
+	const elem = document.createElement("body");
+	const o = Observer.mutable(1);
+
+	mount(elem, h('div', {$val: o.map(o => o * 2)}));
+
+	o.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			val: 4,
 		}],
 	});
 });
