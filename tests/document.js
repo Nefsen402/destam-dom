@@ -129,7 +129,7 @@ global.Node = class Node {
 			return this.textContent_;
 		}
 
-		const ret = {...this};
+		const ret = Object.fromEntries(Object.entries(this));
 		delete ret.parentElement;
 
 		if (this.children.length) {
