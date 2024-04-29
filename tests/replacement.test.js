@@ -288,7 +288,6 @@ test("replacement array impl", () => {
 	});
 });
 
-
 test("replacement node with deps", () => {
 	const elem = document.createElement("body");
 
@@ -309,5 +308,43 @@ test("replacement node with deps", () => {
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
 		children: [{name: 'div', attributes: {val2: 2}}]
+	});
+});
+
+test("replacement of array as each", () => {
+	const elem = document.createElement("body");
+	let each = [1, 2, 3];
+
+	const custom1 = ({each}) => {
+		return each;
+	};
+
+	const custom2 = ({each}) => {
+		return -each;
+	};
+
+	const val = Observer.mutable(h(custom1, {each}));
+	mount(elem, val);
+	val.set(h(custom2, {each}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["-1", "-2", "-3"]
+	});
+});
+
+test("replacement of array as each observer", () => {
+	const elem = document.createElement("body");
+	let each = Observer.mutable([1, 2, 3]);
+
+	const custom1 = ({each}) => {
+		return each;
+	};
+	const val = Observer.mutable(h(custom1, {each}));
+	mount(elem, val);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2", "3"]
 	});
 });
