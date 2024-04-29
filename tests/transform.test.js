@@ -25,7 +25,9 @@ for (const file of files) {
 		htmlLiteral(ast);
 
 		if (!file.endsWith('.jsx')) {
-			staticMount(ast);
+			staticMount(ast, {
+				util_import: '..',
+			});
 		}
 
 		const context = {};

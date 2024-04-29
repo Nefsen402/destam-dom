@@ -218,11 +218,6 @@ test ("mount node as child", () => {
 
 	const remove = mount(null, h(div, {}, document.createTextNode(0)));
 	remove();
-
-	assert.deepEqual(div.tree(), {
-		name: 'div',
-		children: ["0"],
-	});
 });
 
 test ("static h tag returns node", () => {

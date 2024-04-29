@@ -211,7 +211,7 @@ test("mount div with changing property", () => {
 	});
 });
 
-test("mount div with toggle atttribute", () => {
+test("mount div with toggle attribute", () => {
 	const elem = document.createElement("body");
 	const o = Observer.mutable(true);
 
