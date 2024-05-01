@@ -6,7 +6,8 @@ import babelTraverse from '@babel/traverse';
 const canAppend = Symbol();
 const walked = Symbol();
 
-const createTemporary = i => t.identifier('static_' + i + '_' + Math.random().toString().substring(2));
+const allowedTempChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_123456789';
+const createTemporary = i => t.identifier(`$dds$${i}$${Array.from(Array(8), () => allowedTempChars[Math.floor(Math.random() * allowedTempChars.length)]).join('')}`);
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
 const createElement = (importer, name) => {
 	let elem;
