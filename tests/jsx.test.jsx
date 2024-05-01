@@ -113,3 +113,15 @@ test("jsx htm spreading", () => {
 		{name: 'div', props: {one: '1', two: '2'}}
 	);
 });
+
+test("jsx empty expression for comment", () => {
+	assert.deepEqual(<>
+		{/* this is a comment */}
+	</>, []);
+});
+
+test("jsx children spread", () => {
+	assert.deepEqual(<>
+		{...[1, 2]}
+	</>, [1, 2]);
+});

@@ -95,6 +95,63 @@ test("mount node null children", () => {
 	});
 });
 
+test("mount node explicit children", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {children: [1, 2]}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["1", "2"]
+		}]
+	});
+});
+
+test("mount node explicit nested children", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {children: [[1, 2, ...[3, 4]]]}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["1", "2", "3", "4"]
+		}]
+	});
+});
+
+test("mount node explicit nested children 2", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {children: [[1, 2], ...[3, 4]]}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["1", "2", "3", "4"]
+		}]
+	});
+});
+
+test("mount node undeterminate children", () => {
+	const elem = document.createElement("body");
+
+	const children = [1, 2];
+	mount(elem, h('div', {children}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["1", "2"]
+		}]
+	});
+});
+
 test("mount iterable", () => {
 	const elem = document.createElement("body");
 
@@ -134,6 +191,83 @@ test("mount div with attribute", () => {
 	});
 });
 
+test("mount div with bool attribute", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {val: true}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {val: ''}
+		}],
+	});
+});
+
+test("mount div with attribute with normalizer", () => {
+	const elem = document.createElement("body");
+
+	let val = 0;
+	mount(elem, h('div', {val: val + 1}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {val: "1"}
+		}],
+	});
+});
+
+test("mount div with spread attribute", () => {
+	const elem = document.createElement("body");
+
+	const s = {val: 'hello'};
+
+	mount(elem, h('div', {...s}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {val: 'hello'}
+		}],
+	});
+});
+
+test("mount div with spread style", () => {
+	const elem = document.createElement("body");
+
+	const s = {val: 'hello'};
+
+	mount(elem, h('div', {$style: {...s}}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			style: {val: 'hello'}
+		}],
+	});
+});
+
+test("mount div with computed style property", () => {
+	const elem = document.createElement("body");
+
+	const prop = 'hello';
+
+	mount(elem, h('div', {$style: {[prop]: 'hello'}}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			style: {[prop]: 'hello'}
+		}],
+	});
+});
+
 test("mount div with property", () => {
 	const elem = document.createElement("body");
 
@@ -144,6 +278,35 @@ test("mount div with property", () => {
 		children: [{
 			name: 'div',
 			val: 'hello',
+		}],
+	});
+});
+
+test("mount div with property with spaces", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {"$hello world": 'hello'}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			"hello world": 'hello'
+		}],
+	});
+});
+
+test("mount div with property with computed value", () => {
+	const elem = document.createElement("body");
+
+	let prop = 'hello'
+	mount(elem, h('div', {[prop]: 'hello'}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {[prop]: 'hello'}
 		}],
 	});
 });
@@ -175,7 +338,7 @@ test("mount div with nested property removal", () => {
 	});
 });
 
-test ("mount custom element", () => {
+test("mount custom element", () => {
 	const elem = document.createElement("body");
 
 	const custom = () => {
@@ -190,7 +353,7 @@ test ("mount custom element", () => {
 	});
 });
 
-test ("mount to null", () => {
+test("mount to null", () => {
 	const div = document.createElement("div");
 
 	mount(null, h(div, {prop: 'prop'}));
@@ -201,7 +364,7 @@ test ("mount to null", () => {
 	});
 });
 
-test ("mount to null and remove", () => {
+test("mount to null and remove", () => {
 	const div = document.createElement("div");
 
 	const remove = mount(null, h(div, {prop: 'prop'}));
