@@ -102,11 +102,21 @@ const computeNode = (rep, refs, cleanup, node) => {
 			break;
 		}
 
+		if (prop.computed) {
+			canLower = false;
+			break;
+		}
+
 		const search = val => {
 			if (val.type === 'ObjectExpression') {
 				for (let ii = 0; ii < val.properties.length; ii++) {
 					const objectProp = val.properties[ii];
 					if (objectProp.type !== 'ObjectProperty') {
+						canLower = false;
+						break;
+					}
+
+					if (objectProp.computed) {
 						canLower = false;
 						break;
 					}
@@ -124,6 +134,8 @@ const computeNode = (rep, refs, cleanup, node) => {
 		if (prop.type !== 'ObjectProperty') break;
 
 		let key = prop.key;
+		if (prop.computed) break;
+
 		const isRawSetter = (key.name || key.value).charAt(0) === '$';
 		if (isRawSetter) {
 			if (key.type === "Identifier") {
@@ -151,6 +163,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 				for (let ii = 0; ii < val.properties.length; ii++) {
 					const objectProp = val.properties[ii];
 					if (objectProp.type !== 'ObjectProperty') break;
+					if (objectProp.computed) break;
 
 					if (search(objectProp.key, objectProp.value,
 							() => t.memberExpression(getTemp(), name, name.type === 'StringLiteral'))) {
