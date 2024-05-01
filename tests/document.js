@@ -5,7 +5,12 @@ global.Node = class Node {
 		this.name = name;
 		this.children = [];
 		this.attributes = {};
-		this.style = {};
+
+		const style = {};
+		Object.defineProperty(this, 'style', {
+			get: () => style,
+			enumerable: true,
+		});
 	}
 
 	set textContent (content) {

@@ -327,6 +327,23 @@ test("mount div with nested property", () => {
 	});
 });
 
+test("mount div with undeterminate nested property", () => {
+	const elem = document.createElement("body");
+
+	const style = {hello: 'world'};
+	mount(elem, h('div', {$style: style}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			style: {
+				hello: 'world',
+			}
+		}],
+	});
+});
+
 test("mount div with nested property removal", () => {
 	const elem = document.createElement("body");
 
