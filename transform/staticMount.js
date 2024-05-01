@@ -334,10 +334,10 @@ const computeNode = (rep, refs, cleanup, node) => {
 	if (rep.importer && cleanup.length && isBase) {
 		if (children.length) throw new Error("Run into an impossible state");
 
-		const elem = t.identifier('elem');
-		const val = t.identifier('val');
-		const before = t.identifier('before');
-		const arg = t.identifier('arg');
+		const elem = createTemporary(0);
+		const val = createTemporary(1);
+		const before = createTemporary(1);
+		const arg = createTemporary(2);
 		const ret = temporary || createElement(rep.importer, name);
 
 		const idents = cleanup.map((_, i) => _.temporary || createTemporary(rep.length + i));
