@@ -150,7 +150,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 		const search = (name, val, getTemp) => {
 			const binaryType = val.type === 'BinaryExpression' &&
 				([
-					'+', '-', '==', '===', '!=',
+					'==', '===', '!=',
 					'!==', 'in', 'instanceof',
 					'>', '<', "<=", ">="
 				].includes(val.operator) ? 'bool' : 'other');
