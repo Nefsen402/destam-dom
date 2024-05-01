@@ -109,7 +109,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			break;
 		}
 
-		if (prop.key.name === 'children') {
+		if ((prop.key.name || prop.key.value) === 'children') {
 			if (prop.value.type !== 'NullLiteral') {
 				if (prop.value.type !== 'ArrayExpression') {
 					lowerChildren = false;
@@ -120,7 +120,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			}
 		}
 
-		const search = val => {
+		const search = (val, key) => {
 			if (val.type === 'ObjectExpression') {
 				for (let ii = 0; ii < val.properties.length; ii++) {
 					const objectProp = val.properties[ii];
@@ -136,10 +136,12 @@ const computeNode = (rep, refs, cleanup, node) => {
 
 					search(objectProp.value);
 				}
+			} else if ((key?.name || key?.value) === '$style') {
+				canLower = false;
 			}
 		};
 
-		search(prop.value);
+		search(prop.value, prop.key);
 	}
 
 	if (props) for (let i = 0; i < props.properties.length; i++) {
