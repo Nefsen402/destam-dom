@@ -355,12 +355,21 @@ export const h = (e, props = {}, ...children) => {
 			if (each) props.each = item;
 
 			try {
-				dom = e(props, cb => {
-					assert(typeof cb === 'function', "The cleanup function must be passed a function");
-					push(cleanup || (cleanup = []), cb);
-				}, cb => {
-					assert(typeof cb === 'function', "The mount function must be passed a function");
-					push(notifyMount, cb);
+				dom = e(props, (...cb) => {
+					assert(cb.length, "The cleanup function must be called with arguments");
+					assert(!cb.find(cb => typeof cb !== 'function'),
+						"The cleanup function must be passed a function");
+
+					if (cleanup) {
+						cleanup.push(...cleanup);
+					} else {
+						cleanup = cb;
+					}
+				}, (...cb) => {
+					assert(cb.length, "The mount function must be called with arguments");
+					assert(!cb.find(cb => typeof cb !== 'function'),
+						"The mount function must be passed a function");
+					notifyMount.push(...cb);
 				});
 			} catch (e) {
 				console.error(e);
