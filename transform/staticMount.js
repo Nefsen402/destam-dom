@@ -113,10 +113,6 @@ const computeNode = (rep, refs, cleanup, node) => {
 
 					search(objectProp.value);
 				}
-
-				if (val.properties.length === 0) {
-					return true;
-				}
 			}
 		};
 
