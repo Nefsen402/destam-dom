@@ -109,6 +109,17 @@ const computeNode = (rep, refs, cleanup, node) => {
 			break;
 		}
 
+		if (prop.key.name === 'children') {
+			if (prop.value.type !== 'NullLiteral') {
+				if (prop.value.type !== 'ArrayExpression') {
+					lowerChildren = false;
+					canLower = false;
+				} else {
+					children = prop.value.elements;
+				}
+			}
+		}
+
 		const search = val => {
 			if (val.type === 'ObjectExpression') {
 				for (let ii = 0; ii < val.properties.length; ii++) {
@@ -134,9 +145,13 @@ const computeNode = (rep, refs, cleanup, node) => {
 	if (props) for (let i = 0; i < props.properties.length; i++) {
 		const prop = props.properties[i];
 		if (prop.type !== 'ObjectProperty') break;
+		if (prop.computed) break;
 
 		let key = prop.key;
-		if (prop.computed) break;
+		if (key.name === 'children') {
+			if (lowerChildren) props.properties.splice(i--, 1);
+			continue;
+		}
 
 		const isRawSetter = (key.name || key.value).charAt(0) === '$';
 		if (isRawSetter) {
@@ -230,15 +245,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			return false;
 		};
 
-		if (key.name === 'children') {
-			if (prop.value.type !== 'NullLiteral') {
-				if (prop.value.type !== 'ArrayExpression') {
-					lowerChildren = false;
-				} else {
-					children = prop.value.elements;
-				}
-			}
-		} else if (search(key, prop.value, getTemp)) {
+		if (search(key, prop.value, getTemp)) {
 			props.properties.splice(i--, 1);
 		}
 	}
