@@ -254,6 +254,10 @@ const computeNode = (rep, refs, cleanup, node) => {
 	if (lowerChildren) for (let i = children.length - 1; i >= 0; i--) {
 		let child = children[i];
 
+		if (child.type === 'SpreadElement') {
+			child = t.arrayExpression([child]);
+		}
+
 		if (child.type === 'ArrayExpression' && child.elements.find(e => e.type !== 'SpreadElement')) {
 			const elms = child.elements.map(e => {
 				if (e.type === 'SpreadElement') {
