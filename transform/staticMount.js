@@ -95,6 +95,8 @@ const computeNode = (rep, refs, cleanup, node) => {
 	};
 
 	let canLower = true;
+	let lowerChildren = true;
+
 	if (props) for (let i = 0; i < props.properties.length && canLower; i++) {
 		const prop = props.properties[i];
 		if (prop.type !== 'ObjectProperty') {
@@ -230,7 +232,11 @@ const computeNode = (rep, refs, cleanup, node) => {
 
 		if (key.name === 'children') {
 			if (prop.value.type !== 'NullLiteral') {
-				children = prop.value;
+				if (prop.value.type !== 'ArrayExpression') {
+					lowerChildren = false;
+				} else {
+					children = prop.value.elements;
+				}
 			}
 		} else if (search(key, prop.value, getTemp)) {
 			props.properties.splice(i--, 1);
@@ -238,7 +244,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 	}
 
 	let prevChild = null;
-	for (let i = children.length - 1; i >= 0; i--) {
+	if (lowerChildren) for (let i = children.length - 1; i >= 0; i--) {
 		let child = children[i];
 
 		if (child.type === 'ArrayExpression' && child.elements.find(e => e.type !== 'SpreadElement')) {
