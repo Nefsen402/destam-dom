@@ -347,6 +347,19 @@ html`
 
 ```
 
+The cleanup and mount functions can also accept multiple arguments. 0 arguments
+is also allowed.
+```js
+const Component = ({}, cleanup, mounted) => {
+	cleanup(
+		() => console.log("my first cleanup function was called"),
+		() => console.log("my second cleanup function was called"),
+	);
+
+	return "my custom component";
+};
+```
+
 Note that the above timer example can be achieved purely with `Observer.timer`.
 
 ```js
