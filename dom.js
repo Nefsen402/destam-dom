@@ -356,7 +356,6 @@ export const h = (e, props = {}, ...children) => {
 
 			try {
 				dom = e(props, (...cb) => {
-					assert(cb.length, "The cleanup function must be called with arguments");
 					assert(!cb.find(cb => typeof cb !== 'function'),
 						"The cleanup function must be passed a function");
 
@@ -366,7 +365,6 @@ export const h = (e, props = {}, ...children) => {
 						cleanup = cb;
 					}
 				}, (...cb) => {
-					assert(cb.length, "The mount function must be called with arguments");
 					assert(!cb.find(cb => typeof cb !== 'function'),
 						"The mount function must be passed a function");
 					notifyMount.push(...cb);
