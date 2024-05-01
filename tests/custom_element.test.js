@@ -44,6 +44,29 @@ test("custom element cleanup", () => {
 	assert(cleaned);
 });
 
+test("custom element cleanup multiple", () => {
+	const elem = document.createElement("body");
+
+	let cleaned = false;
+	let cleaned2 = false;
+	let cleanup = mount(elem, h(({}, cleanup) => {
+		cleanup(
+			() => cleaned = true,
+			() => cleaned2 = true,
+		);
+
+		return "hello world";
+	}));
+
+	cleanup();
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+
+	assert(cleaned);
+	assert(cleaned2);
+});
+
 test("custom element mounted", () => {
 	const elem = document.createElement("body");
 
@@ -57,6 +80,24 @@ test("custom element mounted", () => {
 	}));
 
 	assert(mounted);
+});
+
+test("custom element mounted multiple", () => {
+	const elem = document.createElement("body");
+
+	let mounted = false;
+	let mounted2 = false;
+	let cleanup = mount(elem, h(({}, cleanup, mounted_) => {
+		mounted_(
+			() => mounted = true,
+			() => mounted2 = true,
+		);
+
+		return "hello world";
+	}));
+
+	assert(mounted);
+	assert(mounted2);
 });
 
 test("custom element mounted tree", () => {
