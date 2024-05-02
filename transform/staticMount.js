@@ -7,7 +7,22 @@ const canAppend = Symbol();
 const walked = Symbol();
 
 const allowedTempChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_123456789';
-const createTemporary = i => t.identifier(`$dds$${i}$${Array.from(Array(8), () => allowedTempChars[Math.floor(Math.random() * allowedTempChars.length)]).join('')}`);
+let tempCounter = 0;
+const createTemporary = () => {
+	let str = "$$";
+
+	let c = tempCounter++;
+	for (let i = 0; i < 2; i++) {
+		str += allowedTempChars[c % allowedTempChars.length];
+		c = Math.floor(c / allowedTempChars.length);
+	}
+
+	for (let i = 0; i < 8; i++) {
+		str += allowedTempChars[Math.floor(Math.random() * allowedTempChars.length)];
+	}
+
+	return t.identifier(str);
+};
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
 const createElement = (importer, name) => {
 	let elem;
@@ -87,7 +102,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 		if (isRef) {
 			temporary = name;
 		} else {
-			temporary = createTemporary(rep.length);
+			temporary = createTemporary();
 			rep.push(declare(temporary, createElement(rep.importer, name)));
 		}
 
@@ -284,7 +299,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			'StringLiteral', 'BooleanLiteral',
 			'NumericLiteral', 'BigIntLiteral'
 		].includes(child.type)) {
-			let temporary = createTemporary(rep.length);
+			let temporary = createTemporary();
 			rep.push(declare(temporary, t.callExpression(
 				rep.importer?.("createTextNode") ||
 					t.memberExpression(t.identifier("document"), t.identifier("createTextNode")),
@@ -307,7 +322,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			prevChild = child;
 			child = null;
 		} else if (rep.importer && canLower) {
-			let temporary = createTemporary(rep.length);
+			let temporary = createTemporary();
 
 			const mountArguments = [getTemp(), child];
 
@@ -335,13 +350,13 @@ const computeNode = (rep, refs, cleanup, node) => {
 	if (rep.importer && cleanup.length && isBase) {
 		if (children.length) throw new Error("Run into an impossible state");
 
-		const elem = createTemporary(0);
-		const val = createTemporary(1);
-		const before = createTemporary(1);
-		const arg = createTemporary(2);
+		const elem = createTemporary();
+		const val = createTemporary();
+		const before = createTemporary();
+		const arg = createTemporary();
 		const ret = temporary || createElement(rep.importer, name);
 
-		const idents = cleanup.map((_, i) => _.temporary || createTemporary(rep.length + i));
+		const idents = cleanup.map((_, i) => _.temporary || createTemporary());
 		return t.arrowFunctionExpression([elem, val, before], t.blockStatement([
 			...cleanup.map((cleanup, i) => declare(idents[i], cleanup)),
 			t.expressionStatement(t.optionalCallExpression(
@@ -388,7 +403,7 @@ export const transformBabelAST = (ast, options = {}) => {
 					path.node.body.unshift(t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)));
 				}
 
-				const temp = createTemporary(table.size);
+				const temp = createTemporary();
 				decls.push(t.importSpecifier(temp, t.identifier(name)));
 				table.set(name, temp);
 				return temp;
