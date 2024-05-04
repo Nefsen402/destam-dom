@@ -2,35 +2,33 @@ import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
-export const getFirst = Symbol();
+export const getFirst = {};
 
-const mapNode = aux => {
+const mapNode = signals => {
 	let bef;
-	return aux[getFirst]?.map(([func, val, handler, pbef]) => {
+	return signals?.map(([func, val, handler, pbef]) => {
 		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 	});
 };
 
-const nodeMounter = (elem, e, before) => {
+const nodeMounter = (elem, e, before, signals) => {
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
 
-	let remove = mapNode(e);
+	const remove = mapNode(signals);
 	elem?.insertBefore(e, before(getFirst));
 
 	return val => {
 		if (!e || val === getFirst) return e;
-		let rem = remove;
 
 		if (!val) {
 			e.remove();
+			if (remove) callAll(remove);
 		} else {
+			assert(!signals);
 			assert(isInstance(val, Node));
-			remove = mapNode(val);
 			e.replaceWith(val);
 		}
-
-		if (rem) callAll(rem);
 
 		return e = val;
 	};
@@ -453,6 +451,9 @@ export const h = (e, props = {}, ...children) => {
 		populateSignals(signals, def, e, o, set);
 	}
 
-	if (len(signals)) e[getFirst] = signals;
-	return e;
+	if (len(signals)) {
+		return (elem, val, before) => nodeMounter(elem, e, before, signals);
+	} else {
+		return e;
+	}
 };
