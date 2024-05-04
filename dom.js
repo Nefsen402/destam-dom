@@ -20,16 +20,17 @@ const nodeMounter = (elem, e, before) => {
 
 	return val => {
 		if (!e || val === getFirst) return e;
+		let rem = remove;
 
 		if (!val) {
 			e.remove();
 		} else {
 			assert(isInstance(val, Node));
+			remove = mapNode(val);
 			e.replaceWith(val);
 		}
 
-		if (remove) callAll(remove);
-		if (val) remove = mapNode(val);
+		if (rem) callAll(rem);
 
 		return e = val;
 	};
