@@ -437,3 +437,22 @@ test("replacement of array as each observer remove", () => {
 		name: 'body',
 	});
 });
+
+test("replacement reuse node", () => {
+	const elem = document.createElement("body");
+	let Elem = document.createElement('div');
+
+	mount(null, h(Elem, {},
+		Observer.immutable("Hello world"),
+	));
+
+	mount(elem, Elem);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["Hello world"]
+		}],
+	});
+});

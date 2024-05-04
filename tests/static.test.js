@@ -393,17 +393,36 @@ test("mount to null and remove", () => {
 	});
 });
 
-test ("mount node as child", () => {
+test("mount node as child", () => {
 	const div = document.createElement("div");
 
 	const remove = mount(null, h(div, {}, document.createTextNode(0)));
 	remove();
 });
 
-test ("static h tag returns node", () => {
+test("static h tag returns node", () => {
 	assert(h('div') instanceof Node);
 });
 
-test ("static h tag returns node with attribute", () => {
+test("static h tag returns node with attribute", () => {
 	assert(h('div', {class: 'test'}) instanceof Node);
+});
+
+test("static reuse node", () => {
+	const elem = document.createElement("body");
+	let Elem = document.createElement('div');
+
+	mount(null, h(Elem, {},
+		"Hello world"
+	));
+
+	mount(elem, Elem);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["Hello world"]
+		}],
+	});
 });
