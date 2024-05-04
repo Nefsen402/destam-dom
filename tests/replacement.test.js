@@ -456,3 +456,22 @@ test("replacement reuse node", () => {
 		}],
 	});
 });
+
+test("replacement clear nested node", () => {
+	const elem = document.createElement("body");
+	const elem2 = document.createElement("div");
+
+	const rem = mount(elem, h('div', {},
+		h(elem2, {}, Observer.immutable("Hello world")),
+	));
+
+	rem();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+
+	assert.deepEqual(elem2.tree(), {
+		name: 'div',
+	});
+});
