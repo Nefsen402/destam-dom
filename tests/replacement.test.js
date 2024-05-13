@@ -475,3 +475,37 @@ test("replacement clear nested node", () => {
 		name: 'div',
 	});
 });
+
+test("map nested node", () => {
+	const elem = document.createElement("body");
+
+	const content = Observer.mutable(null);
+	const remove = mount(elem, content.map(content => {
+		if (!content) {
+			return null;
+		}
+
+		return h('div', {id: 'content'}, content);
+	}));
+
+	content.set(h('div'));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {
+				id: 'content',
+			},
+			children: [{
+				name: 'div'
+			}]
+		}]
+	});
+
+	remove();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
