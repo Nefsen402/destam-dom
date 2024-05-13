@@ -112,21 +112,6 @@ const h = (name, props, ...children) => {
 					for (let l of propListeners.values()) l();
 				};
 			};
-
-			return style[observerGetter] &&
-					shallowListener(style[observerGetter], commit => {
-				// has the entire object been switched out?
-				for (let delta of commit) {
-					if (delta.getParent() !== style) {
-						reset();
-						return;
-					}
-				}
-
-				for (let delta of commit) {
-					set(delta.ref, delta.value);
-				}
-			});
 		};
 
 		if (style instanceof Observer) {
