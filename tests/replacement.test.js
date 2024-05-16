@@ -509,3 +509,70 @@ test("map nested node", () => {
 		name: 'body',
 	});
 });
+
+test("shadow constant", () => {
+	const elem = document.createElement("body");
+
+	const constant = "hello world";
+	const create = (constant) => {
+		mount(elem, h('div', {constant}));
+	};
+
+	const mutable = Observer.mutable(0);
+	create(mutable);
+	mutable.set(1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {
+				constant: 1,
+			}
+		}],
+	});
+});
+
+test("shadow with destructure", () => {
+	const elem = document.createElement("body");
+
+	const constant = "hello world";
+	const create = ({mutable: constant}) => {
+		mount(elem, h('div', {constant}));
+	};
+
+	const mutable = Observer.mutable(0);
+	create({mutable});
+	mutable.set(1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			attributes: {
+				constant: 1,
+			}
+		}],
+	});
+});
+
+test("shadow with spread", () => {
+	const elem = document.createElement("body");
+
+	const $constant = "hello world";
+	const create = (...$constant) => {
+		mount(elem, h('div', {$constant}));
+	};
+
+	const mutable = Observer.mutable(0);
+	create(mutable);
+	mutable.set(1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			constant: [mutable],
+		}],
+	});
+});
