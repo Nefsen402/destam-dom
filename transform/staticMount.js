@@ -77,10 +77,18 @@ const createWatcher = (rep, val, create) => {
 	);
 };
 
-const computeNode = (rep, refs, cleanup, node) => {
+const discoverRef = init => {
+	return init &&
+		init.type === 'CallExpression' &&
+		init.callee.type === 'MemberExpression' &&
+		init.callee.object.type === 'Identifier' &&
+		init.callee.object.name === 'document';
+}
+
+const computeNode = (rep, cleanup, node) => {
 	if (node[walked]) return node;
 	let [name, props, ...children] = node.arguments;
-	const isRef = name.type === 'Identifier' && refs.includes(name.name);
+	const isRef = name.type === 'Identifier' && discoverRef(rep.constants.get(name.name));
 
 	node[walked] = true;
 
@@ -180,7 +188,12 @@ const computeNode = (rep, refs, cleanup, node) => {
 			}
 		}
 
-		const search = (name, val, getTemp) => {
+		const search = (name, orig, getTemp) => {
+			let val = orig;
+			if (val.type === 'Identifier' && rep.constants.has(val.name)) {
+				val = rep.constants.get(val.name);
+			}
+
 			const binaryType = val.type === 'BinaryExpression' &&
 				([
 					'==', '===', '!=',
@@ -222,18 +235,18 @@ const computeNode = (rep, refs, cleanup, node) => {
 					'TemplateLiteral', 'UpdateExpression',
 					'NullLiteral', 'BigIntLiteral',
 				].includes(val.type)) {
-					rep.push(t.expressionStatement(create(val)));
+					rep.push(t.expressionStatement(create(orig)));
 
 					return true;
 				} else if (rep.importer && canLower) {
-					cleanup.push(createWatcher(rep, val, create));
+					cleanup.push(createWatcher(rep, orig, create));
 
 					return true;
 				}
 			} else if (binaryType === 'bool' || val.type === 'BooleanLiteral') {
 				rep.push(t.expressionStatement(t.callExpression(
 					t.memberExpression(getTemp(), t.identifier('toggleAttribute')),
-					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
+					[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, orig]
 				)));
 
 				return true;
@@ -245,12 +258,12 @@ const computeNode = (rep, refs, cleanup, node) => {
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(t.callExpression(
 						t.memberExpression(getTemp(), t.identifier('setAttribute')),
-						[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, val]
+						[name.type === 'Identifier' ? t.stringLiteral(name.name) : name, orig]
 					)));
 
 					return true;
 				} else if (rep.importer && canLower) {
-					cleanup.push(createWatcher(rep, val, val => t.callExpression(rep.importer('setAttribute'), [
+					cleanup.push(createWatcher(rep, orig, val => t.callExpression(rep.importer('setAttribute'), [
 						getTemp(),
 						name.type === 'Identifier' ? t.stringLiteral(name.name) : name,
 						val
@@ -310,7 +323,7 @@ const computeNode = (rep, refs, cleanup, node) => {
 			child[canAppend] = true;
 		} else if (child.type === 'CallExpression' &&
 				child.callee.type === 'Identifier' && child.callee.name === 'h') {
-			child = computeNode(rep, refs, cleanup, child);
+			child = computeNode(rep, cleanup, child);
 		}
 
 		if (child[canAppend]) {
@@ -384,6 +397,22 @@ const computeNode = (rep, refs, cleanup, node) => {
 	}
 }
 
+const recordConstants = path => {
+	const constants = new Map();
+
+	for (const b of path.node.body) {
+		if (b.type === 'VariableDeclaration' && b.kind === 'const') {
+			for (const decl of b.declarations) {
+				if (decl.type === 'VariableDeclarator')  {
+					constants.set(decl.id.name, decl.init);
+				}
+			}
+		}
+	}
+
+	path._constants = constants;
+};
+
 export const transformBabelAST = (ast, options = {}) => {
 	let importer;
 
@@ -408,7 +437,10 @@ export const transformBabelAST = (ast, options = {}) => {
 				table.set(name, temp);
 				return temp;
 			};
+
+			recordConstants(path);
 		},
+		BlockStatement: recordConstants,
 		CallExpression: path => {
 			if (path.node[walked]) return;
 			if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'h') return;
@@ -428,31 +460,51 @@ export const transformBabelAST = (ast, options = {}) => {
 				block = block.parentPath;
 			}
 
-			const refs = [];
-
-			// look for ref definitions
-			for (const b of block.node.body) {
-				if (b.type === 'VariableDeclaration' && b.kind === 'const') {
-					for (let decl of b.declarations) {
-						if (decl.type === 'VariableDeclarator' &&
-								decl.init && decl.init.type === 'CallExpression' &&
-								decl.init.callee.type === 'MemberExpression' &&
-								decl.init.callee.object.type === 'Identifier' &&
-								decl.init.callee.object.name === 'document')  {
-							refs.push(decl.id.name)
-						}
+			const constants = new Map();
+			const searchParams = node => {
+				if (node.type === 'Identifier') {
+					constants.delete(node.name);
+				} else if (node.type === 'ObjectPattern') {
+					for (const prop of node.properties) {
+						searchParams(prop.value);
+					}
+				} else if (node.type === 'RestElement') {
+					if (node.argument.type === 'Identifier') {
+						constants.delete(node.argument.name);
+					}
+				} else if (node.params) {
+					for (let param of node.params) {
+						searchParams(param);
 					}
 				}
+			};
+
+			let stack = [];
+			let constSearch = path;
+			while (constSearch) {
+				stack.push(constSearch);
+				constSearch = constSearch.parentPath;
+			}
+
+			for (const constSearch of stack.reverse()) {
+				if (constSearch._constants) {
+					for (const [key, value] of constSearch._constants.entries()) {
+						constants.set(key, value);
+					}
+				}
+
+				searchParams(constSearch.node);
 			}
 
 			const rep = [];
+			rep.constants = constants;
 
 			if (importer) {
 				rep.importer = importer;
 				rep.cleanup = [];
 			}
 
-			const ret = computeNode(rep, refs, null, path.node);
+			const ret = computeNode(rep, null, path.node);
 			if (ret !== path.node || rep.length > 0 || rep.cleanup?.length > 0) {
 				path.replaceWith(ret);
 			}
@@ -506,15 +558,19 @@ console.log(transform(`
 
 	const Component = ({}, cleanup) => h('div', {hello}, null, one, two, three, "hello");
 
-	const Comp2 = ({}, cleanup) => {
+	const constant = "hello world";
+
+	const Comp2 = ({}, cleanup, ...constant) => {
 		h('div', {
 			class: observer.map(e => e * 2),
 			classBody: observer.map(e => {
 				return 2;
-			})
+			}),
+			constant
 		})
 	};
 `, {util_import: 'destam-dom'}).code);
 */
+
 
 export default transform;
