@@ -24,8 +24,8 @@ const App = () => {
       const label = Observer.mutable(`${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`);
       const dom = html`
         <tr class=${selected.map(sel => sel === label ? "danger" : "")}>
-          <td class='col-md-4'><a $clickHandler=${1} $textContent=${label} /></td>
-          <td class='col-md-1'><a><span $clickHandler=${2} class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
+          <td class='col-md-4'><a $clickHandler=${select} $textContent=${label} /></td>
+          <td class='col-md-1'><a><span $clickHandler=${remove} class='glyphicon glyphicon-remove' aria-hidden="true" $textContent=x /></a></td>
           <td class='col-md-6'/>
         </tr>
       `;
@@ -136,7 +136,7 @@ const App = () => {
         let e = ev.target;
         while (e && e.parentElement?.tagName !== "TBODY") e = e.parentElement;
         let i = Array.prototype.indexOf.call(e.parentElement.children, e);
-        [null, select, remove][ev.target.clickHandler](i);
+       ev.target.clickHandler(i);
       }}>
         <tbody>
           ${array}
