@@ -322,7 +322,7 @@ const populateSignals = (signals, val, e, name, set) => {
 				"destam-dom does not support nested observers");
 			return set(name, v, e);
 		}, 0]);
-	} else if (typeof val !== 'object') {
+	} else if (typeof val !== 'object' || Array.isArray(val)) {
 		set(name, val, e);
 	} else {
 		for (let o in val) {
