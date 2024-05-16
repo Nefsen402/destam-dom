@@ -52,13 +52,26 @@ const createWatcher = (rep, val, create) => {
 			setter = val.arguments[0].body;
 
 			const traverse = node => {
+				if (!node || node.type.includes("Function")) return node;
+
+				if (node.type === 'BlockStatement') {
+					for (let i = 0; i < node.body.length; i++) {
+						traverse(node.body[i]);
+					}
+				} else {
+					traverse(node.body);
+				}
+
+				if (node.type === 'IfStatement') {
+					traverse(node.consequent);
+					traverse(node.alternate);
+				}
+
 				if (node.type === 'ReturnStatement') {
 					node.argument = create(node.argument || t.identifier('undefined'));
-				} else if (Array.isArray(node.body) && !node.type.includes("Function")) {
-					for (let thing of node.body) {
-						traverse(thing);
-					}
 				}
+
+				return node;
 			};
 
 			traverse(setter);
