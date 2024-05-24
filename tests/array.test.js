@@ -302,3 +302,21 @@ test("array modify from mount", () => {
 	});
 	assert(count === 2)
 });
+
+test("replace empty oarray", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([]);
+	mount(elem, arr);
+
+	let oarr = OArray();
+	arr.set(oarr);
+
+	oarr.push(document.createElement("div"));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+		}]
+	});
+});
