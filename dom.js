@@ -74,7 +74,7 @@ const insertMap = (map, item) => {
 };
 
 const cleanupArrayMounts = mounts => {
-	for (const arr of mounts.values()) {
+	if (mounts) for (const arr of mounts.values()) {
 		for (const mount of arr) {
 			mount.prev_.next_ = mount.next_;
 			mount.next_.prev_ = mount.prev_;
@@ -205,7 +205,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 					}
 				}
 
-				if (orphaned) cleanupArrayMounts(orphaned);
+				cleanupArrayMounts(orphaned);
 			}
 
 			callAllSafe(not);
@@ -225,10 +225,8 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 		const orphaned = val && len(val) !== 0 ? new Map() : null;
 		destroy(orphaned);
-		if (orphaned) {
-			mountList(val, orphaned);
-			cleanupArrayMounts(orphaned);
-		}
+		if (val) mountList(val, orphaned);
+		cleanupArrayMounts(orphaned);
 
 		return val;
 	};
