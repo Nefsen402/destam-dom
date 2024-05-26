@@ -186,10 +186,73 @@ const transform = (source, options) => {
 			ret.push(id);
 		}
 
-		if (path.node.params[path.node.params.length - 1]?.type === 'RestElement') {
-			if (ret.length) path.node.body.body.unshift(t.variableDeclaration('var', ret.map(i => t.variableDeclarator(i))));
-		} else {
+		if (!ret.length) {
+			return;
+		}
+
+		// find leading variable assignments and squash them. Terser doesn't
+		// seem to be smart enough to do this on its own.
+		const decls = new Map(ret.map(i => [i.name, t.variableDeclarator(i)]));
+		const body = path.node.body.body;
+		const declsCleanup = [];
+		let movedExpressions = 0;
+
+		for (let elem of body) {
+			if (elem.type === 'ExpressionStatement') {
+				elem = elem.expression;
+			}
+
+			if (elem.type === 'AssignmentExpression' &&
+					elem.operator === '=' &&
+					elem.left.type === 'Identifier' &&
+					decls.has(elem.left.name) &&
+					!decls.get(elem.left.name).init) {
+				decls.get(elem.left.name).init = elem.right;
+				declsCleanup.push(() => {
+					let i = body.indexOf(elem);
+					body.splice(i, 1);
+				});
+				movedExpressions++;
+			} else if (elem.type === 'ForStatement' &&
+					elem.init?.type === 'AssignmentExpression' &&
+					decls.has(elem.init.left.name) &&
+					!decls.get(elem.init.left.name).init) {
+				decls.get(elem.init.left.name).init = elem.init.right;
+				declsCleanup.push(() => elem.init = null);
+				movedExpressions++;
+				break;
+			} else if (elem.type === 'ForStatement' &&
+					elem.init?.type === 'SequenceExpression') {
+				let i = 0;
+				for (let expr of elem.init.expressions) {
+					if (decls.has(expr.left.name) &&
+							!decls.get(expr.left.name).init) {
+						decls.get(expr.left.name).init = expr.right;
+						i++;
+					} else {
+						break;
+					}
+				}
+				movedExpressions += i;
+				declsCleanup.push(() => {
+					if (i === elem.init.length) {
+						elem.init = null;
+					} else{
+						elem.init.expressions.splice(0, i);
+					}
+				});
+				break;
+			} else {
+				break;
+			}
+		}
+
+		if (path.node.params[path.node.params.length - 1]?.type !== 'RestElement' &&
+				movedExpressions <= 4) {
 			path.node.params.push(...ret);
+		} else {
+			for (let c of declsCleanup) c();
+			body.unshift(t.variableDeclaration('var', [...decls.values()]));
 		}
 	};
 
@@ -238,27 +301,13 @@ const transform = (source, options) => {
 
 /*
 console.log(transform(`
-const chainGov = (prev, next) => (child, info, entry) => {
-	if (isSymbol(info)) info = [prev, info];
-	let [gov, curInfo] = info;
-
-	curInfo = gov(child, curInfo, entry);
-	if (curInfo === false) {
-		return false;
-	}
-
-	if (gov === prev && isSymbol(curInfo)) {
-		gov = next;
-
-		curInfo = gov(child, curInfo, entry);
-		if (curInfo === false) {
-			return false;
-		}
-	}
-
-	return [gov, curInfo];
-};
+	const stuff = () => {
+		let a = 0;
+		let b = 0;
+		for (let i = 1, j = 2;;) {}
+	};
 `).code)
 */
+
 
 export default transform;
