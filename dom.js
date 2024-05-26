@@ -2,20 +2,21 @@ import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
-export const getFirst = {};
+export const getFirst = Symbol();
 
-const mapNode = signals => {
+const mapNode = elem => {
 	let bef;
-	return signals?.map(([func, val, handler, pbef]) => {
+	return elem[getFirst]?.map(([func, val, handler, pbef]) => {
 		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 	});
 };
 
-const nodeMounter = (elem, e, before, signals) => {
+const nodeMounter = (elem, e, before) => {
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
 
-	const remove = mapNode(signals);
+	let remove = mapNode(e);
+	if (remove) e = e.elem_;
 	elem?.insertBefore(e, before(getFirst));
 
 	return val => {
@@ -25,9 +26,11 @@ const nodeMounter = (elem, e, before, signals) => {
 			e.remove();
 			if (remove) callAll(remove);
 		} else {
-			assert(!signals);
-			assert(isInstance(val, Node));
+			const old = remove;
+			remove = mapNode(val);
+			if (remove) val = val.elem_;
 			e.replaceWith(val);
+			if (old) callAll(old);
 		}
 
 		return e = val;
@@ -255,7 +258,7 @@ export const mount = (elem, item, before = noop) => {
 				func = val;
 			} else if (type !== 'object') {
 				func = primitiveMounter;
-			} else if (isInstance(val, Node)) {
+			} else if (val[getFirst] || isInstance(val, Node)) {
 				func = nodeMounter;
 			} else {
 				func = arrayMounter;
@@ -418,6 +421,7 @@ export const h = (e, props = {}, ...children) => {
 
 		if (child[getFirst]) {
 			signals.push(...child[getFirst]);
+			child = child.elem_;
 		} else if (!isInstance(child, Node)) {
 			const type = typeof child;
 			if (type !== 'object' && type !== 'function') {
@@ -449,9 +453,9 @@ export const h = (e, props = {}, ...children) => {
 		populateSignals(signals, def, e, o, set);
 	}
 
-	if (len(signals)) {
-		return (elem, val, before) => nodeMounter(elem, e, before, signals);
-	} else {
+	if (!len(signals)) {
 		return e;
 	}
+
+	return {[getFirst]: signals, elem_: e};
 };
