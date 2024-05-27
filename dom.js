@@ -345,7 +345,9 @@ export const h = (e, props = {}, ...children) => {
 	}
 
 	if (typeof e === 'function') {
-		props.children = children;
+		if (len(children)) {
+			props.children = children;
+		}
 
 		const each = props.each;
 		const mounter = (elem, item, before) => {
