@@ -108,7 +108,7 @@ const h = (name, props, ...children) => {
 				});
 
 				return () => {
-					observer();
+					if (observer) observer();
 					for (let l of propListeners.values()) l();
 				};
 			};
@@ -138,7 +138,7 @@ const h = (name, props, ...children) => {
 	}
 
 	return (elem, val, before) => {
-		const rem = handler(elem, val, before);
+		const rem = mount(elem, handler, before);
 		let sigs = signals.map(signal => signal());
 
 		return () => {
