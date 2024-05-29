@@ -205,3 +205,48 @@ test("custom element throw error", silence(() => {
 		name: 'body',
 	});
 }));
+
+test("custom element into node with all props", () => {
+	const elem = document.createElement("body");
+
+	const custom = (props) => {
+		return h('div', props, "Hello world");
+	};
+
+	mount(elem, h(custom));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["Hello world"]
+		}],
+	});
+});
+
+test("custom element pass properties", () => {
+	const props = {a: 1, b: 2, c: 3, [Symbol()]: {}};
+	let passed;
+
+	mount(null, h(props => {
+		passed = props;
+		return null;
+	}, {...props}));
+
+	assert.deepEqual(props, passed);
+});
+
+test("custom element pass properties and children", () => {
+	const props = {a: 1, b: 2, c: 3, [Symbol()]: {}};
+	let passed;
+	const children = [{}, {}, {}];
+
+	mount(null, h(props => {
+		passed = props;
+		return null;
+	}, {...props}, ...children));
+
+	props.children = children;
+
+	assert.deepEqual(props, passed);
+});

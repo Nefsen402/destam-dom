@@ -426,21 +426,3 @@ test("static reuse node", () => {
 		}],
 	});
 });
-
-test("custom element into node with all props", () => {
-	const elem = document.createElement("body");
-
-	const custom = (props) => {
-		return h('div', props, "Hello world");
-	};
-
-	mount(elem, h(custom));
-
-	assert.deepEqual(elem.tree(), {
-		name: 'body',
-		children: [{
-			name: 'div',
-			children: ["Hello world"]
-		}],
-	});
-});
