@@ -393,7 +393,9 @@ export const h = (e, props = {}, ...children) => {
 			return (elem, val, before) => {
 				const listener = shallowListener(each, () => mount(each.get()));
 				const mount = arrayMounter(elem, each.get(), before, mounter);
-				return () => {
+				return arg => {
+					if (arg === getFirst) return mount(getFirst);
+
 					listener();
 					return mount();
 				};
