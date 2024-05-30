@@ -320,3 +320,37 @@ test("replace empty oarray", () => {
 		}]
 	});
 });
+
+test("replace empty oarray each", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([]);
+	mount(elem, h(({each}) => each, {each: arr}));
+
+	let oarr = OArray();
+	arr.set(oarr);
+
+	oarr.push(document.createElement("div"));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+		}]
+	});
+});
+
+test("each double up", () => {
+	const elem = document.createElement("body");
+	const arr = Observer.mutable([]);
+	mount(elem, [h(({each}) => each, {each: arr}), h(({each}) => each, {each: arr})]);
+
+	let oarr = OArray();
+	arr.set(oarr);
+
+	oarr.push('content');
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['content', 'content']
+	});
+});
