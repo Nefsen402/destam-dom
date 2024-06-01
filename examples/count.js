@@ -1,4 +1,4 @@
-import {Observer, OArray, html, mount} from '/index.js';
+import {Observer, OArray, html, mount} from 'destam-dom';
 
 let arr = OArray([0, 1]);
 

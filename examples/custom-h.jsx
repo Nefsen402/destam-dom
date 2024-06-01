@@ -1,4 +1,4 @@
-import {h as destam_h, OObject, mount} from '/index.js';
+import {h as destam_h, OObject, mount} from 'destam-dom';
 import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 
 // This h element overrides the default behavoior that destam-dom gives for

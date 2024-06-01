@@ -1,4 +1,4 @@
-import {html, mount, Observer, OArray} from '/index.js';
+import {html, mount, Observer, OArray} from 'destam-dom';
 
 const Fade = ({children, removed, $style}, cleanup, mounted) => {
 	const opacity = Observer.mutable(0);

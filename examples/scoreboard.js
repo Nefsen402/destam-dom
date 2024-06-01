@@ -1,4 +1,4 @@
-import {html, mount, OArray, OObject, Observer} from '/index.js';
+import {html, mount, OArray, OObject, Observer} from 'destam-dom';
 
 const scores = OArray([
 	OObject({ name: "Mark", score: 3 }),

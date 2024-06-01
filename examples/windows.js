@@ -1,4 +1,4 @@
-import {html, mount, OArray, OObject} from '/index.js';
+import {html, mount, OArray, OObject} from 'destam-dom';
 import {atomic} from 'destam/Network';
 
 const windows = window.windows = OArray();

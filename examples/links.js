@@ -1,4 +1,4 @@
-import {html, mount} from '/index.js';
+import {html, mount} from 'destam-dom';
 
 const cats = [
 	{ id: 'J---aiyznGQ', name: 'Keyboard Cat' },

@@ -1,4 +1,4 @@
-import {mount, h, Observer} from '..';
+import {mount, h, Observer} from 'destam-dom';
 
 const Textarea = ({value, style}, _, mounted) => {
 	const Ref = <textarea />;

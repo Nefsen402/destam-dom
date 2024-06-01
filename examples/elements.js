@@ -1,4 +1,4 @@
-import {mount,  Observer, html} from '/index.js';
+import {mount,  Observer, html} from 'destam-dom';
 
 let elements = ['one', 'two', 'three'].map(name => document.createTextNode(name));
 

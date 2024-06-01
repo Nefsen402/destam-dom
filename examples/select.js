@@ -1,4 +1,4 @@
-import {Observer, html, mount} from '/index.js';
+import {Observer, html, mount} from 'destam-dom';
 
 const value = Observer.mutable(true);
 

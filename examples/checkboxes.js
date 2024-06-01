@@ -1,4 +1,4 @@
-import {Observer, html, mount} from '/index.js';
+import {Observer, html, mount} from 'destam-dom';
 
 const Checkbox = ({value, name}) => {
 	return html`

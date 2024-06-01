@@ -1,4 +1,4 @@
-import {Observer, OArray, OObject, h, mount, Delete} from '/index.js';
+import {Observer, OArray, OObject, h, mount, Delete} from 'destam-dom';
 import createNetwork from 'destam/Tracking';
 
 const TodoItem = ({each: item}) => {

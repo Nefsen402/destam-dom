@@ -1,4 +1,4 @@
-import {OArray, OObject, html, mount, Observer} from '/index.js';
+import {OArray, OObject, html, mount, Observer} from 'destam-dom';
 
 const posts = OArray();
 const loading = Observer.mutable(false);

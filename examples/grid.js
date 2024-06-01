@@ -1,4 +1,4 @@
-import {html, mount, Observer} from '/index.js';
+import {html, mount, Observer} from 'destam-dom';
 
 function randomHexColorString() {
 	return "#" + Math.floor(Math.random() * 16777215).toString(16);

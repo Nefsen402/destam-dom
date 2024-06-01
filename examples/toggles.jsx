@@ -1,4 +1,4 @@
-import {h, mount} from '/index.js';
+import {h, mount} from 'destam-dom';
 import OArray, {positionIndex, indexPosition} from 'destam/Array';
 
 const cssColor = col => {

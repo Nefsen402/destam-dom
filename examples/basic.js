@@ -1,3 +1,3 @@
-import {html, mount} from '/index.js';
+import {html, mount} from 'destam-dom';
 
 mount(document.body, html`Hello world`);

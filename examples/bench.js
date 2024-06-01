@@ -1,4 +1,4 @@
-import {html, mount, OArray, Observer, Synthetic} from '/index.js';
+import {html, mount, OArray, Observer, Synthetic} from 'destam-dom';
 import {atomic} from 'destam/Network';
 
 const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint", "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly", "adorable", "important", "inexpensive", "cheap", "expensive", "fancy"],

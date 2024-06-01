@@ -1,4 +1,4 @@
-import {Observer, OArray, OObject, html, mount} from '/index.js';
+import {Observer, OArray, OObject, html, mount} from 'destam-dom';
 
 const Input = ({value, ref, enter, keydown, cancel}, cleanup, mounted) => {
 	const input = ref || document.createElement('input');

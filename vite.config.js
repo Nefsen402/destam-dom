@@ -148,7 +148,7 @@ if (lib in libs) {
 				},
 			},
 			...(process.env.STATIC_ANALYZE ? [createTransform('static-mount', staticMount, true, {
-				util_import: ''
+				util_import: 'destam-dom'
 			})] : []),
 		],
 		esbuild: {
@@ -159,6 +159,11 @@ if (lib in libs) {
 				input: Object.fromEntries(getExamples().map(ex => [ex.name, ex.resolved])),
 			},
 		},
+		resolve: {
+			alias: [
+				{find: /^destam-dom($|\/)/, replacement: '/'},
+			]
+		}
 	});
 
 }
