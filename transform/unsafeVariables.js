@@ -3,13 +3,12 @@ import generate from '@babel/generator';
 import babelTraverse from '@babel/traverse';
 import t from '@babel/types';
 import util from 'util';
+import {collectVariables} from './util.js';
 
 const createSequence = idents => {
 	if (idents.length === 1) return idents[0];
 	return t.sequenceExpression(idents);
 };
-
-const log = stuff => console.log(util.inspect(stuff, {colors: true, depth: null}));
 
 const transform = (source, options) => {
 	const ast = parser.parse(source, {code: false, ast: true, sourceType: 'module'});
@@ -27,163 +26,113 @@ const transform = (source, options) => {
 		},
 	});
 
-	const traverse = (node, vars, context, remove) => {
-		if (node.type === 'BlockStatement') {
-			for (const ast of node.body.slice()) {
-				traverse(ast, vars, context.concat(node), (things) => {
-					let i = node.body.indexOf(ast);
-					node.body.splice(i, 1, ...things);
-				});
-			}
-		} else if (node.type === 'VariableDeclaration') {
+	collectVariables(ast);
+
+	babelTraverse.default(ast, {
+		Program: path => {
 			const decls = [];
-			const unsafe = [];
-			for (const dec of node.declarations) {
-				if (dec.id.type === 'Identifier') {
+			const reorder = [];
+			const exps = [];
+			for (const ast of path.node.body.slice()) {
+				if (ast.type === 'VariableDeclaration') {
+					decls.push(...ast.declarations);
+				} else if (ast.type === 'ExportNamedDeclaration' && !ast.source) {
+					if (ast.declaration) {
+						decls.push(...ast.declaration.declarations);
+						exps.push(...ast.declaration.declarations.map(decl => {
+							return t.exportSpecifier(decl.id, decl.id);
+						}));
+					} else {
+						exps.push(...ast.specifiers);
+					}
+				} else {
+					reorder.push(ast);
+				}
+			}
+
+			if (decls.length) {
+				reorder.unshift(t.variableDeclaration('var', decls));
+			}
+
+			if (exps.length) {
+				reorder.push(t.exportNamedDeclaration(null, exps));
+			}
+
+			path.node.body = reorder;
+		},
+		VariableDeclaration: path => {
+			const node = path.node;
+			if (node.bailed) return;
+
+			const decls = [];
+			if (['BlockStatement', 'ForStatement'].includes(path.parentPath.node.type)) {
+				for (const dec of node.declarations) {
+					if (dec.init) {
+						decls.push(t.expressionStatement(t.assignmentExpression('=', dec.id, dec.init)));
+					}
+				}
+
+				path.replaceWithMultiple(decls);
+			} else {
+				for (const dec of node.declarations) {
 					if (dec.init) {
 						decls.push(t.assignmentExpression('=', dec.id, dec.init));
-					}
-
-					vars.push({context, id: dec.id});
-				} else {
-					if (dec.id.type === 'ArrayPattern') {
-						const record = thing => {
-							if (thing.type === 'Identifier') {
-								vars.push({context, id: thing});
-							} else if (thing.type === 'ArrayPattern') {
-								for (const element of thing.elements) {
-									record(element)
-								}
-							}
-						};
-
-						record(dec.id);
-
-						if (dec.init) {
-							unsafe.push(t.assignmentExpression('=', dec.id, dec.init));
-						} else {
-							unsafe.push(dec.id);
-						}
 					} else {
-						unsafe.push(t.variableDeclaration('var', [dec]));
+						decls.push(dec.id);
 					}
 				}
+				path.parentPath.node.left = decls[0];
 			}
+		},
+	});
 
-			remove([
-				...decls,
-				...unsafe,
-			].filter(e => e));
-		} else if (node.type === 'IfStatement') {
-			traverse(node.consequent, vars, context);
-			if (node.alternate) traverse(node.alternate, vars, context);
-		} else if (node.type === 'ForStatement') {
-			let nc = [...context, node];
-			if (node.init) traverse(node.init, vars, nc, stuff => node.init = createSequence(stuff));
-			traverse(node.body, vars, nc);
-		} else if (node.type === 'ForOfStatement') {
-			let nc = [...context, node];
-			let ident = [];
-			traverse(node.left, ident, nc, stuff => node.left = stuff[0] || ident[0].id);
-			vars.push(...ident);
-			traverse(node.body, vars, nc);
-		} else if (node.type === 'ForInStatement') {
-			let nc = [...context, node];
-			let ident = [];
-			traverse(node.left, ident, nc, stuff => node.left = stuff.length ? createSequence(stuff) : ident[0].id);
-			vars.push(...ident);
-			traverse(node.body, vars, nc);
-		} else if (node.type === 'TryStatement') {
-			traverse(node.block, vars, context);
-			if (node.handler) traverse(node.handler.body, vars, context);
-			if (node.finalizer) traverse(node.finalizer, vars, context);
-		} else if (node.type === 'WhileStatement') {
-			traverse(node.body, vars, context);
-		} else if (node.type === 'DoWhileStatement') {
-			traverse(node.body, vars, context);
+	const traverse = scope => {
+		for (const child of scope.children) {
+			traverse(child);
 		}
-	};
 
-	const handleFunction = path => {
-		const vars = [];
-		const idents = [];
+		if (!scope.func) {
+			return;
+		}
 
-		path.traverse({
-			Identifier: path => {
-				idents.push(path);
-			}
-		});
-
-		const hasScope = (path, node) => {
-			while (path) {
-				if (node === path.node) return true;
-				path = path.parentPath;
-			}
-
-			return false;
+		const doesNotOverlap = (one, two) => {
+			return one[1] < two[0] ||
+				two[1] < one[0];
 		};
 
-		traverse(path.node.body, vars, []);
-
-		for (let i = 0; i < vars.length; i++) {
-			const {id, context} = vars[i];
-			const contexts = [context];
-
-			// look forward to see if there is anybody that can reuse this
-			// variable allocation
-			main:for (let ii = i + 1; ii < vars.length; ii++) {
-				let cur = vars[ii];
-
-				// make sure these variables are not in the same scope
-				for (let iv = 0; iv < contexts.length; iv++) {
-					let equ = true;
-					for (let iii = 0; iii < Math.min(contexts[iv].length, cur.context.length); iii++) {
-						if (contexts[iv][iii] !== cur.context[iii]) {
-							equ = false;
-							break;
-						}
-					}
-					if (equ) continue main;
-				}
-
-				//make sure nobody else is using this variable name
-				let found = false;
-				for (let path of idents) {
-					if (!hasScope(path, cur.context[cur.context.length - 1])) continue;
-
-					if (path.node.name === id.name) {
-						found = true;
-						break;
-					}
-				}
-
-				if (found) {
-					continue;
-				}
-
-				contexts.push(cur.context);
-
-				// this variable can be re-used. Make a pass over the ast to rename the variable
-				let name = cur.id.name;
-				for (let path of idents) {
-					if (!hasScope(path, cur.context[cur.context.length - 1])) continue;
-
-					if (path.node.name === name) {
-						path.node.name = id.name;
-					}
-				}
-
-				// stop tracking the variable as we eliminated it.
-				vars.splice(ii--, 1);
-			}
-		}
+		const vars = [];
 
 		const ret = [];
-		const seen = new Set();
-		for (let {id, context} of vars) {
-			if (seen.has(id.name)) continue;
-			seen.add(id.name);
-			ret.push(id);
+		for (const assignment of scope.values()) {
+			if (assignment.type !== 'var') {
+				continue;
+			}
+
+			let s = assignment.getScope();
+
+			let sameScope = true;
+			for (let ident of [...assignment.uses, ...assignment.assignments]) {
+				if (assignment.assignments[0].scope !== ident.scope) {
+					sameScope = false;
+					break;
+				}
+			}
+
+			let replaced = false;
+			if (sameScope) for (let v of vars) {
+				if (doesNotOverlap(v.scope, s)) {
+					console.log(v.assignment.name, assignment.name);
+					assignment.replace(v.assignment);
+					v.scope = v.assignment.getScope();
+					replaced = true;
+					break;
+				}
+			}
+
+			if (!replaced) {
+				if (sameScope) vars.push({scope: s, assignment});
+				ret.push(assignment.assignments[0]);
+			}
 		}
 
 		if (!ret.length) {
@@ -193,11 +142,13 @@ const transform = (source, options) => {
 		// find leading variable assignments and squash them. Terser doesn't
 		// seem to be smart enough to do this on its own.
 		const decls = new Map(ret.map(i => [i.name, t.variableDeclarator(i)]));
-		const body = path.node.body.body;
+		const body = scope.func.body.body;
 		const declsCleanup = [];
 		let movedExpressions = 0;
 
 		for (let elem of body) {
+			const orig = elem;
+
 			if (elem.type === 'ExpressionStatement') {
 				elem = elem.expression;
 			}
@@ -209,7 +160,7 @@ const transform = (source, options) => {
 					!decls.get(elem.left.name).init) {
 				decls.get(elem.left.name).init = elem.right;
 				declsCleanup.push(() => {
-					let i = body.indexOf(elem);
+					let i = body.indexOf(orig);
 					body.splice(i, 1);
 				});
 				movedExpressions++;
@@ -247,67 +198,21 @@ const transform = (source, options) => {
 			}
 		}
 
-		if (path.node.params[path.node.params.length - 1]?.type !== 'RestElement' &&
+		if (scope.func.params[scope.func.params.length - 1]?.type !== 'RestElement' &&
 				movedExpressions <= 4) {
-			path.node.params.push(...ret);
+			scope.func.params.push(...ret);
 		} else {
 			for (let c of declsCleanup) c();
 			body.unshift(t.variableDeclaration('var', [...decls.values()]));
 		}
 	};
 
-	babelTraverse.default(ast, {
-		Program: path => {
-			const decls = [];
-			const reorder = [];
-			const exps = [];
-			for (const ast of path.node.body.slice()) {
-				if (ast.type === 'VariableDeclaration') {
-					decls.push(...ast.declarations);
-				} else if (ast.type === 'ExportNamedDeclaration' && !ast.source) {
-					if (ast.declaration) {
-						decls.push(...ast.declaration.declarations);
-						exps.push(...ast.declaration.declarations.map(decl => {
-							return t.exportSpecifier(decl.id, decl.id);
-						}));
-					} else {
-						exps.push(...ast.specifiers);
-					}
-				} else {
-					reorder.push(ast);
-				}
-			}
-
-			if (decls.length) {
-				reorder.unshift(t.variableDeclaration('var', decls));
-			}
-
-			if (exps.length) {
-				reorder.push(t.exportNamedDeclaration(null, exps));
-			}
-
-			path.node.body = reorder;
-		},
-		ArrowFunctionExpression: handleFunction,
-		FunctionDeclaration: handleFunction,
-		ObjectMethod: handleFunction,
-	});
+	traverse(ast.program.assignment);
 
 	return generate.default(ast, {
 		sourceMaps: true,
 		...options,
 	}, source);
 };
-
-/*
-console.log(transform(`
-	const stuff = () => {
-		let a = 0;
-		let b = 0;
-		for (let i = 1, j = 2;;) {}
-	};
-`).code)
-*/
-
 
 export default transform;
