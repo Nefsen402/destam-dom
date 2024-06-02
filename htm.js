@@ -45,7 +45,7 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 
 			const char = str[ii];
 			if (inString) {
-				if (char == inString.char) {
+				if (char == inString.char_) {
 					flush();
 					push(tokens, join(inString));
 					inString = 0;
@@ -72,7 +72,7 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 				} else if (char === '"' || char === "'") {
 					flush();
 					inString = [];
-					inString.char = char;
+					inString.char_ = char;
 				} else {
 					cur += char;
 				}
