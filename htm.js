@@ -32,7 +32,6 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 
 	for (let i = 0; i < len(segments); i++) {
 		const str = segments[i];
-		let parsingWhitespace;
 
 		// when scanning the string, extract special characters and simplify whitespace
 		for (let ii = 0; ii < len(str); ii++) {
