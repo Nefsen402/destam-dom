@@ -354,18 +354,14 @@ export const h = (e, props = {}, ...children) => {
 			try {
 				if (each) props.each = item;
 
-				let cleanup = 0;
+				let cleanup = null;
 				const m = mount(
 					elem,
 					e(props, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The cleanup function must be passed a function");
 
-						if (cleanup) {
-							cleanup.push(...cleanup);
-						} else {
-							cleanup = cb;
-						}
+						cleanup = cleanup?.concat(cb) || cb;
 					}, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The mount function must be passed a function");
