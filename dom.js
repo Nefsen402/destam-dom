@@ -355,22 +355,24 @@ export const h = (e, props = {}, ...children) => {
 				if (each) props.each = item;
 
 				let cleanup = 0;
-				const dom = e(props, (...cb) => {
-					assert(!cb.find(cb => typeof cb !== 'function'),
-						"The cleanup function must be passed a function");
+				const m = mount(
+					elem,
+					e(props, (...cb) => {
+						assert(!cb.find(cb => typeof cb !== 'function'),
+							"The cleanup function must be passed a function");
 
-					if (cleanup) {
-						cleanup.push(...cleanup);
-					} else {
-						cleanup = cb;
-					}
-				}, (...cb) => {
-					assert(!cb.find(cb => typeof cb !== 'function'),
-						"The mount function must be passed a function");
-					notifyMount.push(...cb);
-				});
-
-				const m = mount(elem, dom, before);
+						if (cleanup) {
+							cleanup.push(...cleanup);
+						} else {
+							cleanup = cb;
+						}
+					}, (...cb) => {
+						assert(!cb.find(cb => typeof cb !== 'function'),
+							"The mount function must be passed a function");
+						notifyMount.push(...cb);
+					}),
+					before
+				);
 				if (!cleanup) {
 					return m;
 				}
@@ -384,6 +386,7 @@ export const h = (e, props = {}, ...children) => {
 				};
 			} catch (e) {
 				console.error(e);
+				assert(true, console.error("The error above happened in the " + e.name + " component"));
 			}
 
 			return () => noop;
