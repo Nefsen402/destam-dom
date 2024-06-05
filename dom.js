@@ -351,11 +351,11 @@ export const h = (e, props = {}, ...children) => {
 
 		const each = props.each;
 		const mounter = (elem, item, before) => {
-			let dom = null, cleanup = 0;
-			if (each) props.each = item;
-
 			try {
-				dom = e(props, (...cb) => {
+				if (each) props.each = item;
+
+				let cleanup = 0;
+				const dom = e(props, (...cb) => {
 					assert(!cb.find(cb => typeof cb !== 'function'),
 						"The cleanup function must be passed a function");
 
@@ -369,22 +369,24 @@ export const h = (e, props = {}, ...children) => {
 						"The mount function must be passed a function");
 					notifyMount.push(...cb);
 				});
+
+				const m = mount(elem, dom, before);
+				if (!cleanup) {
+					return m;
+				}
+
+				return arg => {
+					if (arg === getFirst) return m(getFirst);
+
+					m();
+					callAllSafe(cleanup);
+					return cleanup = 0;
+				};
 			} catch (e) {
 				console.error(e);
 			}
 
-			const m = mount(elem, dom, before);
-			if (!cleanup) {
-				return m;
-			}
-
-			return arg => {
-				if (arg === getFirst) return m(getFirst);
-
-				m();
-				callAllSafe(cleanup);
-				return cleanup = 0;
-			};
+			return () => noop;
 		};
 
 		if (!each) {
