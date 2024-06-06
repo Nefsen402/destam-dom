@@ -2,6 +2,7 @@ import parser from '@babel/parser';
 import t from '@babel/types';
 import generate from '@babel/generator';
 import babelTraverse from '@babel/traverse';
+import {collectVariables} from './util.js';
 
 const canAppend = Symbol();
 const walked = Symbol();
@@ -51,30 +52,10 @@ const createWatcher = (rep, val, create) => {
 		if (val.arguments[0].body.type === 'BlockStatement') {
 			setter = val.arguments[0].body;
 
-			const traverse = node => {
-				if (!node || node.type.includes("Function")) return node;
-
-				if (node.type === 'BlockStatement') {
-					for (let i = 0; i < node.body.length; i++) {
-						traverse(node.body[i]);
-					}
-				} else {
-					traverse(node.body);
-				}
-
-				if (node.type === 'IfStatement') {
-					traverse(node.consequent);
-					traverse(node.alternate);
-				}
-
-				if (node.type === 'ReturnStatement') {
-					node.argument = create(node.argument || t.identifier('undefined'));
-				}
-
-				return node;
-			};
-
-			traverse(setter);
+			const returns = val.arguments[0].assignment.returns;
+			for (const ret of returns) {
+				ret.argument = create(ret.argument || t.identifier('undefined'));
+			}
 		} else {
 			setter = create(val.arguments[0].body);
 		}
@@ -96,12 +77,12 @@ const discoverRef = init => {
 		init.callee.type === 'MemberExpression' &&
 		init.callee.object.type === 'Identifier' &&
 		init.callee.object.name === 'document';
-}
+};
 
 const computeNode = (rep, cleanup, node) => {
 	if (node[walked]) return node;
 	let [name, props, ...children] = node.arguments;
-	const isRef = name.type === 'Identifier' && discoverRef(rep.constants.get(name.name));
+	const isRef = name.type === 'Identifier' && discoverRef(name.assignment?.assignments?.length === 1 && name.assignment.init);
 
 	node[walked] = true;
 
@@ -203,8 +184,9 @@ const computeNode = (rep, cleanup, node) => {
 
 		const search = (name, orig, getTemp) => {
 			let val = orig;
-			if (val.type === 'Identifier' && rep.constants.has(val.name)) {
-				val = rep.constants.get(val.name);
+			if (val.type === 'Identifier' && val.assignment?.init &&
+					val.assignment.assignments.length === 1) {
+				val = val.assignment.init;
 			}
 
 			const binaryType = val.type === 'BinaryExpression' &&
@@ -410,24 +392,10 @@ const computeNode = (rep, cleanup, node) => {
 	}
 }
 
-const recordConstants = path => {
-	const constants = new Map();
-
-	for (const b of path.node.body) {
-		if (b.type === 'VariableDeclaration' && b.kind === 'const') {
-			for (const decl of b.declarations) {
-				if (decl.type === 'VariableDeclarator')  {
-					constants.set(decl.id.name, decl.init);
-				}
-			}
-		}
-	}
-
-	path._constants = constants;
-};
-
 export const transformBabelAST = (ast, options = {}) => {
 	let importer;
+
+	collectVariables(ast);
 
 	babelTraverse.default(ast, {
 		Program: path => {
@@ -450,13 +418,11 @@ export const transformBabelAST = (ast, options = {}) => {
 				table.set(name, temp);
 				return temp;
 			};
-
-			recordConstants(path);
 		},
-		BlockStatement: recordConstants,
 		CallExpression: path => {
 			if (path.node[walked]) return;
 			if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'h') return;
+			if (!path.node.callee.assignment?.source?.value.startsWith(options.util_import)) return;
 
 			let block = path;
 			let child;
@@ -473,44 +439,7 @@ export const transformBabelAST = (ast, options = {}) => {
 				block = block.parentPath;
 			}
 
-			const constants = new Map();
-			const searchParams = node => {
-				if (node.type === 'Identifier') {
-					constants.delete(node.name);
-				} else if (node.type === 'ObjectPattern') {
-					for (const prop of node.properties) {
-						searchParams(prop.value);
-					}
-				} else if (node.type === 'RestElement') {
-					if (node.argument.type === 'Identifier') {
-						constants.delete(node.argument.name);
-					}
-				} else if (node.params) {
-					for (let param of node.params) {
-						searchParams(param);
-					}
-				}
-			};
-
-			let stack = [];
-			let constSearch = path;
-			while (constSearch) {
-				stack.push(constSearch);
-				constSearch = constSearch.parentPath;
-			}
-
-			for (const constSearch of stack.reverse()) {
-				if (constSearch._constants) {
-					for (const [key, value] of constSearch._constants.entries()) {
-						constants.set(key, value);
-					}
-				}
-
-				searchParams(constSearch.node);
-			}
-
 			const rep = [];
-			rep.constants = constants;
 
 			if (importer) {
 				rep.importer = importer;
