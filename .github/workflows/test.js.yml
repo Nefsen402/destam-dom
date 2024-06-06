@@ -12,9 +12,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Use node 21
+    - name: Use node
       uses: actions/setup-node@v4
       with:
-        node-version: '21.x'
+        node-version: '22.x'
     - run: npm install
     - run: npm test
