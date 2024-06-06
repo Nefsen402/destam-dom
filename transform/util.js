@@ -127,7 +127,20 @@ export const collectVariables = (node) => {
 		}
 	};
 
-	const traverseFunction = (node, lets) => {
+	const orphanUndecl = lets => {
+		if (lets.parent) for (const assignment of lets.values()) {
+			if (assignment.type === 'undecl') {
+				if (lets.parent.has(assignment.name)) {
+					throw new Error("assert: variable traversal in bad state: " + assignment.name);
+				}
+
+				lets.parent.set(assignment.name, assignment);
+				lets.delete(assignment.name);
+			}
+		}
+	};
+
+	const traverseFunction = (node, lets, glob) => {
 		let idents = [];
 		for (let param of node.params) {
 			traverseAssignment(idents, param);
@@ -135,9 +148,10 @@ export const collectVariables = (node) => {
 
 		const ret = context(lets);
 		ret.func = node;
+		ret.returns = [];
 		node.assignment = ret;
 
-		if (node.id) ret.set(node.id.name, createAssignment(node.id, {
+		if (node.id) (glob ? lets : ret).set(node.id.name, createAssignment(node.id, {
 			type: 'function',
 			assignments: [node.id],
 		}));
@@ -159,6 +173,43 @@ export const collectVariables = (node) => {
 		} else {
 			traverseExpression(node.body, ret);
 		}
+
+		orphanUndecl(ret);
+	};
+
+	const traverseClass = (node, lets, glob) => {
+		const cont = context(lets);
+		cont.func = node;
+		node.assignment = cont;
+
+		if (node.id) (glob ? lets : cont).set(node.id.name, createAssignment(node.id, {
+			type: 'class',
+			assignments: [node.id],
+		}));
+
+		if (node.superClass) traverseExpression(node.superClass, cont);
+
+		for (const cnode of node.body.body) {
+			if (cnode.type === 'ClassMethod' || cnode.type === 'ClassPrivateMethod') {
+				if (cnode.computed) {
+					traverseExpression(cnode.key, cont);
+				}
+
+				traverseFunction(cnode, cont);
+			} else if (cnode.type === 'ClassProperty') {
+				if (cnode.computed) {
+					traverseExpression(cnode.key, cont);
+				}
+
+				traverseExpression(cnode.value, cont);
+			} else if (cnode.type === 'ClassPrivateProperty') {
+				traverseExpression(cnode.value, cont);
+			} else {
+				throw new Error("Unknown class node: " + cnode.type);
+			}
+		}
+
+		orphanUndecl(cont);
 	};
 
 	const traverseExpression = (node, lets) => {
@@ -167,7 +218,11 @@ export const collectVariables = (node) => {
 
 		if (node.type === 'ArrayExpression') {
 			for (const elem of node.elements) {
-				traverseExpression(elem, lets);
+				if (elem.type === 'SpreadElement') {
+					traverseExpression(elem.argument, lets);
+				} else {
+					traverseExpression(elem, lets);
+				}
 			}
 		} else if (node.type === 'ArrowFunctionExpression' || node.type === 'FunctionExpression') {
 			traverseFunction(node, lets);
@@ -197,9 +252,7 @@ export const collectVariables = (node) => {
 				}
 			}
 		} else if (node.type === 'ClassExpression') {
-			if (node.id) collectAssignment(node.id, lets, lets, {type: 'class'});
-			if (node.superClass) traverseExpression(node.superClass, lets);
-			traverse(node.body, lets);
+			traverseClass(node, lets);
 		} else if (node.type === 'ConditionalExpression') {
 			traverseExpression(node.test, lets);
 			traverseExpression(node.consequent, lets);
@@ -235,8 +288,19 @@ export const collectVariables = (node) => {
 			for (const exp of node.expressions) {
 				traverseExpression(exp, lets);
 			}
-		} else if (node.type === 'ThisExpression') {
+		} else if (node.type === 'ThisExpression' ||
+				node.type === 'Super') {
 			//fallthrough
+		} else if (node.type === 'TemplateLiteral') {
+			for (const exp of node.expressions) {
+				traverseExpression(exp, lets);
+			}
+		} else if (node.type === 'TaggedTemplateExpression') {
+			traverseExpression(node.tag, lets);
+
+			for (const exp of node.quasi.expressions) {
+				traverseExpression(exp, lets);
+			}
 		} else if (!node.type.includes("Literal")) {
 			throw new Error("Unknown expression: " + node.type);
 		}
@@ -255,7 +319,7 @@ export const collectVariables = (node) => {
 		if (!node) throw new Error("assert: node in null");
 
 		if (node.type.includes("Function")) {
-			traverseFunction(node, lets);
+			traverseFunction(node, lets, true);
 		} else if (node.type === 'VariableDeclaration') {
 			for (let decl of node.declarations) {
 				if (decl.init) {
@@ -326,7 +390,6 @@ export const collectVariables = (node) => {
 			}
 
 			if (node.right) traverseExpression(node.right, cont);
-
 			traverse(node.body, cont);
 		} else if (node.type === 'File') {
 			traverse(node.program, lets);
@@ -334,7 +397,7 @@ export const collectVariables = (node) => {
 			for (const spec of node.specifiers) {
 				const assignment = collectAssignment(spec.local, lets, lets);
 				assignment.type = 'import';
-				assignment.source = spec.source;
+				assignment.source = node.source;
 			}
 		} else if (node.type === 'SwitchStatement') {
 			traverseExpression(node.discriminant, lets);
@@ -347,6 +410,8 @@ export const collectVariables = (node) => {
 					traverse(statement, cont);
 				}
 			}
+
+			orphanUndecl(cont);
 		} else if (node.type === 'LabeledStatement') {
 			const assignment = collectAssignment(node.label, lets, lets);
 			assignment.type = 'label';
@@ -354,6 +419,13 @@ export const collectVariables = (node) => {
 		} else if (node.type === 'ThrowStatement') {
 			traverseExpression(node.argument, lets);
 		} else if (node.type === 'ReturnStatement') {
+			let context = lets;
+			while (context && !context.func) {
+				context = context.parent;
+			}
+
+			if (context) context.returns.push(node);
+
 			if (node.argument) traverseExpression(node.argument, lets);
 		} else if (node.type === 'BreakStatement' || node.type === 'ContinueStatement') {
 			if (node.label) {
@@ -384,11 +456,12 @@ export const collectVariables = (node) => {
 				}
 
 				node.handler.assignment = cont;
+				orphanUndecl(cont);
 			}
 		} else if (node.type === 'WhileStatement' || node.type === 'DoWhileStatement') {
 			traverseExpression(node.test, lets);
 			traverse(node.body, lets);
-		} else if (node.type === 'ExportAllDeclaration') {
+		} else if (node.type === 'ExportAllDeclaration' || node.type === 'EmptyStatement') {
 			// fallthrough
 		} else if (node.type === 'ExportDefaultDeclaration') {
 			traverseExpression(node.declaration, lets);
@@ -402,20 +475,13 @@ export const collectVariables = (node) => {
 					traverseExpression(node.exported, lets);
 				}
 			}
+		} else if (node.type === 'ClassDeclaration') {
+			traverseClass(node, lets, true);
 		} else {
 			throw new Error("Unknown statement: " + node.type);
 		}
 
-		if (lets.parent) for (const assignment of lets.values()) {
-			if (assignment.type === 'undecl') {
-				if (lets.parent.has(assignment.name)) {
-					throw new Error("assert: variable traversal in bad state: " + assignment.name);
-				}
-
-				lets.parent.set(assignment.name, assignment);
-				lets.delete(assignment.name);
-			}
-		}
+		orphanUndecl(lets);
 	}
 
 	traverse(node, context());
