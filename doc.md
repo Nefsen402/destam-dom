@@ -389,7 +389,7 @@ html`
 `
 ```
 
-In order to implement reactivity, an Observer can be used to wrap the array. Destam-dom will reconcile common object references (objects that compare equal in `Map`). If you're used to other framework, it's like the objects in the array themselves act as the key. It's easy to lose these object references unfortunately. If we were to generate the div wrappers around names at the last moment such as the above example, those div wrappers would compare as different and everything would be remounted. Instead, we'll store the div wrappers as part of the array.
+In order to implement reactivity, an Observer can be used to wrap the array. Destam-dom will reconcile common object references (objects that compare equal in `Map`). If you're used to other frameworks, it's like the objects in the array themselves act as the key. It's easy to lose these object references unfortunately. If we were to generate the div wrappers around names at the last moment such as the above example, those div wrappers would compare as different and everything would be remounted. Instead, we'll store the div wrappers as part of the array.
 
 ```js
 const names = Observer.mutable([
@@ -405,7 +405,7 @@ html`
 names.set([...names.get(), html`<div>Ford</div>`]);
 ```
 
-Hovever, this is a naive way of implementing reactivity with arrays because we require that we copy all elements from the previous array into the new one, to then add one more element. To achieve constant time insertion, we can use `OArray`.
+Hovever, this is a naive way of implementing reactivity with arrays because we require that we copy all elements from the previous array into the new one, to then add one more element. This also means that destam-dom is forced to diff the entire array as well. To achieve constant time insertion, we can use `OArray`.
 
 ```js
 const names = OArray([
@@ -421,12 +421,12 @@ html`
 names.push(html`<div>Ford</div>`);
 ```
 
-This also has the added effect that destam-dom does not need to reconcile references. It simply detects that a new item was pushed and adds it to the dom.
+This has the added effect that destam-dom does not need to reconcile references. It simply detects that a new item was pushed and adds it to the dom.
 
 ## Custom element each property
 Sometimes, it's inconventient to need to manage an array of components, you might just have a list of arbitrary program state. Custom components are the basis of how destam-dom manages rendering a list of items with an arbitrary format.
 
-The `each` element property can be used to iterate a list and transform the list into html elements at the same time with a custom element. In the custom component, the `each` property will no longer be the list, but instead an element of the list.
+The `each` element property can be used to iterate a list and transform the list into html elements at the same time with a custom element. In the custom element, the `each` property will no longer be the list, but instead an element of the list.
 
 ```js
 const Name = ({each: name}) => {
@@ -438,7 +438,7 @@ html`
 `
 ```
 
-In this case, the array reconciler will notice that the references are the same, as the references are now just simple strings and prenent unnecessary DOM manipulations.
+In this case, the array reconciler will notice that the references are the same, as the references are now just simple strings and prevent unnecessary DOM manipulations.
 
 ```js
 const names = Observer.mutable([
