@@ -426,3 +426,11 @@ test("static reuse node", () => {
 		}],
 	});
 });
+
+test("Redefine h function", () => {
+	const h = (name, props, ...children) => {
+		return name;
+	};
+
+	assert(typeof h('div') === 'string');
+});
