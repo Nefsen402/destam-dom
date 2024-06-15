@@ -2,7 +2,7 @@ import parser from '@babel/parser';
 import t from '@babel/types';
 import generate from '@babel/generator';
 import babelTraverse from '@babel/traverse';
-import {collectVariables} from './util.js';
+import {collectVariables, checkImport} from './util.js';
 
 const canAppend = Symbol();
 const walked = Symbol();
@@ -422,7 +422,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		CallExpression: path => {
 			if (path.node[walked]) return;
 			if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'h') return;
-			if (!path.node.callee.assignment?.source?.value.startsWith(options.util_import)) return;
+			if (!checkImport(path.node.callee, options.assure_import)) return;
 
 			let block = path;
 			let child;

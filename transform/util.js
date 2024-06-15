@@ -398,6 +398,7 @@ export const collectVariables = (node) => {
 				const assignment = collectAssignment(spec.local, lets, lets);
 				assignment.type = 'import';
 				assignment.source = node.source;
+				assignment.sourceNode = node;
 			}
 		} else if (node.type === 'SwitchStatement') {
 			traverseExpression(node.discriminant, lets);
@@ -471,8 +472,12 @@ export const collectVariables = (node) => {
 			for (let spec of node.specifiers) {
 				if (spec.type === 'ExportSpcifier') {
 					traverseExpression(spec.local, lets);
-				} else if (node.type === 'ExportDefaultDeclaration' || node.type === 'ExportNamespaceSpecifier') {
-					traverseExpression(node.exported, lets);
+				} else if (spec.type === 'ExportDefaultDeclaration') {
+					traverseExpression(spec.declaration, lets);
+				} else if (spec.type === 'ExportNamespaceSpecifier') {
+					traverseExpression(spec.exported, lets);
+				} else {
+					throw new Error("Unknown export: " + spec.type);
 				}
 			}
 		} else if (node.type === 'ClassDeclaration') {
@@ -485,4 +490,17 @@ export const collectVariables = (node) => {
 	}
 
 	traverse(node, context());
+};
+
+export const checkImport = (node, regex) => {
+	if (!regex) {
+		return true;
+	}
+
+	const source = node.assignment?.source;
+	if (!source) {
+		return false;
+	}
+
+	return regex.test(source.value);
 };

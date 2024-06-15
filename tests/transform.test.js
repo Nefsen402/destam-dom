@@ -76,6 +76,11 @@ for (const file of files) {
 	if (file === 'transform.test.js') continue;
 	if (!file.endsWith('.test.js') && !file.endsWith('.test.jsx')) continue;
 
-	describe("transform with util " + file, transform(file, {util_import: '..'}));
-	describe("transform " + file, transform(file));
+	describe("transform with util " + file, transform(file, {
+		util_import: '..',
+		assure_import: /$destam-dom\/?/,
+	}));
+	describe("transform " + file, transform(file, {
+		assure_import: /$destam-dom\/?/,
+	}));
 }
