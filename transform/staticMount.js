@@ -1,29 +1,10 @@
 import parser from '@babel/parser';
 import t from '@babel/types';
 import generate from '@babel/generator';
-import babelTraverse from '@babel/traverse';
-import {collectVariables, checkImport} from './util.js';
+import {collectVariables, createIdent, createUse, assignVariables, unallocate, checkImport} from './util.js';
 
 const canAppend = Symbol();
-const walked = Symbol();
 
-const allowedTempChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_123456789';
-let tempCounter = 0;
-const createTemporary = () => {
-	let str = "$$";
-
-	let c = tempCounter++;
-	for (let i = 0; i < 2; i++) {
-		str += allowedTempChars[c % allowedTempChars.length];
-		c = Math.floor(c / allowedTempChars.length);
-	}
-
-	for (let i = 0; i < 8; i++) {
-		str += allowedTempChars[Math.floor(Math.random() * allowedTempChars.length)];
-	}
-
-	return t.identifier(str);
-};
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
 const createElement = (importer, name) => {
 	let elem;
@@ -37,9 +18,8 @@ const createElement = (importer, name) => {
 };
 
 const createWatcher = (rep, val, create) => {
-	let param = t.identifier('_');
-	let setter = param;
-
+	let param;
+	let setter;
 	if (val.type === 'CallExpression' &&
 			val.callee.type === 'MemberExpression' &&
 			val.callee.property.type === 'Identifier' &&
@@ -62,12 +42,13 @@ const createWatcher = (rep, val, create) => {
 
 		val = val.callee.object;
 	} else {
-		setter = create(setter);
+		param = createIdent();
+		setter = create(createUse(param));
 	}
 
 	return t.callExpression(
 		rep.importer('watch'),
-		[val, t.arrowFunctionExpression([param], setter)]
+		[createUse(val), t.arrowFunctionExpression([param], setter)]
 	);
 };
 
@@ -80,11 +61,8 @@ const discoverRef = init => {
 };
 
 const computeNode = (rep, cleanup, node) => {
-	if (node[walked]) return node;
 	let [name, props, ...children] = node.arguments;
 	const isRef = name.type === 'Identifier' && discoverRef(name.assignment?.assignments?.length === 1 && name.assignment.init);
-
-	node[walked] = true;
 
 	if (name.type !== 'StringLiteral' && !isRef) {
 		return node;
@@ -99,17 +77,21 @@ const computeNode = (rep, cleanup, node) => {
 
 	let temporary = null;
 	const getTemp = () => {
-		if (temporary) return temporary;
-
-		if (isRef) {
-			temporary = name;
+		let temp;
+		if (!temporary) {
+			if (isRef) {
+				temp = createUse(name);
+			} else {
+				temporary = createIdent({thing: 'temp'});
+				rep.push(declare(temporary, createElement(rep.importer, name)));
+				temp = createUse(temporary);
+			}
 		} else {
-			temporary = createTemporary();
-			rep.push(declare(temporary, createElement(rep.importer, name)));
+			temp = createUse(temporary);
 		}
 
-		temporary[canAppend] = true;
-		return temporary;
+		temp[canAppend] = true;
+		return temp;
 	};
 
 	let canLower = true;
@@ -307,7 +289,7 @@ const computeNode = (rep, cleanup, node) => {
 			'StringLiteral', 'BooleanLiteral',
 			'NumericLiteral', 'BigIntLiteral'
 		].includes(child.type)) {
-			let temporary = createTemporary();
+			let temporary = createIdent();
 			rep.push(declare(temporary, t.callExpression(
 				rep.importer?.("createTextNode") ||
 					t.memberExpression(t.identifier("document"), t.identifier("createTextNode")),
@@ -330,7 +312,7 @@ const computeNode = (rep, cleanup, node) => {
 			prevChild = child;
 			child = null;
 		} else if (rep.importer && canLower) {
-			let temporary = createTemporary();
+			let temporary = createIdent();
 
 			const mountArguments = [getTemp(), child];
 
@@ -358,24 +340,24 @@ const computeNode = (rep, cleanup, node) => {
 	if (rep.importer && cleanup.length && isBase) {
 		if (children.length) throw new Error("Run into an impossible state");
 
-		const elem = createTemporary();
-		const val = createTemporary();
-		const before = createTemporary();
-		const arg = createTemporary();
+		const elem = createIdent();
+		const val = createIdent();
+		const before = createIdent();
+		const arg = createIdent();
 		const ret = temporary || createElement(rep.importer, name);
 
-		const idents = cleanup.map((_, i) => _.temporary || createTemporary());
+		const idents = cleanup.map((_, i) => _.temporary || createIdent());
 		return t.arrowFunctionExpression([elem, val, before], t.blockStatement([
 			...cleanup.map((cleanup, i) => declare(idents[i], cleanup)),
 			t.expressionStatement(t.optionalCallExpression(
-				t.optionalMemberExpression(elem, t.identifier('insertBefore'), false, true),
-				[ret, t.callExpression(before, [rep.importer('getFirst')])],
+				t.optionalMemberExpression(createUse(elem), t.identifier('insertBefore'), false, true),
+				[createUse(ret), t.callExpression(createUse(before), [rep.importer('getFirst')])],
 				false
 			)),
 			t.returnStatement(t.arrowFunctionExpression([arg], t.blockStatement([
 				t.ifStatement(
-					t.binaryExpression('===', arg, rep.importer('getFirst')),
-					t.returnStatement(ret)
+					t.binaryExpression('===', createUse(arg), rep.importer('getFirst')),
+					t.returnStatement(createUse(ret))
 				),
 				t.expressionStatement(t.callExpression(t.memberExpression(ret, t.identifier('remove')), [])),
 				...idents.map(ident => t.expressionStatement(t.callExpression(ident, [])))
@@ -386,19 +368,18 @@ const computeNode = (rep, cleanup, node) => {
 		if (name.type === 'Identifier') return name;
 		return createElement(rep.importer, name);
 	} else {
-		const node = t.callExpression(t.identifier('h'), [temporary || name, props, ...children]);
-		node[walked] = true;
-		return node;
+		return t.callExpression(t.identifier('h'), [temporary || name, props, ...children]);
 	}
 }
 
 export const transformBabelAST = (ast, options = {}) => {
 	let importer;
+	let imported;
 
-	collectVariables(ast);
+	const assignments = [];
 
-	babelTraverse.default(ast, {
-		Program: path => {
+	const scope = collectVariables(ast, (node, lets) => {
+		if (node.type === 'Program') {
 			if (!('util_import' in options)) return;
 
 			const table = new Map();
@@ -406,50 +387,34 @@ export const transformBabelAST = (ast, options = {}) => {
 
 			importer = name => {
 				if (table.has(name)) {
-					return table.get(name);
+					return createUse(table.get(name));
 				}
 
 				if (table.size === 0)  {
-					path.node.body.unshift(t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)));
+					imported = {
+						decl: t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)),
+						lets,
+					};
+					node.body.unshift(imported.decl);
 				}
 
-				const temp = createTemporary();
+				const temp = createIdent();
 				decls.push(t.importSpecifier(temp, t.identifier(name)));
 				table.set(name, temp);
-				return temp;
+
+				return createUse(temp);
 			};
-		},
-		CallExpression: path => {
-			if (path.node[walked]) return;
-			if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'h') return;
-			if (!checkImport(path.node.callee, options.assure_import)) return;
-
-			let block = path;
-			let child;
-			while (!block.node.body) {
-				if (block.parentPath.node.body) {
-					if (!Array.isArray(block.parentPath.node.body)) {
-						block.replaceWith(t.blockStatement([t.returnStatement(block.node)]));
-						return;
-					} else {
-						child = block.node;
-					}
-				}
-
-				block = block.parentPath;
-			}
+		} else if (node.type === 'CallExpression') {
+			if (node.callee.type !== 'Identifier' || node.callee.name !== 'h') return;
+			if (!checkImport(node.callee, options.assure_import)) return;
 
 			const rep = [];
-
 			if (importer) {
 				rep.importer = importer;
 				rep.cleanup = [];
 			}
 
-			const ret = computeNode(rep, null, path.node);
-			if (ret !== path.node || rep.length > 0 || rep.cleanup?.length > 0) {
-				path.replaceWith(ret);
-			}
+			const ret = computeNode(rep, null, node);
 
 			// reorder all variable declarations to the top
 			const decls = [];
@@ -460,9 +425,40 @@ export const transformBabelAST = (ast, options = {}) => {
 			}
 			rep.unshift(...decls);
 
-			block.node.body.splice(block.node.body.indexOf(child), 0, ...rep);
+			if (ret !== node || rep.length > 0 || rep.cleanup?.length > 0) {
+				for (let o in node) {
+					delete node[o];
+				}
+
+				for (let o in ret) {
+					node[o] = ret[o];
+				}
+
+				let body;
+				let current = lets;
+				while (current) {
+					body = current.getBody?.();
+					if (body) break;
+
+					current = current.parent;
+				}
+
+				for (let e of rep) {
+					collectVariables(e, null, current);
+				}
+
+				collectVariables(node, null, lets);
+				body.body.splice(0, 0, ...rep);
+
+				return true;
+			}
 		}
 	});
+
+	if (imported) collectVariables(imported.decl, null, imported.lets);
+
+	//unallocate(scope);
+	assignVariables(scope);
 };
 
 const transform = (source, options = {}) => {
@@ -478,41 +474,13 @@ const transform = (source, options = {}) => {
 
 /*
 console.log(transform(`
-	let $thing = 0;
-	const Button = ({ id, text, fn }) =>
-	  mount(h('div', {"class": 'col-sm-6 smallpad'},
-	    h('button', {id, "class": 'btn btn-primary btn-block', type: 'button', $onclick: fn}, text)
-	  ))
+	import {h} from 'destam-dom';
 
-	let a = () => h('a', {hello: world < 0, thing: value * 2});
+	let val;
+	val = () => {};
 
-	const div = document.createElement('div');
-
-	mount(h(div, {hello: 'world', $value: 10, num: 10.5, bool: true, $style: {
-		"hello with a space": "world",
-		val: 10n,
-		func: (a) => lol,
-		func2: function () {},
-		class: ["hello"].join('')
-	}}, "hello", 0, h('br'), h('br')));
-
-	h('div', {}, h('div'), stuff)
-
-	const Component = ({}, cleanup) => h('div', {hello}, null, one, two, three, "hello");
-
-	const constant = "hello world";
-
-	const Comp2 = ({}, cleanup, ...constant) => {
-		h('div', {
-			class: observer.map(e => e * 2),
-			classBody: observer.map(e => {
-				return 2;
-			}),
-			constant
-		})
-	};
+	() => h('div', {$thing: val});
 `, {util_import: 'destam-dom'}).code);
 */
-
 
 export default transform;

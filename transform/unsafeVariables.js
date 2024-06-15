@@ -26,7 +26,7 @@ const transform = (source, options) => {
 		},
 	});
 
-	collectVariables(ast);
+	const scope = collectVariables(ast);
 
 	babelTraverse.default(ast, {
 		Program: path => {
@@ -121,7 +121,6 @@ const transform = (source, options) => {
 			let replaced = false;
 			if (sameScope) for (let v of vars) {
 				if (doesNotOverlap(v.scope, s)) {
-					console.log(v.assignment.name, assignment.name);
 					assignment.replace(v.assignment);
 					v.scope = v.assignment.getScope();
 					replaced = true;
@@ -207,7 +206,7 @@ const transform = (source, options) => {
 		}
 	};
 
-	traverse(ast.program.assignment);
+	traverse(scope);
 
 	return generate.default(ast, {
 		sourceMaps: true,

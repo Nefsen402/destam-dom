@@ -1,8 +1,12 @@
+import t from '@babel/types';
+
 const assignmentPrototype = {
 	rename (name) {
 		for (let ident of [...this.assignments, ...this.uses]) {
 			ident.name = name;
 		}
+
+		this.name = name;
 	},
 	replace (assignment) {
 		for (let ident of this.assignments) {
@@ -30,7 +34,7 @@ const assignmentPrototype = {
 		}
 
 		return [min, max];
-	}
+	},
 };
 
 const createAssignment = (ident, mix) => {
@@ -56,31 +60,46 @@ const assignIdentifier = (ident, assignment, scope) => {
 	ident.scope = scope;
 };
 
-export const collectVariables = (node) => {
-	const traverseAssignment = (assignments, param) => {
+export const context = (parent, getBody) => {
+	const ret = new Map();
+	ret.parent = parent;
+	ret.children = [];
+	ret.unassigned = [];
+	ret.getBody = getBody;
+	if (parent) ret.parent.children.push(ret);
+	return ret;
+};
+
+export const collectVariables = (node, seeker, cont) => {
+	const traverseAssignment = (assignments, param, lets) => {
 		if (param.type === 'Identifier') {
 			assignments.push(param);
 		} else if (param.type === 'RestElement') {
 			assignments.push(param.argument);
 		} else if (param.type === 'ArrayPattern') {
 			if (param.elements) for (let elem of param.elements) {
-				traverseAssignment(assignments, elem);
+				traverseAssignment(assignments, elem, lets);
 			}
 		} else if (param.type === 'AssignmentPattern') {
-			traverseAssignment(assignments, param.right)
+			traverseAssignment(assignments, param.left, lets);
+			if (param.right) traverseExpression(param.right, lets);
 		} else if (param.type === 'ObjectPattern') {
 			for (const prop of param.properties) {
 				if (prop.type === 'ObjectProperty') {
-					traverseAssignment(assignments, prop.value);
+					traverseAssignment(assignments, prop.value, lets);
 				} else if (param.type === 'RestElement') {
 					assignments.push(param.argument);
 				}
 			}
+		} else if (param.type === 'MemberExpression') {
+			traverseExpression(param, lets);
+		} else {
+			throw new Error("Unknown assignment type: " + param.type);
 		}
 	};
 
 	const collectAssignment = (ident, context, _lets, defs) => {
-		let assignment;
+		let assignment = ident.assignment;
 		while (context && !assignment) {
 			assignment = context.get(ident.name);
 			if (!context.parent) {
@@ -94,6 +113,15 @@ export const collectVariables = (node) => {
 
 		if (!assignment) {
 			_lets.set(ident.name, assignment = createAssignment(ident, defs));
+		} else if (defs) {
+			for (let o in defs) {
+				assignment[o] = defs[o];
+			}
+
+			if (assignment.unassigned) {
+				assignment.unassigned = false;
+				_lets.unassigned.push(assignment);
+			}
 		}
 
 		assignment.assignments.push(ident);
@@ -102,7 +130,7 @@ export const collectVariables = (node) => {
 	};
 
 	const getAssignment = (ident, lets) => {
-		let assignment;
+		let assignment = ident.assignment;
 		let context = lets;
 		while (!assignment && context) {
 			assignment = context.get(ident.name);
@@ -110,7 +138,7 @@ export const collectVariables = (node) => {
 		}
 
 		if (!assignment) {
-			lets.set(ident.name, assignment = createAssignment(ident, {type: 'undecl'}));
+			lets.set(ident.name, assignment = createAssignment(ident));
 		}
 
 		assignment.uses.push(ident);
@@ -120,16 +148,16 @@ export const collectVariables = (node) => {
 
 	const undecl = (node, lets) => {
 		let idents = [];
-		traverseAssignment(idents, node);
+		traverseAssignment(idents, node, lets);
 
 		for (const ident of idents) {
-			collectAssignment(ident, lets, null, {type: 'undecl'});
+			collectAssignment(ident, lets, null);
 		}
 	};
 
 	const orphanUndecl = lets => {
 		if (lets.parent) for (const assignment of lets.values()) {
-			if (assignment.type === 'undecl') {
+			if (!assignment.type) {
 				if (lets.parent.has(assignment.name)) {
 					throw new Error("assert: variable traversal in bad state: " + assignment.name);
 				}
@@ -140,52 +168,58 @@ export const collectVariables = (node) => {
 		}
 	};
 
+	const traverseBody = (node, scope) => {
+		scope.getBody = () => {
+			if (node.body.type !== 'BlockStatement') {
+				node.body = t.blockStatement([t.returnStatement(node.body)]);
+			}
+
+			return node.body;
+		};
+
+		if (node.body.type === 'BlockStatement') {
+			const body = [...node.body.body];
+			for (const statement of body) {
+				traverse(statement, scope);
+			}
+		} else if (node.body.type === 'ExpressionStatement') {
+			traverseExpression(node.body.expression, scope);
+		} else {
+			traverseExpression(node.body, scope);
+		}
+	};
+
 	const traverseFunction = (node, lets, glob) => {
 		let idents = [];
 		for (let param of node.params) {
-			traverseAssignment(idents, param);
+			traverseAssignment(idents, param, lets);
 		}
 
 		const ret = context(lets);
 		ret.func = node;
 		ret.returns = [];
-		node.assignment = ret;
 
-		if (node.id) (glob ? lets : ret).set(node.id.name, createAssignment(node.id, {
+		if (node.id) collectAssignment(node.id, glob ? lets : ret, glob ? lets : ret, {
 			type: 'function',
-			assignments: [node.id],
-		}));
+		});
 
 		for (const ident of idents) {
-			const assignment = createAssignment(ident, {
+			collectAssignment(ident, ret, ret, {
 				type: 'param',
-				assignments: [ident],
 			});
-
-			ret.set(ident.name, assignment);
-			assignIdentifier(ident, assignment, ret);
 		}
 
-		if (node.body.type === 'BlockStatement') {
-			for (const statement of node.body.body) {
-				traverse(statement, ret);
-			}
-		} else {
-			traverseExpression(node.body, ret);
-		}
-
+		traverseBody(node, ret);
 		orphanUndecl(ret);
 	};
 
 	const traverseClass = (node, lets, glob) => {
 		const cont = context(lets);
 		cont.func = node;
-		node.assignment = cont;
 
-		if (node.id) (glob ? lets : cont).set(node.id.name, createAssignment(node.id, {
+		if (node.id) collectAssignment(node.id, glob ? lets : ret, glob ? lets : ret, {
 			type: 'class',
-			assignments: [node.id],
-		}));
+		});
 
 		if (node.superClass) traverseExpression(node.superClass, cont);
 
@@ -215,6 +249,8 @@ export const collectVariables = (node) => {
 	const traverseExpression = (node, lets) => {
 		if (!lets) throw new Error("assert: lets in null");
 		if (!node) throw new Error("assert: node in null");
+
+		if (seeker && seeker(node, lets)) return;
 
 		if (node.type === 'ArrayExpression') {
 			for (const elem of node.elements) {
@@ -306,17 +342,15 @@ export const collectVariables = (node) => {
 		}
 	};
 
-	const context = parent => {
-		const ret = new Map();
-		ret.parent = parent;
-		ret.children = [];
-		if (parent) ret.parent.children.push(ret);
-		return ret;
-	};
-
 	const traverse = (node, lets) => {
 		if (!lets) throw new Error("assert: lets in null");
 		if (!node) throw new Error("assert: node in null");
+
+		if (node.type === 'BlockStatement' || node.type === 'Program') {
+			lets = context(lets, () => node);
+		}
+
+		if (seeker && seeker(node, lets)) return;
 
 		if (node.type.includes("Function")) {
 			traverseFunction(node, lets, true);
@@ -333,7 +367,7 @@ export const collectVariables = (node) => {
 					idents.push(decl.id);
 					init = decl.init;
 				} else {
-					traverseAssignment(idents, decl.id);
+					traverseAssignment(idents, decl.id, lets);
 				}
 
 				let _lets = lets;
@@ -344,28 +378,33 @@ export const collectVariables = (node) => {
 				}
 
 				for (const ident of idents) {
-					const assignment = collectAssignment(ident, lets, _lets);
-					assignment.type = node.kind;
-					assignment.init = init;
+					collectAssignment(ident, lets, _lets, {
+						type: node.kind,
+						init,
+					});
 				}
 			}
-		} else if (node.type === 'BlockStatement') {
-			const cont = context(lets);
-			for (let i = 0; i < node.body.length; i++) {
-				traverse(node.body[i], cont);
+		} else if (node.type === 'BlockStatement' || node.type === 'Program') {
+			const body = [...node.body];
+			for (let i = 0; i < body.length; i++) {
+				traverse(body[i], lets);
 			}
-			node.assignment = cont;
-		} else if (node.type === 'Program') {
-			for (let i = 0; i < node.body.length; i++) {
-				traverse(node.body[i], lets);
-			}
-			node.assignment = lets;
 		} else if (node.type === 'ExpressionStatement') {
 			traverseExpression(node.expression, lets);
 		} else if (node.type === 'IfStatement') {
 			traverseExpression(node.test, lets);
-			traverse(node.consequent, lets);
-			if (node.alternate) traverse(node.alternate, lets);
+			traverse(node.consequent, context(lets, () => {
+				if (node.consequent.type !== 'BlockStatement') {
+					node.consequent = t.blockStatement([node.consequent]);
+				}
+				return node.consequent;
+			}));
+			if (node.alternate) traverse(node.alternate, context(lets, () => {
+				if (node.alternate.type !== 'BlockStatement') {
+					node.alternate = t.blockStatement([node.alternate]);
+				}
+				return node.alternate;
+			}));
 		} else if (node.type === 'ForStatement') {
 			const cont = context(lets);
 			if (node.init) {
@@ -379,26 +418,26 @@ export const collectVariables = (node) => {
 			if (node.test) traverseExpression(node.test, cont);
 			if (node.update) traverseExpression(node.update, cont);
 
-			traverse(node.body, cont);
+			traverseBody(node, cont);
 		} else if (node.type === 'ForOfStatement' || node.type === 'ForInStatement') {
-			let cont = lets;
+			let cont = context(lets);
 			if (node.left.type === 'VariableDeclaration') {
-				cont = context(cont);
 				traverse(node.left, cont);
 			} else {
 				undecl(node.left, cont);
 			}
 
 			if (node.right) traverseExpression(node.right, cont);
-			traverse(node.body, cont);
+			traverseBody(node, cont);
 		} else if (node.type === 'File') {
 			traverse(node.program, lets);
 		} else if (node.type === 'ImportDeclaration') {
 			for (const spec of node.specifiers) {
-				const assignment = collectAssignment(spec.local, lets, lets);
-				assignment.type = 'import';
-				assignment.source = node.source;
-				assignment.sourceNode = node;
+				collectAssignment(spec.local, lets, lets, {
+					type: 'import',
+					source: node.source,
+					sourceNode: node,
+				});
 			}
 		} else if (node.type === 'SwitchStatement') {
 			traverseExpression(node.discriminant, lets);
@@ -414,8 +453,9 @@ export const collectVariables = (node) => {
 
 			orphanUndecl(cont);
 		} else if (node.type === 'LabeledStatement') {
-			const assignment = collectAssignment(node.label, lets, lets);
-			assignment.type = 'label';
+			collectAssignment(node.label, lets, lets, {
+				type: 'label',
+			});
 			traverse(node.body, lets);
 		} else if (node.type === 'ThrowStatement') {
 			traverseExpression(node.argument, lets);
@@ -438,25 +478,21 @@ export const collectVariables = (node) => {
 			if (node.finalizer) traverse(node.finalizer, lets);
 
 			if (node.handler) {
-				const cont = context(lets);
+				const cont = context(lets, () => node.handler.body);
 				const idents = [];
-				traverseAssignment(idents, node.handler.param);
+				traverseAssignment(idents, node.handler.param, cont);
 
 				for (const ident of idents) {
-					const assignment = createAssignment(ident, {
+					collectAssignment(ident, cont, cont, {
 						type: 'param',
-						assignments: [ident],
 					});
-
-					cont.set(ident.name, assignment);
-					assignIdentifier(ident, assignment, cont);
 				}
 
 				for (const statement of node.handler.body.body) {
 					traverse(statement, cont);
 				}
 
-				node.handler.assignment = cont;
+				node.handler.scope = cont;
 				orphanUndecl(cont);
 			}
 		} else if (node.type === 'WhileStatement' || node.type === 'DoWhileStatement') {
@@ -470,7 +506,7 @@ export const collectVariables = (node) => {
 			if (node.declaration) traverse(node.declaration, lets);
 
 			for (let spec of node.specifiers) {
-				if (spec.type === 'ExportSpcifier') {
+				if (spec.type === 'ExportSpecifier') {
 					traverseExpression(spec.local, lets);
 				} else if (spec.type === 'ExportDefaultDeclaration') {
 					traverseExpression(spec.declaration, lets);
@@ -483,14 +519,135 @@ export const collectVariables = (node) => {
 		} else if (node.type === 'ClassDeclaration') {
 			traverseClass(node, lets, true);
 		} else {
-			throw new Error("Unknown statement: " + node.type);
+			traverseExpression(node, lets);
+			return;
+			//throw new Error("Unknown statement: " + node.type);
 		}
 
 		orphanUndecl(lets);
 	}
 
-	traverse(node, context());
+	traverse(node, cont || (cont = context()));
+	return cont;
 };
+
+const allowedNameCharsFirst = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_';
+const allowedNameChars = allowedNameCharsFirst + '0123456789';
+export const assignVariables = scope => {
+	// collect all used variables in every scope
+	const used = new Map();
+	const vals = [];
+
+	const collect = (assignment, scope) => {
+		for (const use of [...assignment.assignments, ...assignment.uses]) {
+			let current = use.scope;
+
+			while (current && current !== scope.parent) {
+				let list = used.get(current);
+				if (!list) used.set(current, list = new Set());
+				list.add(assignment);
+
+				current = current.parent;
+			}
+		}
+	};
+
+	const traverse = (scope, undef) => {
+		for (const assignment of scope.values()) {
+			collect(assignment, scope);
+		}
+
+		for (const assignment of scope.unassigned) {
+			vals.push([assignment, scope]);
+		}
+
+		scope.unassigned.length = 0;
+
+		for (const child of scope.children) {
+			traverse(child);
+		}
+	};
+
+	traverse(scope, scope);
+
+	for (const [assignment, scope] of vals.sort((a, b) => {
+		return b[0].assignments.length + b[0].uses.length -
+			a[0].assignments.length - a[0].uses.length;
+	})) {
+		const taken = new Set([
+			'let', 'const', 'class', 'var', 'function', 'of', 'in', 'for', 'while',
+			'do', 'if', 'else', 'try', 'catch', 'finally', 'export', 'import',
+			'default', 'switch', 'case', 'break', 'continue', 'throw', 'new', 'this',
+			'return', 'from', 'as', 'null', 'undefined',
+		]);
+
+		for (const use of [...assignment.assignments, ...assignment.uses]) {
+			let current = use.scope;
+			while (current !== scope.parent) {
+				const thing = used.get(current);
+				if (thing) for (let t of thing) {
+					taken.add(t.name);
+				}
+
+				current = current.parent;
+			}
+		}
+
+		for (let i = 0;; i++) {
+			let name = '';
+			let num = i;
+			do {
+				const chars = name.length ? allowedNameChars : allowedNameCharsFirst;
+
+				name += chars[num % chars.length];
+				num = Math.floor(num / chars.length);
+			} while(num);
+
+			if (taken.has(name)) continue;
+
+			scope.set(name, assignment);
+			assignment.rename(name);
+			collect(assignment, scope);
+			break;
+		}
+	}
+};
+
+export const unallocate = (scope) => {
+	const traverse = scope => {
+		for (const assignment of scope.values()) {
+			scope.unassigned.push(assignment);
+		}
+
+		scope.clear();
+
+		for (const child of scope.children) {
+			traverse(child);
+		}
+	};
+
+	traverse(scope);
+};
+
+export const createIdent = extra => {
+	const ident = t.identifier('');
+	ident.assignment = createAssignment(ident, {
+		unassigned: true,
+		...extra,
+	});
+
+	return ident;
+};
+
+export const createUse = ident => {
+	if (ident.type !== "Identifier") {
+		return ident;
+	}
+
+	const ret = t.identifier(ident.name);
+	ret.assignment = ident.assignment;
+	return ret;
+}
 
 export const checkImport = (node, regex) => {
 	if (!regex) {
