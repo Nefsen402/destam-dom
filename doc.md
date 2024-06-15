@@ -39,6 +39,7 @@ Mount supports:
  - booleans (will be rendered as the string true/false)
  - `null`
  - JSX or `html` tagged template literals
+ - Observers that resolve to any of the above
 
 ## html
 `html()` is meant to be used with tagged template literals and provides an easy and build-free way to start creating complex dom structures in javascript. Note that for cases like the `br` element, you will have to close those manually.
