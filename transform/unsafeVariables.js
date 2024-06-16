@@ -13,27 +13,24 @@ const createSequence = idents => {
 const transform = (source, options) => {
 	const ast = parser.parse(source, {code: false, ast: true, sourceType: 'module'});
 
-	babelTraverse.default(ast, {
-		VariableDeclaration: path => {
-			path.node.kind = 'var';
-		},
-		BinaryExpression: path => {
-			if (path.node.operator === '===') {
-				path.node.operator = '==';
-			} else if (path.node.operator === '!==') {
-				path.node.operator = '!=';
+	const decls = [];
+	const ignoreDecls = new Set();
+
+	const scope = collectVariables(ast, node => {
+		if (node.type === 'VariableDeclaration') {
+			node.kind = 'var';
+			decls.push(node);
+		} else if (node.type === 'BinaryExpression') {
+			if (node.operator === '===') {
+				node.operator = '==';
+			} else if (node.operator === '!==') {
+				node.operator = '!=';
 			}
-		},
-	});
-
-	const scope = collectVariables(ast);
-
-	babelTraverse.default(ast, {
-		Program: path => {
+		} else if (node.type === 'Program') {
 			const decls = [];
 			const reorder = [];
 			const exps = [];
-			for (const ast of path.node.body.slice()) {
+			for (const ast of node.body) {
 				if (ast.type === 'VariableDeclaration') {
 					decls.push(...ast.declarations);
 				} else if (ast.type === 'ExportNamedDeclaration' && !ast.source) {
@@ -51,40 +48,46 @@ const transform = (source, options) => {
 			}
 
 			if (decls.length) {
-				reorder.unshift(t.variableDeclaration('var', decls));
+				const decl = t.variableDeclaration('var', decls);
+				reorder.unshift(decl);
+				ignoreDecls.add(decl);
 			}
 
 			if (exps.length) {
 				reorder.push(t.exportNamedDeclaration(null, exps));
 			}
 
-			path.node.body = reorder;
-		},
-		VariableDeclaration: path => {
-			const node = path.node;
-			if (node.bailed) return;
-
-			const decls = [];
-			if (['BlockStatement', 'ForStatement'].includes(path.parentPath.node.type)) {
-				for (const dec of node.declarations) {
-					if (dec.init) {
-						decls.push(t.expressionStatement(t.assignmentExpression('=', dec.id, dec.init)));
-					}
-				}
-
-				path.replaceWithMultiple(decls);
-			} else {
-				for (const dec of node.declarations) {
-					if (dec.init) {
-						decls.push(t.assignmentExpression('=', dec.id, dec.init));
-					} else {
-						decls.push(dec.id);
-					}
-				}
-				path.parentPath.node.left = decls[0];
-			}
-		},
+			node.body = reorder;
+		}
 	});
+
+	for (const node of decls) {
+		if (ignoreDecls.has(node)) continue;
+
+		const decls = [];
+		for (const dec of node.declarations) {
+			if (dec.init) {
+				decls.push(t.assignmentExpression('=', dec.id, dec.init));
+			} else {
+				decls.push(dec.id);
+			}
+		}
+
+		let replace;
+		if (decls.length === 1) {
+			replace = decls[0];
+		} else {
+			replace = t.sequenceExpression(decls);
+		}
+
+		for (let o in node) {
+			delete node[o];
+		}
+
+		for (let o in replace) {
+			node[o] = replace[o];
+		}
+	}
 
 	const traverse = scope => {
 		for (const child of scope.children) {
