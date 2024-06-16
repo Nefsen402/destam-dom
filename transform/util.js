@@ -212,7 +212,6 @@ export const collectVariables = (node, seeker, cont) => {
 		}
 
 		traverseBody(node, ret);
-		orphanUndecl(ret);
 	};
 
 	const traverseClass = (node, lets, glob) => {

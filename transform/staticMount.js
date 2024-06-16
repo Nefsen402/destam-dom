@@ -173,10 +173,6 @@ const computeNode = (rep, cleanup, node) => {
 				val = val.assignment.init;
 			}
 
-			if (orig.name === 'select') {
-				console.log(orig);
-			}
-
 			const binaryType = val.type === 'BinaryExpression' &&
 				([
 					'==', '===', '!=',
@@ -460,7 +456,7 @@ export const transformBabelAST = (ast, options = {}) => {
 			}
 
 			collectVariables(node, null, lets);
-			body.body.splice(0, 0, ...rep);
+			body.body.splice(body.body.findLastIndex(e => e.type.includes("Import")), 0, ...rep);
 		}
 	}
 
