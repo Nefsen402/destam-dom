@@ -4,6 +4,7 @@ import generate from '@babel/generator';
 import {collectVariables, createIdent, createUse, assignVariables, unallocate, checkImport} from './util.js';
 
 const canAppend = Symbol();
+const traversed = Symbol();
 
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
 const createElement = (importer, name) => {
@@ -61,6 +62,7 @@ const discoverRef = init => {
 };
 
 const computeNode = (rep, cleanup, node) => {
+	node[traversed] = true;
 	let [name, props, ...children] = node.arguments;
 	const isRef = name.type === 'Identifier' && discoverRef(name.assignment?.assignments?.length === 1 && name.assignment.init);
 
@@ -83,6 +85,7 @@ const computeNode = (rep, cleanup, node) => {
 				temp = createUse(name);
 			} else {
 				temporary = createIdent({thing: 'temp'});
+				temporary[canAppend] = true;
 				rep.push(declare(temporary, createElement(rep.importer, name)));
 				temp = createUse(temporary);
 			}
@@ -90,7 +93,6 @@ const computeNode = (rep, cleanup, node) => {
 			temp = createUse(temporary);
 		}
 
-		temp[canAppend] = true;
 		return temp;
 	};
 
@@ -169,6 +171,10 @@ const computeNode = (rep, cleanup, node) => {
 			if (val.type === 'Identifier' && val.assignment?.init &&
 					val.assignment.assignments.length === 1) {
 				val = val.assignment.init;
+			}
+
+			if (orig.name === 'select') {
+				console.log(orig);
 			}
 
 			const binaryType = val.type === 'BinaryExpression' &&
@@ -376,7 +382,7 @@ export const transformBabelAST = (ast, options = {}) => {
 	let importer;
 	let imported;
 
-	const assignments = [];
+	const found = [];
 
 	const scope = collectVariables(ast, (node, lets) => {
 		if (node.type === 'Program') {
@@ -406,54 +412,57 @@ export const transformBabelAST = (ast, options = {}) => {
 			};
 		} else if (node.type === 'CallExpression') {
 			if (node.callee.type !== 'Identifier' || node.callee.name !== 'h') return;
-			if (!checkImport(node.callee, options.assure_import)) return;
-
-			const rep = [];
-			if (importer) {
-				rep.importer = importer;
-				rep.cleanup = [];
-			}
-
-			const ret = computeNode(rep, null, node);
-
-			// reorder all variable declarations to the top
-			const decls = [];
-			for (let i = 0; i < rep.length; i++) {
-				if (rep[i].type !== 'VariableDeclaration') continue;
-				decls.push(rep[i]);
-				rep.splice(i--, 1);
-			}
-			rep.unshift(...decls);
-
-			if (ret !== node || rep.length > 0 || rep.cleanup?.length > 0) {
-				for (let o in node) {
-					delete node[o];
-				}
-
-				for (let o in ret) {
-					node[o] = ret[o];
-				}
-
-				let body;
-				let current = lets;
-				while (current) {
-					body = current.getBody?.();
-					if (body) break;
-
-					current = current.parent;
-				}
-
-				for (let e of rep) {
-					collectVariables(e, null, current);
-				}
-
-				collectVariables(node, null, lets);
-				body.body.splice(0, 0, ...rep);
-
-				return true;
-			}
+			found.push([node, lets]);
 		}
 	});
+
+	for (const [node, lets] of found) {
+		if (node[traversed]) continue;
+		if (!checkImport(node.callee, options.assure_import)) continue;
+
+		const rep = [];
+		if (importer) {
+			rep.importer = importer;
+			rep.cleanup = [];
+		}
+
+		const ret = computeNode(rep, null, node);
+
+		// reorder all variable declarations to the top
+		const decls = [];
+		for (let i = 0; i < rep.length; i++) {
+			if (rep[i].type !== 'VariableDeclaration') continue;
+			decls.push(rep[i]);
+			rep.splice(i--, 1);
+		}
+		rep.unshift(...decls);
+
+		if (ret !== node || rep.length > 0 || rep.cleanup?.length > 0) {
+			for (let o in node) {
+				delete node[o];
+			}
+
+			for (let o in ret) {
+				node[o] = ret[o];
+			}
+
+			let body;
+			let current = lets;
+			while (current) {
+				body = current.getBody?.();
+				if (body) break;
+
+				current = current.parent;
+			}
+
+			for (let e of rep) {
+				collectVariables(e, null, current);
+			}
+
+			collectVariables(node, null, lets);
+			body.body.splice(0, 0, ...rep);
+		}
+	}
 
 	if (imported) collectVariables(imported.decl, null, imported.lets);
 
@@ -472,15 +481,13 @@ const transform = (source, options = {}) => {
 	}, source);
 };
 
-/*
+
 console.log(transform(`
 	import {h} from 'destam-dom';
 
-	let val;
-	val = () => {};
-
-	() => h('div', {$thing: val});
+	h('div', {$thing: val});
+	let val = () => {};
 `, {util_import: 'destam-dom'}).code);
-*/
+
 
 export default transform;
