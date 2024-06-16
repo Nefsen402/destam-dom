@@ -187,6 +187,8 @@ export const collectVariables = (node, seeker, cont) => {
 		} else {
 			traverseExpression(node.body, scope);
 		}
+
+		orphanUndecl(scope);
 	};
 
 	const traverseFunction = (node, lets, glob) => {
@@ -389,22 +391,34 @@ export const collectVariables = (node, seeker, cont) => {
 			for (let i = 0; i < body.length; i++) {
 				traverse(body[i], lets);
 			}
+
+			orphanUndecl(lets);
 		} else if (node.type === 'ExpressionStatement') {
 			traverseExpression(node.expression, lets);
 		} else if (node.type === 'IfStatement') {
 			traverseExpression(node.test, lets);
-			traverse(node.consequent, context(lets, () => {
+
+			const consequentScope = context(lets, () => {
 				if (node.consequent.type !== 'BlockStatement') {
 					node.consequent = t.blockStatement([node.consequent]);
 				}
 				return node.consequent;
-			}));
-			if (node.alternate) traverse(node.alternate, context(lets, () => {
-				if (node.alternate.type !== 'BlockStatement') {
-					node.alternate = t.blockStatement([node.alternate]);
-				}
-				return node.alternate;
-			}));
+			});
+
+			traverse(node.consequent, consequentScope);
+			orphanUndecl(consequentScope);
+
+			if (node.alternate) {
+				const alternateScope = context(lets, () => {
+					if (node.alternate.type !== 'BlockStatement') {
+						node.alternate = t.blockStatement([node.alternate]);
+					}
+					return node.alternate;
+				});
+
+				traverse(node.alternate, alternateScope);
+				orphanUndecl(alternateScope);
+			}
 		} else if (node.type === 'ForStatement') {
 			const cont = context(lets);
 			if (node.init) {
@@ -492,7 +506,6 @@ export const collectVariables = (node, seeker, cont) => {
 					traverse(statement, cont);
 				}
 
-				node.handler.scope = cont;
 				orphanUndecl(cont);
 			}
 		} else if (node.type === 'WhileStatement' || node.type === 'DoWhileStatement') {
@@ -523,8 +536,6 @@ export const collectVariables = (node, seeker, cont) => {
 			return;
 			//throw new Error("Unknown statement: " + node.type);
 		}
-
-		orphanUndecl(lets);
 	}
 
 	traverse(node, cont || (cont = context()));
