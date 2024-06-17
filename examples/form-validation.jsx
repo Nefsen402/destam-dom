@@ -1,4 +1,4 @@
-import {mount, Observer, h} from 'destam-dom';
+import {mount, Observer} from 'destam-dom';
 
 const constainsOneOf = (str, chars) => {
 	for (let i = 0; i < chars.length; i++) {

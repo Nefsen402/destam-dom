@@ -1,4 +1,4 @@
-import {h, mount, Observer} from 'destam-dom';
+import {mount, Observer} from 'destam-dom';
 
 const RadioButton = ({value, name}) => {
 	return <>

@@ -1,4 +1,4 @@
-import {mount, OArray, Observer, h} from 'destam-dom';
+import {mount, OArray, Observer} from 'destam-dom';
 
 const size = 500;
 const transitionDuration = 200;

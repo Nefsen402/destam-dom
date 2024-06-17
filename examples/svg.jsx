@@ -1,4 +1,4 @@
-import {h, mount} from 'destam-dom';
+import {mount, h} from 'destam-dom';
 import htm from '/htm.js';
 
 const svg = (name, prop, ...children) => {

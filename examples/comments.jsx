@@ -1,4 +1,4 @@
-import {h, mount, OArray, Observer, OObject} from 'destam-dom';
+import {mount, OArray, Observer, OObject} from 'destam-dom';
 
 const CommentPoster = ({postComment, postName="Post"}) => {
 	const value = Observer.mutable("");

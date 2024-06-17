@@ -123,7 +123,9 @@ if (lib in libs) {
 	config = defineConfig({
 		plugins: [
 			...(process.env.N_DEBUG ? [createTransform('assert-remove', assertRemove)] : []),
-			createTransform('transform-literal-html', compileHTMLLiteral, true),
+			createTransform('transform-literal-html', compileHTMLLiteral, true, {
+				jsx_auto_import: {h: 'destam-dom'},
+			}),
 			{
 				name: 'examples',
 				resolveId (id) {
