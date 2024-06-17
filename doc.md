@@ -37,7 +37,7 @@ Mount supports:
  - [Iterables](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols) (common references will be reconciliated)
  - Numbers
  - booleans (will be rendered as the string true/false)
- - `null`
+ - `null` (won't render anything)
  - JSX or `html` tagged template literals
  - Observers that resolve to any of the above
 
