@@ -261,7 +261,7 @@ export const collectVariables = (node, seeker, cont) => {
 					traverseExpression(elem, lets);
 				}
 			}
-		} else if (node.type === 'ArrowFunctionExpression' || node.type === 'FunctionExpression') {
+		} else if (node.type === 'ArrowFunctionExpression' || node.type === 'FunctionDeclaration') {
 			traverseFunction(node, lets);
 		} else if (node.type === 'AssignmentExpression') {
 			traverseExpression(node.right, lets);
@@ -362,6 +362,8 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 		} else if (node.type === 'JSXText' || node.type === 'JSXEmptyExpression') {
 			// fallthrough
+		} else if (node.type === 'ClassDeclaration') {
+			traverseClass(node, lets, true);
 		} else if (!node.type.includes("Literal")) {
 			throw new Error("Unknown expression: " + node.type);
 		}
@@ -552,7 +554,7 @@ export const collectVariables = (node, seeker, cont) => {
 					throw new Error("Unknown export: " + spec.type);
 				}
 			}
-		} else if (node.type === 'ClassDeclaration') {
+		} else if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
 			traverseClass(node, lets, true);
 		} else {
 			if (letFail) {
