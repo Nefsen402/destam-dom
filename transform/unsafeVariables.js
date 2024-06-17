@@ -1,6 +1,5 @@
 import parser from '@babel/parser';
 import generate from '@babel/generator';
-import babelTraverse from '@babel/traverse';
 import t from '@babel/types';
 import util from 'util';
 import {collectVariables} from './util.js';

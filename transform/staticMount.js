@@ -1,7 +1,7 @@
 import parser from '@babel/parser';
 import t from '@babel/types';
 import generate from '@babel/generator';
-import {collectVariables, createIdent, createUse, assignVariables, unallocate, checkImport} from './util.js';
+import {collectVariables, createIdent, createUse, assignVariables, checkImport} from './util.js';
 
 const canAppend = Symbol();
 const traversed = Symbol();
@@ -462,7 +462,6 @@ export const transformBabelAST = (ast, options = {}) => {
 
 	if (imported) collectVariables(imported.decl, null, imported.lets);
 
-	//unallocate(scope);
 	assignVariables(scope);
 };
 
@@ -476,14 +475,5 @@ const transform = (source, options = {}) => {
 		...options,
 	}, source);
 };
-
-
-console.log(transform(`
-	import {h} from 'destam-dom';
-
-	h('div', {$thing: val});
-	let val = () => {};
-`, {util_import: 'destam-dom'}).code);
-
 
 export default transform;

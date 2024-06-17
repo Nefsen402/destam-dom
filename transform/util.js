@@ -338,12 +338,36 @@ export const collectVariables = (node, seeker, cont) => {
 			for (const exp of node.quasi.expressions) {
 				traverseExpression(exp, lets);
 			}
+		} else if (node.type === 'JSXElement') {
+			for (const attr of node.openingElement.attributes) {
+				if (attr.type === 'JSXSpreadChild') {
+					traverseExpression(node.expression, lets);
+				} else {
+					if (attr.value) traverseExpression(attr.value, lets);
+				}
+			}
+
+			if (node.children) for (const child of node.children) {
+				traverseExpression(child, lets);
+			}
+		} else if (node.type === 'JSXExpressionContainer') {
+			traverseExpression(node.expression, lets);
+		} else if (node.type === 'JSXFragment') {
+			for (const child of node.children) {
+				if (child.type === 'JSXSpreadChild') {
+					traverseExpression(child.expression, lets);
+				} else {
+					traverseExpression(child, lets);
+				}
+			}
+		} else if (node.type === 'JSXText' || node.type === 'JSXEmptyExpression') {
+			// fallthrough
 		} else if (!node.type.includes("Literal")) {
 			throw new Error("Unknown expression: " + node.type);
 		}
 	};
 
-	const traverse = (node, lets) => {
+	const traverse = (node, lets, letFail) => {
 		if (!lets) throw new Error("assert: lets in null");
 		if (!node) throw new Error("assert: node in null");
 
@@ -452,7 +476,7 @@ export const collectVariables = (node, seeker, cont) => {
 					sourceNode: node,
 				});
 			}
-		} else if (node.type === 'SwitchStatement') {
+		}else if (node.type === 'SwitchStatement') {
 			traverseExpression(node.discriminant, lets);
 
 			const cont = context(lets);
@@ -531,20 +555,26 @@ export const collectVariables = (node, seeker, cont) => {
 		} else if (node.type === 'ClassDeclaration') {
 			traverseClass(node, lets, true);
 		} else {
-			traverseExpression(node, lets);
-			return;
-			//throw new Error("Unknown statement: " + node.type);
+			if (letFail) {
+				throw new Error("Unknown statement: " + node.type);
+			}
+
+			return true;
 		}
+
+		return false;
+	};
+
+	if (traverse(node, cont || (cont = context()))) {
+		traverseExpression(node, cont);
 	}
 
-	traverse(node, cont || (cont = context()));
 	return cont;
 };
 
 const allowedNameCharsFirst = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_';
 const allowedNameChars = allowedNameCharsFirst + '0123456789';
 export const assignVariables = scope => {
-	// collect all used variables in every scope
 	const used = new Map();
 	const vals = [];
 
@@ -639,35 +669,59 @@ export const unallocate = (scope) => {
 	traverse(scope);
 };
 
-export const createIdent = extra => {
+export const createIdent = scope => {
 	const ident = t.identifier('');
 	ident.assignment = createAssignment(ident, {
 		unassigned: true,
-		...extra,
+		name: '',
 	});
+
+	if (scope) {
+		ident.scope = scope;
+		scope.unassigned.push(ident.assignment);
+		ident.assignment.assignments.push(ident);
+	}
 
 	return ident;
 };
 
-export const createUse = ident => {
-	if (ident.type !== "Identifier") {
+export const createUse = (ident, scope) => {
+	let assignment;
+	if (ident.type === "Identifier") {
+		assignment = ident.assignment;
+	} else if (Object.getPrototypeOf(ident) === assignmentPrototype){
+		assignment = ident;
+	} else {
 		return ident;
 	}
 
-	const ret = t.identifier(ident.name);
-	ret.assignment = ident.assignment;
+	const ret = t.identifier(assignment.name);
+	ret.assignment = assignment;
+
+	if (scope) {
+		ret.scope = scope;
+		assignment.uses.push(ret);
+	}
+
 	return ret;
-}
+};
 
 export const checkImport = (node, regex) => {
 	if (!regex) {
 		return true;
 	}
 
-	const source = node.assignment?.source;
+	let assignment = node;
+	if (node.type === 'Identifier') {
+		assignment = node.assignment;
+	}
+
+	const source = assignment?.source;
 	if (!source) {
 		return false;
 	}
 
 	return regex.test(source.value);
 };
+
+

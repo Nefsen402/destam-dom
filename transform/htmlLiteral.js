@@ -1,13 +1,14 @@
 import parser from '@babel/parser';
 import generate from '@babel/generator';
-import babelTraverse from '@babel/traverse';
 import t from '@babel/types';
 import util from 'util';
 import htm, {validTags} from '../htm.js';
+import {collectVariables, createIdent, createUse, assignVariables, checkImport} from './util.js';
 
-let currentTag = 'h';
-const createTag = (args, tagName) => {
-	const expr = t.callExpression(t.identifier(tagName), args);
+const traversed = Symbol();
+
+const createTag = (args, tag, lets) => {
+	const expr = t.callExpression(createUse(tag, lets), args);
 	return expr;
 };
 
@@ -21,68 +22,6 @@ const createArray = (items) => {
 
 const spreadKeys = Symbol();
 
-const html = htm((name, props, ...children) => {
-	const args = [
-		typeof name === 'string' ? t.stringLiteral(name) : name,
-	];
-
-	if (Object.keys(props).length || children.length) {
-		args.push(t.objectExpression(Object.entries(props).map(([key, val]) => {
-			if (props[spreadKeys]?.includes(key)) {
-				return t.spreadElement(val);
-			}
-
-			if (val === true) {
-				val = t.booleanLiteral(val);
-			}
-
-			if (typeof key === 'string') {
-				key = t.stringLiteral(key);
-			}
-
-			if (typeof val === 'string') {
-				val = t.stringLiteral(val);
-			}
-
-			return t.objectProperty(key, val);
-		})));
-	}
-
-	args.push(...children.map(child => {
-		if (typeof child === 'string') {
-			return t.stringLiteral(child);
-		} else if (child === null) {
-			return t.identifier('null');
-		} else {
-			return child;
-		}
-	}));
-
-	return createTag(args, currentTag);
-}, (props, obj) => {
-	const key = '~spread-' + Math.random();
-
-	if (!props[spreadKeys]) props[spreadKeys] = [];
-	props[spreadKeys].push(key);
-
-	props[key] = obj;
-}, strings => {
-	if (strings.length === 1) {
-		return strings[0]
-	}
-
-	return t.callExpression(
-		t.memberExpression(t.arrayExpression(strings.map(string => {
-			if (typeof string === 'string') {
-				string = t.stringLiteral(string);
-			}
-
-			return string;
-		})), t.identifier('join')),
-		[t.stringLiteral("")],
-	);
-});
-
 const jsxName = (name, check) => {
 	if (name[0].toLowerCase() !== name[0]) {
 		return t.identifier(name);
@@ -95,7 +34,13 @@ const jsxName = (name, check) => {
 	}
 };
 
-const parse = node => {
+const parse = (node, importer) => {
+	node[traversed] = true;
+
+	if (node.type === 'JSXFragment') {
+		return t.arrayExpression(transformChildren(node, importer));
+	}
+
 	let impl = 'h';
 	let name = node.openingElement.name;
 	if (name.type === 'JSXNamespacedName') {
@@ -107,11 +52,16 @@ const parse = node => {
 		name = jsxName(name.name, true);
 	}
 
+	impl = importer(impl);
+	if (!impl) {
+		return node;
+	}
+
 	const args = [
 		name,
 	];
 
-	const children = transformChildren(node);
+	const children = transformChildren(node, importer);
 	if (children || node.openingElement.attributes.length) {
 		args.push(t.objectExpression(node.openingElement.attributes.map(attr => {
 			if (attr.type === 'JSXSpreadAttribute') {
@@ -141,10 +91,10 @@ const parse = node => {
 		}
 	}
 
-	return createTag(args, impl);
+	return createTag(args, impl, importer.scope);
 };
 
-const transformChildren = node => {
+const transformChildren = (node, importer) => {
 	if (node.type !== 'JSXFragment' && !node.closingElement) {
 		if (node.children.length) throw new Error("Expected no children if there is no closing element");
 		return null;
@@ -195,13 +145,15 @@ const transformChildren = node => {
 		flush();
 
 		if (child.type === 'JSXElement') {
-			children.push(parse(child));
+			children.push(parse(child, importer));
 		} else if (child.type === 'JSXExpressionContainer') {
 			if (child.expression.type !== 'JSXEmptyExpression') {
 				children.push(child.expression);
 			}
 		} else if (child.type === 'JSXFragment') {
-			children.push(...transformChildren(child));
+			child[traversed] = true;
+
+			children.push(...transformChildren(child, importer));
 		} else if (child.type === 'JSXSpreadChild') {
 			children.push(t.spreadElement(child.expression));
 		} else {
@@ -213,108 +165,199 @@ const transformChildren = node => {
 	return children;
 };
 
+const replace = (node, replace) => {
+	if (node === replace) return;
+
+	for (let o in node) {
+		delete node[o];
+	}
+
+	for (let o in replace) {
+		node[o] = replace[o];
+	}
+};
+
 export const transformBabelAST = (ast, options = {}) => {
 	const globalTags = options.tags || {
 		'html': 'h',
 	};
 
-	const imports = new Map();
-	const checkImport = (node, path) => {
-		if (node.type !== "Identifier") {
-			return;
-		}
-
-		imports.set(node.name, path);
-	};
-
-	babelTraverse.default(ast, {
-		ImportSpecifier: path => {
-			checkImport(path.node.imported, path);
-		},
-		ImportDefaultSpecifier: path => {
-			checkImport(path.node.local, path);
-		},
-		VariableDeclaration: path => {
-			if (!imports.has('htm')) return;
-
-			let tags = null;
-
-			for (let i = 0; i < path.node.declarations.length; i++) {
-				const decl = path.node.declarations[i];
-				if (decl.id.type === 'Identifier' &&
-						decl.init.type === 'CallExpression' &&
-						decl.init.callee.type === 'Identifier' &&
-						decl.init.callee.name === 'htm' &&
-						decl.init.arguments.length === 1 &&
-						decl.init.arguments[0].type === 'Identifier') {
-					(tags || (tags = {}))[decl.id.name] = decl.init.arguments[0].name;
-					path.node.declarations.splice(i--, 1);
-				}
-			}
-
-			if (path.node.declarations.length === 0) {
-				path.replaceWithMultiple([]);
-			}
-
-			if (tags) path.parentPath.destam_tags = tags;
-		},
-		TaggedTemplateExpression: path => {
-			const node = path.node;
+	let templates = [];
+	let imports = new Map();
+	let jsx = [];
+	let program;
+	const scope = collectVariables(ast, (node, lets) => {
+		if (node.type === 'Program') {
+			program = {node, lets};
+		} else if (node.type === 'ImportDeclaration') {
+			imports.set(node, lets);
+		} else if (node.type === 'TaggedTemplateExpression') {
 			if (!node.tag) {
 				return;
 			}
 
-			let tags = {...globalTags};
+			templates.push([node, lets]);
+		} else if (node.type === 'JSXElement' || node.type === 'JSXFragment') {
+			jsx.push([node, lets]);
+		}
+	});
 
-			if (!imports.has(node.tag.name)) {
-				// check local variables
-				let current = path;
-				while (current) {
-					if (current.destam_tags) tags = {...tags, ...current.destam_tags};
-					current = current.parentPath;
+	for (const [node, lets] of templates) {
+		let currentTag;
+		if (node.tag.assignment.sourceNode && checkImport(node.tag, options.assure_import)) {
+			const name = globalTags[node.tag.name];
+			const specs = node.tag.assignment.sourceNode.specifiers;
+
+			for (const spec of specs) {
+				if (spec.imported.name === name || spec.imported.value === name) {
+					currentTag = spec.local;
 				}
 			}
 
-			if (!(node.tag.name in tags)) {
-				return;
+			if (!currentTag) {
+				currentTag = createIdent(imports.get(node.tag.assignment.sourceNode));
+				specs.push(t.importSpecifier(currentTag, t.identifier(name)));
 			}
+		} else {
+			const init = node.tag.assignment.init;
 
-			currentTag = tags[node.tag.name];
-			if (node.tag.name in globalTags && !imports.get(currentTag)) {
-				const im = imports.get(node.tag.name);
-
-				im.replaceWithMultiple([
-					t.importSpecifier(t.identifier(currentTag), t.identifier(currentTag))
-				]);
-
-				imports.delete(node.tag.name);
-				imports.set(tags[node.tag.name], im);
+			if (init && init.type === 'CallExpression' &&
+					init.callee.type === 'Identifier' &&
+					init.callee.name === 'htm' &&
+					init.arguments.length === 1 &&
+					init.arguments[0].type === 'Identifier') {
+				currentTag = init.arguments[0];
 			}
+		}
 
-			const {expressions, quasis} = node.quasi;
-			path.replaceWith(createArray(
-				html(quasis.map(node => node.value.raw), ...expressions.map(exp => {
-					if (exp.type === 'stringLiteral') {
-						return exp.value;
+		if (!currentTag) {
+			return;
+		}
+
+		const html = htm((name, props, ...children) => {
+			const args = [
+				typeof name === 'string' ? t.stringLiteral(name) : name,
+			];
+
+			if (Object.keys(props).length || children.length) {
+				args.push(t.objectExpression(Object.entries(props).map(([key, val]) => {
+					if (props[spreadKeys]?.includes(key)) {
+						return t.spreadElement(val);
 					}
 
-					return exp;
-				})).map(node => {
-					if (typeof node === 'string') {
-						node = t.stringLiteral(node);
+					if (val === true) {
+						val = t.booleanLiteral(val);
 					}
 
-					return node;
-				})
-			));
-		},
-		JSXFragment: path => {
-			path.replaceWith(t.arrayExpression(transformChildren(path.node)));
-		},
-		JSXElement: path => {
-			path.replaceWith(parse(path.node));
-		},
-	});
+					if (typeof key === 'string') {
+						key = t.stringLiteral(key);
+					}
+
+					if (typeof val === 'string') {
+						val = t.stringLiteral(val);
+					}
+
+					return t.objectProperty(key, val);
+				})));
+			}
+
+			args.push(...children.map(child => {
+				if (typeof child === 'string') {
+					return t.stringLiteral(child);
+				} else if (child === null) {
+					return t.identifier('null');
+				} else {
+					return child;
+				}
+			}));
+
+			return createTag(args, currentTag, lets);
+		}, (props, obj) => {
+			const key = '~spread-' + Math.random();
+
+			if (!props[spreadKeys]) props[spreadKeys] = [];
+			props[spreadKeys].push(key);
+
+			props[key] = obj;
+		}, strings => {
+			if (strings.length === 1) {
+				return strings[0]
+			}
+
+			return t.callExpression(
+				t.memberExpression(t.arrayExpression(strings.map(string => {
+					if (typeof string === 'string') {
+						string = t.stringLiteral(string);
+					}
+
+					return string;
+				})), t.identifier('join')),
+				[t.stringLiteral("")],
+			);
+		});
+
+		const {expressions, quasis} = node.quasi;
+		replace(node, createArray(
+			html(quasis.map(node => node.value.raw), ...expressions.map(exp => {
+				if (exp.type === 'stringLiteral') {
+					return exp.value;
+				}
+
+				return exp;
+			})).map(node => {
+				if (typeof node === 'string') {
+					node = t.stringLiteral(node);
+				}
+
+				return node;
+			})
+		));
+	}
+
+	let jsxAutoImport = new Map();
+	for (const [node, lets] of jsx) {
+		if (node[traversed]) continue;
+
+		const importer = name => {
+			let found;
+
+			let current = lets;
+			while (current) {
+				if (current.get(name)) {
+					found = current.get(name);
+					break;
+				}
+
+				current = current.parent;
+			}
+
+			if (found && checkImport(found, options.assure_import)) {
+				return found;
+			}
+
+			if (!options.jsx_auto_import?.[name]) {
+				return null;
+			}
+
+			if (jsxAutoImport.has(name)) {
+				return jsxAutoImport.get(name);
+			}
+
+			const decls = [];
+			program.node.body.unshift(
+				t.importDeclaration(decls, t.stringLiteral(options.jsx_auto_import[name])));
+
+			const temp = createIdent(program.lets);
+			decls.push(t.importSpecifier(temp, t.identifier(name)));
+			jsxAutoImport.set(name, temp);
+			return temp;
+		};
+
+		importer.scope = lets;
+		replace(node, parse(node, importer));
+	}
+
+	assignVariables(scope);
 };
 
 const transform = (source, options = {}) => {
