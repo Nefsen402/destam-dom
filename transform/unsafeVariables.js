@@ -76,7 +76,7 @@ const transform = (source, options) => {
 		if (decls.length === 1) {
 			replace = decls[0];
 		} else {
-			replace = t.sequenceExpression(decls);
+			replace = t.expressionStatement(t.sequenceExpression(decls));
 		}
 
 		for (let o in node) {
