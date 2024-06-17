@@ -61,6 +61,22 @@ const discoverRef = init => {
 		init.callee.object.name === 'document';
 };
 
+const checkHImport = (node) => {
+	const source = node.assignment.sourceNode;
+	if (!source) {
+		return false;
+	}
+
+	for (const spec of source.specifiers) {
+		if (spec.type === 'ImportSpecifier' &&
+				spec.local.assignment === node.assignment) {
+			return (spec.imported.name || spec.imported.value) === 'h';
+		}
+	}
+
+	return false;
+};
+
 const computeNode = (rep, cleanup, node) => {
 	node[traversed] = true;
 	let [name, props, ...children] = node.arguments;
@@ -84,7 +100,7 @@ const computeNode = (rep, cleanup, node) => {
 			if (isRef) {
 				temp = createUse(name);
 			} else {
-				temporary = createIdent({thing: 'temp'});
+				temporary = createIdent(null, {thing: 'temp'});
 				temporary[canAppend] = true;
 				rep.push(declare(temporary, createElement(rep.importer, name)));
 				temp = createUse(temporary);
@@ -300,8 +316,8 @@ const computeNode = (rep, cleanup, node) => {
 
 			child = temporary;
 			child[canAppend] = true;
-		} else if (child.type === 'CallExpression' &&
-				child.callee.type === 'Identifier' && child.callee.name === 'h') {
+		} else if (child.type === 'CallExpression' && child.callee.type === 'Identifier'
+				&& (child.callee.name === 'h' || checkHImport(node.callee))) {
 			child = computeNode(rep, cleanup, child);
 		}
 
@@ -370,7 +386,7 @@ const computeNode = (rep, cleanup, node) => {
 		if (name.type === 'Identifier') return name;
 		return createElement(rep.importer, name);
 	} else {
-		return t.callExpression(t.identifier('h'), [temporary || name, props, ...children]);
+		return t.callExpression(createUse(rep.callee), [temporary || name, props, ...children]);
 	}
 }
 
@@ -407,16 +423,18 @@ export const transformBabelAST = (ast, options = {}) => {
 				return createUse(temp);
 			};
 		} else if (node.type === 'CallExpression') {
-			if (node.callee.type !== 'Identifier' || node.callee.name !== 'h') return;
+			if (node.callee.type !== 'Identifier') return;
 			found.push([node, lets]);
 		}
 	});
 
 	for (const [node, lets] of found) {
 		if (node[traversed]) continue;
+		if (node.callee.name !== 'h' && !checkHImport(node.callee)) continue;
 		if (!checkImport(node.callee, options.assure_import)) continue;
 
 		const rep = [];
+		rep.callee = node.callee;
 		if (importer) {
 			rep.importer = importer;
 			rep.cleanup = [];

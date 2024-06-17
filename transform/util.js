@@ -669,11 +669,12 @@ export const unallocate = (scope) => {
 	traverse(scope);
 };
 
-export const createIdent = scope => {
+export const createIdent = (scope, options) => {
 	const ident = t.identifier('');
 	ident.assignment = createAssignment(ident, {
 		unassigned: true,
 		name: '',
+		...options,
 	});
 
 	if (scope) {
