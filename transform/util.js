@@ -639,7 +639,7 @@ export const assignVariables = scope => {
 
 		let name = assignment.name;
 		for (let i = 0; !name || taken.has(name); i++) {
-			if (i === 0) name = '';
+			name = '';
 
 			let num = i;
 			do {
