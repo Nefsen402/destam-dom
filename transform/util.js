@@ -113,6 +113,7 @@ export const collectVariables = (node, seeker, cont) => {
 
 		if (!assignment) {
 			_lets.set(ident.name, assignment = createAssignment(ident, defs));
+			assignment.rootScope = _lets;
 		} else if (defs) {
 			for (let o in defs) {
 				assignment[o] = defs[o];
@@ -139,6 +140,7 @@ export const collectVariables = (node, seeker, cont) => {
 
 		if (!assignment) {
 			lets.set(ident.name, assignment = createAssignment(ident));
+			assignment.rootScope = lets;
 		}
 
 		assignment.uses.push(ident);
@@ -635,8 +637,10 @@ export const assignVariables = scope => {
 			}
 		}
 
-		for (let i = 0;; i++) {
-			let name = '';
+		let name = assignment.name;
+		for (let i = 0; !name || taken.has(name); i++) {
+			if (i === 0) name = '';
+
 			let num = i;
 			do {
 				const chars = name.length ? allowedNameChars : allowedNameCharsFirst;
@@ -644,14 +648,12 @@ export const assignVariables = scope => {
 				name += chars[num % chars.length];
 				num = Math.floor(num / chars.length);
 			} while(num);
-
-			if (taken.has(name)) continue;
-
-			scope.set(name, assignment);
-			assignment.rename(name);
-			collect(assignment, scope);
-			break;
 		}
+
+		scope.set(name, assignment);
+		assignment.rootScope = scope;
+		assignment.rename(name);
+		collect(assignment, scope);
 	}
 };
 
@@ -659,6 +661,8 @@ export const unallocate = (scope) => {
 	const traverse = scope => {
 		for (const assignment of scope.values()) {
 			scope.unassigned.push(assignment);
+			assignment.rootScope = null;
+			assignment.name = null;
 		}
 
 		scope.clear();
@@ -696,6 +700,12 @@ export const createUse = (ident, scope) => {
 		assignment = ident;
 	} else {
 		return ident;
+	}
+
+	if (assignment.rootScope) {
+		assignment.rootScope.delete(assignment.name);
+		assignment.rootScope.unassigned.push(assignment);
+		assignment.rootScope = null;
 	}
 
 	const ret = t.identifier(assignment.name);
