@@ -392,7 +392,6 @@ const computeNode = (rep, cleanup, node) => {
 
 export const transformBabelAST = (ast, options = {}) => {
 	let importer;
-	let imported;
 
 	const found = [];
 
@@ -409,14 +408,10 @@ export const transformBabelAST = (ast, options = {}) => {
 				}
 
 				if (table.size === 0)  {
-					imported = {
-						decl: t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)),
-						lets,
-					};
-					node.body.unshift(imported.decl);
+					node.body.unshift(t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)));
 				}
 
-				const temp = createIdent();
+				const temp = createIdent(lets);
 				decls.push(t.importSpecifier(temp, t.identifier(name)));
 				table.set(name, temp);
 
@@ -477,8 +472,6 @@ export const transformBabelAST = (ast, options = {}) => {
 			body.body.splice(body.body.findLastIndex(e => e.type.includes("Import")), 0, ...rep);
 		}
 	}
-
-	if (imported) collectVariables(imported.decl, null, imported.lets);
 
 	assignVariables(scope);
 };
