@@ -323,10 +323,8 @@ export const transformBabelAST = (ast, options = {}) => {
 
 			let current = lets;
 			while (current) {
-				if (current.get(name)) {
-					found = current.get(name);
-					break;
-				}
+				found = current.get(name) || current.unassigned.find(a => a.name === name);
+				if (found) break;
 
 				current = current.parent;
 			}
