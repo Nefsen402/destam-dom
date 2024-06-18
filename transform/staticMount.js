@@ -316,8 +316,8 @@ const computeNode = (rep, cleanup, node) => {
 
 			child = temporary;
 			child[canAppend] = true;
-		} else if (child.type === 'CallExpression' && child.callee.type === 'Identifier'
-				&& (child.callee.name === 'h' || checkHImport(node.callee))) {
+		} else if (child.type === 'CallExpression' && child.callee.type === 'Identifier' &&
+				rep.callee.assignment === node.callee.assignment) {
 			child = computeNode(rep, cleanup, child);
 		}
 
@@ -430,7 +430,7 @@ export const transformBabelAST = (ast, options = {}) => {
 
 	for (const [node, lets] of found) {
 		if (node[traversed]) continue;
-		if (node.callee.name !== 'h' && !checkHImport(node.callee)) continue;
+		if (!checkHImport(node.callee)) continue;
 		if (!checkImport(node.callee, options.assure_import)) continue;
 
 		const rep = [];
