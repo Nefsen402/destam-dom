@@ -614,15 +614,20 @@ export const assignVariables = scope => {
 
 	traverse(scope, scope);
 
-	for (const [assignment, scope] of vals.sort((a, b) => {
-		return b[0].assignments.length + b[0].uses.length -
-			a[0].assignments.length - a[0].uses.length;
-	})) {
+	vals.sort(([a], [b]) => {
+		if (a.name && !b.name) return -1;
+		if (!b.name && a.name) return 1;
+
+		return b.assignments.length + b.uses.length -
+			a.assignments.length - a.uses.length;
+	});
+
+	for (const [assignment, scope] of vals) {
 		const taken = new Set([
 			'let', 'const', 'class', 'var', 'function', 'of', 'in', 'for', 'while',
 			'do', 'if', 'else', 'try', 'catch', 'finally', 'export', 'import',
 			'default', 'switch', 'case', 'break', 'continue', 'throw', 'new', 'this',
-			'return', 'from', 'as', 'null', 'undefined',
+			'return', 'from', 'as', 'null', 'undefined', 'true', 'false',
 		]);
 
 		for (const use of [...assignment.assignments, ...assignment.uses]) {
