@@ -60,12 +60,11 @@ const assignIdentifier = (ident, assignment, scope) => {
 	ident.scope = scope;
 };
 
-export const context = (parent, getBody) => {
+export const context = parent => {
 	const ret = new Map();
 	ret.parent = parent;
 	ret.children = [];
 	ret.unassigned = [];
-	ret.getBody = getBody;
 
 	ret.search = name => {
 		let current = ret;
@@ -183,24 +182,50 @@ export const collectVariables = (node, seeker, cont) => {
 		}
 	};
 
-	const traverseBody = (node, scope) => {
-		scope.getBody = () => {
-			if (node.body.type !== 'BlockStatement') {
-				node.body = t.blockStatement([t.returnStatement(node.body)]);
-			}
+	const traverseBody = (node, name, scope) => {
+		let type = 'body';
+		let current = node[name];
+		scope.body = () => {
+			let child = current;
 
-			return node.body;
+			const get = () => {
+				if (type === 'expression') {
+					type = 'body';
+					child = t.returnStatement(node[name]);
+					node[name] = t.blockStatement([child]);
+				} else if (type === 'statement') {
+					type = 'body';
+					child = t.expressionStatement(node[name]);
+					node[name] = t.blockStatement([child]);
+				}
+
+				return node[name];
+			};
+
+			return {
+				scope,
+				get,
+				placeBefore: (...nodes) => {
+					let index = get().body.indexOf(child);
+					if (index === -1) throw new Error("Couldn't find node to place before");
+
+					get().body.splice(index, 0, ...nodes);
+				},
+			};
 		};
 
-		if (node.body.type === 'BlockStatement') {
-			const body = [...node.body.body];
-			for (const statement of body) {
-				traverse(statement, scope);
+		const body = node[name];
+		if (['BlockStatement', 'Program'].includes(body.type)) {
+			for (current of [...body.body]) {
+				traverse(current, scope);
 			}
-		} else if (node.body.type === 'ExpressionStatement') {
-			traverseExpression(node.body.expression, scope);
 		} else {
-			traverseExpression(node.body, scope);
+			type = 'statement';
+
+			if (traverse(body, scope, true)) {
+				type = 'expression';
+				traverseExpression(body, scope);
+			}
 		}
 
 		orphanUndecl(scope);
@@ -226,7 +251,7 @@ export const collectVariables = (node, seeker, cont) => {
 			});
 		}
 
-		traverseBody(node, ret);
+		traverseBody(node, 'body', ret);
 	};
 
 	const traverseClass = (node, lets, glob) => {
@@ -384,12 +409,12 @@ export const collectVariables = (node, seeker, cont) => {
 		}
 	};
 
-	const traverse = (node, lets, letFail) => {
+	const traverse = (node, lets, noFail) => {
 		if (!lets) throw new Error("assert: lets in null");
 		if (!node) throw new Error("assert: node in null");
 
 		if (node.type === 'BlockStatement' || node.type === 'Program') {
-			lets = context(lets, () => node);
+			lets = context(lets);
 		}
 
 		if (seeker && seeker(node, lets)) return;
@@ -427,38 +452,14 @@ export const collectVariables = (node, seeker, cont) => {
 				}
 			}
 		} else if (node.type === 'BlockStatement' || node.type === 'Program') {
-			const body = [...node.body];
-			for (let i = 0; i < body.length; i++) {
-				traverse(body[i], lets);
-			}
-
-			orphanUndecl(lets);
+			traverseBody({node}, 'node', lets);
 		} else if (node.type === 'ExpressionStatement') {
 			traverseExpression(node.expression, lets);
 		} else if (node.type === 'IfStatement') {
 			traverseExpression(node.test, lets);
 
-			const consequentScope = context(lets, () => {
-				if (node.consequent.type !== 'BlockStatement') {
-					node.consequent = t.blockStatement([node.consequent]);
-				}
-				return node.consequent;
-			});
-
-			traverse(node.consequent, consequentScope);
-			orphanUndecl(consequentScope);
-
-			if (node.alternate) {
-				const alternateScope = context(lets, () => {
-					if (node.alternate.type !== 'BlockStatement') {
-						node.alternate = t.blockStatement([node.alternate]);
-					}
-					return node.alternate;
-				});
-
-				traverse(node.alternate, alternateScope);
-				orphanUndecl(alternateScope);
-			}
+			traverseBody(node, 'consequent', context(lets));
+			if (node.alternate) traverseBody(node, 'alternate', context(lets));
 		} else if (node.type === 'ForStatement') {
 			const cont = context(lets);
 			if (node.init) {
@@ -472,7 +473,7 @@ export const collectVariables = (node, seeker, cont) => {
 			if (node.test) traverseExpression(node.test, cont);
 			if (node.update) traverseExpression(node.update, cont);
 
-			traverseBody(node, cont);
+			traverseBody(node, 'body', cont);
 		} else if (node.type === 'ForOfStatement' || node.type === 'ForInStatement') {
 			let cont = context(lets);
 			if (node.left.type === 'VariableDeclaration') {
@@ -482,7 +483,7 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 
 			if (node.right) traverseExpression(node.right, cont);
-			traverseBody(node, cont);
+			traverseBody(node, 'body', cont);
 		} else if (node.type === 'File') {
 			traverse(node.program, lets);
 		} else if (node.type === 'ImportDeclaration') {
@@ -529,10 +530,12 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 		} else if (node.type === 'TryStatement') {
 			traverse(node.block, lets);
-			if (node.finalizer) traverse(node.finalizer, lets);
+			if (node.finalizer) {
+				traverseBody(node, 'finalizer', context(lets));
+			}
 
 			if (node.handler) {
-				const cont = context(lets, () => node.handler.body);
+				const cont = context(lets);
 				const idents = [];
 				traverseAssignment(idents, node.handler.param, cont);
 
@@ -542,11 +545,7 @@ export const collectVariables = (node, seeker, cont) => {
 					});
 				}
 
-				for (const statement of node.handler.body.body) {
-					traverse(statement, cont);
-				}
-
-				orphanUndecl(cont);
+				traverseBody(node.handler, 'body', cont);
 			}
 		} else if (node.type === 'WhileStatement' || node.type === 'DoWhileStatement') {
 			traverseExpression(node.test, lets);
@@ -572,7 +571,7 @@ export const collectVariables = (node, seeker, cont) => {
 		} else if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
 			traverseClass(node, lets, true);
 		} else {
-			if (letFail) {
+			if (!noFail) {
 				throw new Error("Unknown statement: " + node.type);
 			}
 
@@ -582,7 +581,7 @@ export const collectVariables = (node, seeker, cont) => {
 		return false;
 	};
 
-	if (traverse(node, cont || (cont = context()))) {
+	if (traverse(node, cont || (cont = context()), true)) {
 		traverseExpression(node, cont);
 	}
 

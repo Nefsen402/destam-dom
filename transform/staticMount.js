@@ -419,11 +419,21 @@ export const transformBabelAST = (ast, options = {}) => {
 			};
 		} else if (node.type === 'CallExpression') {
 			if (node.callee.type !== 'Identifier') return;
-			found.push([node, lets]);
+
+			let body;
+			let current = lets;
+			while (current) {
+				body = current.body?.();
+				if (body) break;
+
+				current = current.parent;
+			}
+
+			found.push([node, lets, body]);
 		}
 	});
 
-	for (const [node, lets] of found) {
+	for (const [node, lets, body] of found) {
 		if (node[traversed]) continue;
 		if (!checkHImport(node.callee)) continue;
 		if (!checkImport(node.callee, options.assure_import)) continue;
@@ -455,21 +465,12 @@ export const transformBabelAST = (ast, options = {}) => {
 				node[o] = ret[o];
 			}
 
-			let body;
-			let current = lets;
-			while (current) {
-				body = current.getBody?.();
-				if (body) break;
-
-				current = current.parent;
-			}
-
 			for (let e of rep) {
-				collectVariables(e, null, current);
+				collectVariables(e, null, body.scope);
 			}
 
 			collectVariables(node, null, lets);
-			body.body.splice(body.body.findLastIndex(e => e.type.includes("Import")), 0, ...rep);
+			body.placeBefore(...rep);
 		}
 	}
 
