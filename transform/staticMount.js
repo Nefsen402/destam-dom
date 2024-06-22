@@ -80,9 +80,17 @@ const checkHImport = (node) => {
 const computeNode = (rep, cleanup, node) => {
 	node[traversed] = true;
 	let [name, props, ...children] = node.arguments;
-	const isRef = name.type === 'Identifier' && discoverRef(name.assignment?.assignments?.length === 1 && name.assignment.init);
 
-	if (name.type !== 'StringLiteral' && !isRef) {
+	let ref = name;
+	if (name.type === 'Identifier') {
+		if (name.assignment?.assignments?.length !== 1 || !name.assignment.init) {
+			return node;
+		}
+
+		ref = name.assignment.init;
+	}
+
+	if (ref.type !== 'StringLiteral') {
 		return node;
 	}
 
@@ -97,12 +105,12 @@ const computeNode = (rep, cleanup, node) => {
 	const getTemp = () => {
 		let temp;
 		if (!temporary) {
-			if (isRef) {
-				temp = createUse(name);
+			if (discoverRef(ref)) {
+				temp = ref;
 			} else {
 				temporary = createIdent(null, {thing: 'temp'});
 				temporary[canAppend] = true;
-				rep.push(declare(temporary, createElement(rep.importer, name)));
+				rep.push(declare(temporary, createElement(rep.importer, createUse(name))));
 				temp = createUse(temporary);
 			}
 		} else {
@@ -382,8 +390,7 @@ const computeNode = (rep, cleanup, node) => {
 			])))
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
-		if (temporary) return temporary;
-		if (name.type === 'Identifier') return name;
+		if (temporary) return createUse(temporary);
 		return createElement(rep.importer, name);
 	} else {
 		return t.callExpression(createUse(rep.callee), [temporary || name, props, ...children]);
