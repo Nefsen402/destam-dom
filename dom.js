@@ -311,18 +311,20 @@ const attributeSetter = (name, val, e) => {
 };
 
 const propertySignal = (val, handler) => {
-	const remove = shallowListener(val, handler);
+	const remove = shallowListener({register_: val}, handler);
 	handler();
 	return remove;
 };
 const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
-		push(signals, [propertySignal, val, () => {
-			const v = val.get();
+		push(signals, [propertySignal, val.register_, () => {
+			const v = val();
 			assert(!isInstance(v, Observer),
 				"destam-dom does not support nested observers");
 			return set(name, v, e);
 		}, 0]);
+
+		val = val.get;
 	} else if (typeof val !== 'object' || Array.isArray(val)) {
 		set(name, val, e);
 	} else {
