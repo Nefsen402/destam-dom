@@ -382,8 +382,8 @@ export const h = (e, props = {}, ...children) => {
 					callAllSafe(cleanup);
 					return cleanup = 0;
 				};
-			} catch (e) {
-				console.error(e);
+			} catch (err) {
+				console.error(err);
 				assert(true, console.error("The error above happened in the " + e.name + " component"));
 			}
 
