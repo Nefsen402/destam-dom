@@ -318,16 +318,16 @@ export const transformBabelAST = (ast, options = {}) => {
 	for (const [node, lets] of jsx) {
 		if (node[traversed]) continue;
 
-		const importer = name => {
-			let found;
+		if (options.assure_no_import) {
+			const found = lets.search(options.assure_no_import);
 
-			let current = lets;
-			while (current) {
-				found = current.get(name) || current.unassigned.find(a => a.name === name);
-				if (found) break;
-
-				current = current.parent;
+			if (found?.type === 'import') {
+				continue;
 			}
+		}
+
+		const importer = name => {
+			const found = lets.search(name);
 
 			if (found && checkImport(found, options.assure_import)) {
 				return found;

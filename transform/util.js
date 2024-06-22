@@ -66,6 +66,19 @@ export const context = (parent, getBody) => {
 	ret.children = [];
 	ret.unassigned = [];
 	ret.getBody = getBody;
+
+	ret.search = name => {
+		let current = ret;
+		while (current) {
+			const found = current.get(name) || current.unassigned.find(a => a.name === name);
+			if (found) return found;
+
+			current = current.parent;
+		}
+
+		return null;
+	};
+
 	if (parent) ret.parent.children.push(ret);
 	return ret;
 };
