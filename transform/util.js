@@ -335,7 +335,7 @@ export const collectVariables = (node, seeker, cont) => {
 			traverseExpression(node.consequent, lets);
 			traverseExpression(node.alternate, lets);
 		} else if (node.type === 'DoExpression') {
-			traverse(node.body, lets);
+			traverseBody(node, 'body', context(lets));
 		} else if (node.type === 'Identifier') {
 			getAssignment(node, lets);
 		} else if (node.type === 'ImportExpression') {
