@@ -366,6 +366,7 @@ export const collectVariables = (node, seeker, cont) => {
 				traverseExpression(exp, lets);
 			}
 		} else if (node.type === 'ThisExpression' ||
+				node.type === 'DebuggerExpression' ||
 				node.type === 'Super') {
 			//fallthrough
 		} else if (node.type === 'TemplateLiteral') {
