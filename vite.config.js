@@ -40,7 +40,19 @@ if (lib in libs) {
 		},
 		plugins: !process.env.N_DEBUG ? [] : [
 			createTransform('assert-remove', assertRemove),
-			createTransform('unsafe-vars', unsafeVars),
+			{
+				name: 'unsafe-vars',
+				renderChunk: (code, chunk, options) => {
+					const transformed = unsafeVars(code, {
+						sourceFileName: chunk.fileName,
+					});
+
+					return {
+						code: transformed.code,
+						map: transformed.decodedMap,
+					};
+				},
+			},
 		],
 		build: {
 			minify: 'terser',

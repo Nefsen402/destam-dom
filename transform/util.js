@@ -24,17 +24,6 @@ const assignmentPrototype = {
 		this.assignments.splice(0, this.assignments.length);
 		this.uses.splice(0, this.uses.length);
 	},
-	getScope () {
-		let min = Infinity;
-		let max = -Infinity;
-
-		for (let ident of [...this.assignments, ...this.uses]) {
-			min = Math.min(min, ident.identId);
-			max = Math.max(max, ident.identId);
-		}
-
-		return [min, max];
-	},
 };
 
 const createAssignment = (ident, mix) => {
@@ -46,10 +35,8 @@ const createAssignment = (ident, mix) => {
 	return Object.assign(obj, mix || {});
 };
 
-let identId = 0;
 const assignIdentifier = (ident, assignment, scope) => {
 	ident.assignment = assignment;
-	ident.identId = ++identId;
 
 	if (assignment.type === 'var') {
 		while (scope.parent && !scope.func) {
@@ -112,6 +99,7 @@ export const collectVariables = (node, seeker, cont) => {
 
 	const collectAssignment = (ident, context, _lets, defs) => {
 		let assignment = ident.assignment;
+		let orig = context;
 		while (context && !assignment) {
 			assignment = context.get(ident.name);
 			if (!context.parent) {
@@ -127,6 +115,13 @@ export const collectVariables = (node, seeker, cont) => {
 			_lets.set(ident.name, assignment = createAssignment(ident, defs));
 			assignment.rootScope = _lets;
 		} else if (defs) {
+			// javascript maps are ordered. Make sure the order matches how they
+			// are assigned.
+			if (!assignment.type) {
+				_lets.delete(ident.name);
+				_lets.set(ident.name, assignment);
+			}
+
 			for (let o in defs) {
 				assignment[o] = defs[o];
 			}
@@ -138,7 +133,7 @@ export const collectVariables = (node, seeker, cont) => {
 		}
 
 		assignment.assignments.push(ident);
-		assignIdentifier(ident, assignment, context);
+		assignIdentifier(ident, assignment, orig);
 		return assignment;
 	};
 
@@ -232,13 +227,14 @@ export const collectVariables = (node, seeker, cont) => {
 	};
 
 	const traverseFunction = (node, lets, glob) => {
-		let idents = [];
-		for (let param of node.params) {
-			traverseAssignment(idents, param, lets);
-		}
-
 		const ret = context(lets);
 		ret.func = node;
+
+		let idents = [];
+		for (let param of node.params) {
+			traverseAssignment(idents, param, ret);
+		}
+
 		ret.returns = [];
 
 		if (node.id) collectAssignment(node.id, glob ? lets : ret, glob ? lets : ret, {
@@ -301,7 +297,9 @@ export const collectVariables = (node, seeker, cont) => {
 					traverseExpression(elem, lets);
 				}
 			}
-		} else if (node.type === 'ArrowFunctionExpression' || node.type === 'FunctionDeclaration') {
+		} else if (node.type === 'ArrowFunctionExpression' ||
+				node.type === 'FunctionDeclaration' ||
+				node.type === 'FunctionExpression') {
 			traverseFunction(node, lets);
 		} else if (node.type === 'AssignmentExpression') {
 			traverseExpression(node.right, lets);
@@ -414,7 +412,7 @@ export const collectVariables = (node, seeker, cont) => {
 		if (!lets) throw new Error("assert: lets in null");
 		if (!node) throw new Error("assert: node in null");
 
-		if (node.type === 'BlockStatement' || node.type === 'Program') {
+		if (node.type === 'BlockStatement') {
 			lets = context(lets);
 		}
 
@@ -592,6 +590,14 @@ export const collectVariables = (node, seeker, cont) => {
 const allowedNameCharsFirst = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_';
 const allowedNameChars = allowedNameCharsFirst + '0123456789';
 export const assignVariables = scope => {
+	const globalTaken = [
+		'let', 'const', 'class', 'var', 'function', 'of', 'in', 'for', 'while',
+		'do', 'if', 'else', 'try', 'catch', 'finally', 'export', 'import',
+		'default', 'switch', 'case', 'break', 'continue', 'throw', 'new', 'this',
+		'return', 'from', 'as', 'null', 'undefined', 'true', 'false', 'debugger',
+		'with',
+	];
+
 	const used = new Map();
 	const vals = [];
 
@@ -636,12 +642,7 @@ export const assignVariables = scope => {
 	});
 
 	for (const [assignment, scope] of vals) {
-		const taken = new Set([
-			'let', 'const', 'class', 'var', 'function', 'of', 'in', 'for', 'while',
-			'do', 'if', 'else', 'try', 'catch', 'finally', 'export', 'import',
-			'default', 'switch', 'case', 'break', 'continue', 'throw', 'new', 'this',
-			'return', 'from', 'as', 'null', 'undefined', 'true', 'false',
-		]);
+		const taken = new Set(globalTaken);
 
 		for (const use of [...assignment.assignments, ...assignment.uses]) {
 			let current = use.scope;
@@ -754,5 +755,3 @@ export const checkImport = (node, regex) => {
 
 	return regex.test(source.value);
 };
-
-

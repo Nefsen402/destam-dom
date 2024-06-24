@@ -4,9 +4,14 @@ import t from '@babel/types';
 import util from 'util';
 import {collectVariables} from './util.js';
 
-const createSequence = idents => {
-	if (idents.length === 1) return idents[0];
-	return t.sequenceExpression(idents);
+const replace = (node, replace) => {
+	for (let o in node) {
+		delete node[o];
+	}
+
+	for (let o in replace) {
+		node[o] = replace[o];
+	}
 };
 
 const transform = (source, options) => {
@@ -16,7 +21,9 @@ const transform = (source, options) => {
 	const ignoreDecls = new Set();
 
 	const scope = collectVariables(ast, node => {
-		if (node.type === 'VariableDeclaration') {
+		if (node.type === 'FunctionExpression') {
+			node.type = 'ArrowFunctionExpression';
+		} else if (node.type === 'VariableDeclaration') {
 			node.kind = 'var';
 			decls.push(node);
 		} else if (node.type === 'BinaryExpression') {
@@ -63,29 +70,25 @@ const transform = (source, options) => {
 	for (const node of decls) {
 		if (ignoreDecls.has(node)) continue;
 
-		const decls = [];
-		for (const dec of node.declarations) {
-			if (dec.init) {
-				decls.push(t.assignmentExpression('=', dec.id, dec.init));
+		let repl;
+		if (node.declarations.length === 1 && !node.declarations[0].init) {
+			repl = node.declarations[0];
+		} else {
+			const decls = [];
+			for (const dec of node.declarations) {
+				if (dec.init) {
+					decls.push(t.assignmentExpression('=', dec.id, dec.init));
+				}
+			}
+
+			if (decls.length === 1) {
+				repl = decls[0];
 			} else {
-				decls.push(dec.id);
+				repl = t.expressionStatement(t.sequenceExpression(decls));
 			}
 		}
 
-		let replace;
-		if (decls.length === 1) {
-			replace = decls[0];
-		} else {
-			replace = t.expressionStatement(t.sequenceExpression(decls));
-		}
-
-		for (let o in node) {
-			delete node[o];
-		}
-
-		for (let o in replace) {
-			node[o] = replace[o];
-		}
+		replace(node, repl);
 	}
 
 	const traverse = scope => {
@@ -97,43 +100,13 @@ const transform = (source, options) => {
 			return;
 		}
 
-		const doesNotOverlap = (one, two) => {
-			return one[1] < two[0] ||
-				two[1] < one[0];
-		};
-
-		const vars = [];
-
 		const ret = [];
 		for (const assignment of scope.values()) {
 			if (assignment.type !== 'var') {
 				continue;
 			}
 
-			let s = assignment.getScope();
-
-			let sameScope = true;
-			for (let ident of [...assignment.uses, ...assignment.assignments]) {
-				if (assignment.assignments[0].scope !== ident.scope) {
-					sameScope = false;
-					break;
-				}
-			}
-
-			let replaced = false;
-			if (sameScope) for (let v of vars) {
-				if (doesNotOverlap(v.scope, s)) {
-					assignment.replace(v.assignment);
-					v.scope = v.assignment.getScope();
-					replaced = true;
-					break;
-				}
-			}
-
-			if (!replaced) {
-				if (sameScope) vars.push({scope: s, assignment});
-				ret.push(assignment.assignments[0]);
-			}
+			ret.push(t.variableDeclarator(assignment.assignments[0]));
 		}
 
 		if (!ret.length) {
@@ -142,19 +115,44 @@ const transform = (source, options) => {
 
 		// find leading variable assignments and squash them. Terser doesn't
 		// seem to be smart enough to do this on its own.
-		const decls = new Map(ret.map(i => [i.name, t.variableDeclarator(i)]));
+		const decls = new Map(ret.map(i => [i.id.name, i]));
 		const body = scope.func.body.body;
 		const declsCleanup = [];
 		let movedExpressions = 0;
 
-		for (let elem of body) {
+		const root = !!scope.func.body.directives.length;
+		scope.func.body.directives = [];
+
+		main:for (let elem of body) {
 			const orig = elem;
 
 			if (elem.type === 'ExpressionStatement') {
 				elem = elem.expression;
 			}
 
-			if (elem.type === 'AssignmentExpression' &&
+			if (elem.type === 'SequenceExpression') {
+				for (let seq of elem.expressions) {
+					if (seq.type === 'AssignmentExpression' &&
+							seq.operator === '=' &&
+							seq.left.type === 'Identifier' &&
+							decls.has(seq.left.name) &&
+							!decls.get(seq.left.name).init) {
+						decls.get(seq.left.name).init = seq.right;
+						declsCleanup.push(() => {
+							let i = elem.expressions.indexOf(seq);
+							elem.expressions.splice(i, 1);
+
+							if (elem.expressions.length === 0) {
+								let i = body.indexOf(orig);
+								body.splice(i, 1);
+							}
+						});
+						movedExpressions++;
+					} else {
+						break main;
+					}
+				}
+			} else if (elem.type === 'AssignmentExpression' &&
 					elem.operator === '=' &&
 					elem.left.type === 'Identifier' &&
 					decls.has(elem.left.name) &&
@@ -194,17 +192,43 @@ const transform = (source, options) => {
 					}
 				});
 				break;
-			} else {
+			} else if (!root) {
 				break;
 			}
 		}
 
-		if (scope.func.params[scope.func.params.length - 1]?.type !== 'RestElement' &&
+		// use assignment patterns here instead
+		if (root) {
+			for (let c of declsCleanup) c();
+
+			scope.func.params.push(...ret.map(decl => {
+				const assignment = decl.id.assignment;
+				if (assignment.assignments.length === 1) {
+					if (assignment.init === null) {
+						assignment.rename('undefined');
+
+						return null;
+					} else if (assignment.uses.length === 1 &&
+							assignment.uses[0].scope === assignment.rootScope){
+						// this variable only has one use and within the same
+						// scope. It's safe to inline
+						replace(assignment.uses[0], assignment.init);
+						return null;
+					}
+				}
+
+				if (!decl.init) {
+					return decl.id;
+				}
+
+				return t.assignmentPattern(decl.id, decl.init);
+			}).filter(e => e));
+		} else if (scope.func.params[scope.func.params.length - 1]?.type !== 'RestElement' &&
 				movedExpressions <= 4) {
-			scope.func.params.push(...ret);
+			scope.func.params.push(...ret.map(decl => decl.id));
 		} else {
 			for (let c of declsCleanup) c();
-			body.unshift(t.variableDeclaration('var', [...decls.values()]));
+			body.unshift(t.variableDeclaration('var', ret));
 		}
 	};
 
