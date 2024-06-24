@@ -329,7 +329,6 @@ const populateSignals = (signals, val, e, name, set) => {
 		set(name, val, e);
 	} else {
 		for (let o in val) {
-			const def = val[o];
 			populateSignals(signals, val[o], e[name], o, set);
 		}
 	}
