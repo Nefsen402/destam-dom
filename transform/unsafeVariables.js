@@ -2,7 +2,7 @@ import parser from '@babel/parser';
 import generate from '@babel/generator';
 import t from '@babel/types';
 import util from 'util';
-import {collectVariables} from './util.js';
+import {collectVariables, assignVariables, createUse} from './util.js';
 
 const replace = (node, replace) => {
 	for (let o in node) {
@@ -24,7 +24,6 @@ const transform = (source, options) => {
 		if (node.type === 'FunctionExpression') {
 			node.type = 'ArrowFunctionExpression';
 		} else if (node.type === 'VariableDeclaration') {
-			node.kind = 'var';
 			decls.push(node);
 		} else if (node.type === 'BinaryExpression') {
 			if (node.operator === '===') {
@@ -101,13 +100,41 @@ const transform = (source, options) => {
 		}
 
 		const ret = [];
-		for (const assignment of scope.values()) {
-			if (assignment.type !== 'var') {
-				continue;
+		const unused = [];
+		const collect = currentScope => {
+			const used = [];
+
+			for (const assignment of currentScope.values()) {
+				if (!['var', 'let', 'const'].includes(assignment.type)) {
+					continue;
+				}
+
+				currentScope.delete(assignment.name);
+				if (unused.length) {
+					let reuse = unused.pop();
+					assignment.replace(reuse);
+					used.push(reuse);
+				} else {
+					assignment.rootScope = scope;
+
+					let v = createUse(assignment);
+					v.scope = scope;
+					v.assignment.assignments.splice(0, 0, v);
+
+					ret.push(t.variableDeclarator(v));
+					used.push(assignment);
+				}
 			}
 
-			ret.push(t.variableDeclarator(assignment.assignments[0]));
-		}
+			for (const child of currentScope.children) {
+				if (child.func) continue;
+				collect(child);
+			}
+
+			unused.push(...used);
+		};
+
+		collect(scope);
 
 		if (!ret.length) {
 			return;
@@ -233,6 +260,7 @@ const transform = (source, options) => {
 	};
 
 	traverse(scope);
+	assignVariables(scope);
 
 	return generate.default(ast, {
 		sourceMaps: true,
