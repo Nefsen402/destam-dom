@@ -90,6 +90,7 @@ const transform = (source, options) => {
 		replace(node, repl);
 	}
 
+	let root;
 	const traverse = scope => {
 		for (const child of scope.children) {
 			traverse(child);
@@ -147,7 +148,7 @@ const transform = (source, options) => {
 		const declsCleanup = [];
 		let movedExpressions = 0;
 
-		const root = !!scope.func.body.directives.length;
+		const isRoot = !!scope.func.body.directives.length;
 		scope.func.body.directives = [];
 
 		main:for (let elem of body) {
@@ -219,18 +220,18 @@ const transform = (source, options) => {
 					}
 				});
 				break;
-			} else if (!root) {
+			} else if (!isRoot) {
 				break;
 			}
 		}
 
 		// use assignment patterns here instead
-		if (root) {
-			for (let c of declsCleanup) c();
+		if (isRoot) {
+			root = () => {
+				for (let c of declsCleanup) c();
 
-			scope.func.params.push(...ret.map(decl => {
-				const assignment = decl.id.assignment;
-				if (assignment.assignments.length === 1) {
+				scope.func.params.push(...ret.map(decl => {
+					const assignment = decl.id.assignment;
 					if (assignment.init === null) {
 						assignment.rename('undefined');
 
@@ -242,14 +243,14 @@ const transform = (source, options) => {
 						replace(assignment.uses[0], assignment.init);
 						return null;
 					}
-				}
 
-				if (!decl.init) {
-					return decl.id;
-				}
+					if (!decl.init) {
+						return decl.id;
+					}
 
-				return t.assignmentPattern(decl.id, decl.init);
-			}).filter(e => e));
+					return t.assignmentPattern(decl.id, decl.init);
+				}).filter(e => e));
+			};
 		} else if (scope.func.params[scope.func.params.length - 1]?.type !== 'RestElement' &&
 				movedExpressions <= 4) {
 			scope.func.params.push(...ret.map(decl => decl.id));
@@ -261,6 +262,7 @@ const transform = (source, options) => {
 
 	traverse(scope);
 	assignVariables(scope);
+	if (root) root();
 
 	return generate.default(ast, {
 		sourceMaps: true,
