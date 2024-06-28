@@ -19,6 +19,7 @@ const transform = (source, options) => {
 
 	const decls = [];
 	const ignoreDecls = new Set();
+	const callSites = new Map();
 
 	const scope = collectVariables(ast, node => {
 		if (node.type === 'FunctionExpression') {
@@ -63,6 +64,8 @@ const transform = (source, options) => {
 			}
 
 			node.body = reorder;
+		} else if (node.type === 'CallExpression' && node.callee.type === 'Identifier') {
+			callSites.set(node.callee, node);
 		}
 	});
 
@@ -88,6 +91,33 @@ const transform = (source, options) => {
 		}
 
 		replace(node, repl);
+	}
+
+	const functionArgSize = new Map();
+	for (const assignment of new Set([...callSites.keys()].map(e => e.assignment))) {
+		if (assignment.assignments.length === 1 &&
+				assignment.init &&
+				assignment.init.type === 'ArrowFunctionExpression' &&
+				assignment.uses.length) {
+			let params = 0;
+			for (const use of assignment.uses) {
+				if (!callSites.has(use)) {
+					params = Infinity;
+					break;
+				}
+
+				let call = callSites.get(use);
+				if (call.arguments.length &&
+						call.arguments[call.arguments.length - 1].type === 'SpreadElement') {
+					params = Infinity;
+					break;
+				}
+
+				params = Math.max(params, call.arguments.length);
+			}
+
+			functionArgSize.set(assignment.init, params);
+		}
 	}
 
 	let root;
@@ -251,6 +281,17 @@ const transform = (source, options) => {
 					return t.assignmentPattern(decl.id, decl.init);
 				}).filter(e => e));
 			};
+		} else if (functionArgSize.has(scope.func) &&
+				functionArgSize.get(scope.func) <= scope.func.params.length) {
+			for (let c of declsCleanup) c();
+
+			scope.func.params.push(...ret.map(decl => {
+				if (decl.init) {
+					return t.assignmentPattern(decl.id, decl.init)
+				}
+
+				return decl.id;
+			}));
 		} else if (scope.func.params[scope.func.params.length - 1]?.type !== 'RestElement' &&
 				movedExpressions <= 4) {
 			scope.func.params.push(...ret.map(decl => decl.id));
