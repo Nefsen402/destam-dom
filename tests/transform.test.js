@@ -36,7 +36,7 @@ const transform = (file, options) => async () => {
 		if (child.type === 'ImportDeclaration') {
 			ast.program.body.splice(i--, 1);
 
-			const mod = await import(child.source.value);
+			const mod = options.override_import?.[child.source.value] || await import(child.source.value);
 			for (const spec of child.specifiers) {
 				if (!spec.imported) {
 					context[spec.local.name] = mod.default;
@@ -72,6 +72,15 @@ const transform = (file, options) => async () => {
 	script.runInContext(context);
 }
 
+const iife = path.resolve(fileURLToPath(import.meta.url), '../../dist/destam-dom.iife.js');
+if (fs.existsSync(iife)) {
+	const script = new vm.Script(fs.readFileSync(iife), {
+		filename: 'destam-dom.iife.js',
+	});
+
+	script.runInThisContext();
+}
+
 for (const file of files) {
 	if (file === 'transform.test.js') continue;
 	if (!file.endsWith('.test.js') && !file.endsWith('.test.jsx')) continue;
@@ -80,7 +89,23 @@ for (const file of files) {
 		util_import: '..',
 		assure_import: /^\.\.\/index\.js$/,
 	}));
+
 	describe("transform " + file, transform(file, {
 		assure_import: /^\.\.\/index\.js$/,
 	}));
+
+	if ([
+		'custom_element.test.js',
+		'array.test.js',
+		'array_reconciliation.test.js',
+		'replacement.test.js',
+		'static.test.js',
+	].includes(file)) {
+		describe("iife " + file, transform(file, {
+			assure_import: /^$/,
+			override_import: {
+				'../index.js': global.destamd,
+			}
+		}));
+	}
 }
