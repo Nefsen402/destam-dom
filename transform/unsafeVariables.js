@@ -173,7 +173,7 @@ const transform = (source, options) => {
 
 		// find leading variable assignments and squash them. Terser doesn't
 		// seem to be smart enough to do this on its own.
-		const decls = new Map(ret.map(i => [i.id.name, i]));
+		const decls = new Map(ret.map(i => [i.id.assignment, i]));
 		const body = scope.func.body.body;
 		const declsCleanup = [];
 		let movedExpressions = 0;
@@ -193,9 +193,9 @@ const transform = (source, options) => {
 					if (seq.type === 'AssignmentExpression' &&
 							seq.operator === '=' &&
 							seq.left.type === 'Identifier' &&
-							decls.has(seq.left.name) &&
-							!decls.get(seq.left.name).init) {
-						decls.get(seq.left.name).init = seq.right;
+							decls.has(seq.left.assignment) &&
+							!decls.get(seq.left.assignment).init) {
+						decls.get(seq.left.assignment).init = seq.right;
 						declsCleanup.push(() => {
 							let i = elem.expressions.indexOf(seq);
 							elem.expressions.splice(i, 1);
@@ -213,9 +213,9 @@ const transform = (source, options) => {
 			} else if (elem.type === 'AssignmentExpression' &&
 					elem.operator === '=' &&
 					elem.left.type === 'Identifier' &&
-					decls.has(elem.left.name) &&
-					!decls.get(elem.left.name).init) {
-				decls.get(elem.left.name).init = elem.right;
+					decls.has(elem.left.assignment) &&
+					!decls.get(elem.left.assignment).init) {
+				decls.get(elem.left.assignment).init = elem.right;
 				declsCleanup.push(() => {
 					let i = body.indexOf(orig);
 					body.splice(i, 1);
@@ -223,9 +223,9 @@ const transform = (source, options) => {
 				movedExpressions++;
 			} else if (elem.type === 'ForStatement' &&
 					elem.init?.type === 'AssignmentExpression' &&
-					decls.has(elem.init.left.name) &&
-					!decls.get(elem.init.left.name).init) {
-				decls.get(elem.init.left.name).init = elem.init.right;
+					decls.has(elem.init.left.assignment) &&
+					!decls.get(elem.init.left.assignment).init) {
+				decls.get(elem.init.left.assignment).init = elem.init.right;
 				declsCleanup.push(() => elem.init = null);
 				movedExpressions++;
 				break;
@@ -233,9 +233,9 @@ const transform = (source, options) => {
 					elem.init?.type === 'SequenceExpression') {
 				let i = 0;
 				for (let expr of elem.init.expressions) {
-					if (decls.has(expr.left.name) &&
-							!decls.get(expr.left.name).init) {
-						decls.get(expr.left.name).init = expr.right;
+					if (decls.has(expr.left.assignment) &&
+							!decls.get(expr.left.assignment).init) {
+						decls.get(expr.left.assignment).init = expr.right;
 						i++;
 					} else {
 						break;
