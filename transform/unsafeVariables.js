@@ -262,16 +262,18 @@ const transform = (source, options) => {
 
 				scope.func.params.push(...ret.map(decl => {
 					const assignment = decl.id.assignment;
-					if (assignment.init === null) {
-						assignment.rename('undefined');
+					if (assignment.assignments.length === 2) {
+						if (assignment.init === null) {
+							assignment.rename('undefined');
 
-						return null;
-					} else if (assignment.uses.length === 1 &&
-							assignment.uses[0].scope === assignment.rootScope){
-						// this variable only has one use and within the same
-						// scope. It's safe to inline
-						replace(assignment.uses[0], assignment.init);
-						return null;
+							return null;
+						} else if (assignment.uses.length === 1 &&
+								assignment.uses[0].scope === assignment.rootScope){
+							// this variable only has one use and within the same
+							// scope. It's safe to inline
+							replace(assignment.uses[0], assignment.init);
+							return null;
+						}
 					}
 
 					if (!decl.init) {
