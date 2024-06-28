@@ -138,13 +138,7 @@ export const collectVariables = (node, seeker, cont) => {
 	};
 
 	const getAssignment = (ident, lets) => {
-		let assignment = ident.assignment;
-		let context = lets;
-		while (!assignment && context) {
-			assignment = context.get(ident.name);
-			context = context.parent;
-		}
-
+		let assignment = ident.assignment || lets.get(ident.name);
 		if (!assignment) {
 			lets.set(ident.name, assignment = createAssignment(ident));
 			assignment.rootScope = lets;
@@ -168,10 +162,11 @@ export const collectVariables = (node, seeker, cont) => {
 		if (lets.parent) for (const assignment of lets.values()) {
 			if (!assignment.type) {
 				if (lets.parent.has(assignment.name)) {
-					throw new Error("assert: variable traversal in bad state: " + assignment.name);
+					assignment.replace(lets.parent.get(assignment.name));
+				} else {
+					lets.parent.set(assignment.name, assignment);
 				}
 
-				lets.parent.set(assignment.name, assignment);
 				lets.delete(assignment.name);
 			}
 		}
