@@ -74,7 +74,7 @@ if (lib in libs) {
 			lib: {
 				...libs[lib],
 				name: lib,
-				formats: ['es', 'iife', 'umd'],
+				formats: process.env.FORMATS?.split(',') || ['es', 'iife', 'umd'],
 			},
 			sourcemap: true,
 		},
