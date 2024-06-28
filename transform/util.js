@@ -229,6 +229,7 @@ export const collectVariables = (node, seeker, cont) => {
 	const traverseFunction = (node, lets, glob) => {
 		const ret = context(lets);
 		ret.func = node;
+		node.scope = ret;
 
 		let idents = [];
 		for (let param of node.params) {

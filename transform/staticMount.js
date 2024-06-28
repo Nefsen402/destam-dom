@@ -33,7 +33,7 @@ const createWatcher = (rep, val, create) => {
 		if (val.arguments[0].body.type === 'BlockStatement') {
 			setter = val.arguments[0].body;
 
-			const returns = val.arguments[0].assignment.returns;
+			const returns = val.arguments[0].scope.returns;
 			for (const ret of returns) {
 				ret.argument = create(ret.argument || t.identifier('undefined'));
 			}

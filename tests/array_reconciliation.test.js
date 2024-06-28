@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import './document.js';
 
 import {Observer, mount, h} from '../index.js';
-import {atomic} from 'destam/Network.js';
 
 test("array replace", () => {
 	const elem = document.createElement("body");

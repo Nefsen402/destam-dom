@@ -78,9 +78,9 @@ for (const file of files) {
 
 	describe("transform with util " + file, transform(file, {
 		util_import: '..',
-		assure_import: /$destam-dom\/?/,
+		assure_import: /^\.\.\/index\.js$/,
 	}));
 	describe("transform " + file, transform(file, {
-		assure_import: /$destam-dom\/?/,
+		assure_import: /^\.\.\/index\.js$/,
 	}));
 }
