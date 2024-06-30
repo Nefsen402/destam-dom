@@ -144,3 +144,9 @@ test("htm comments with spaces", () => {
 		[{name: 'div'}, " ", {name: 'div'}]
 	);
 });
+
+test("htm arrow function", () => {
+	const func = () => h`hello world`;
+
+	assert.deepEqual(func(), ['hello world']);
+});

@@ -125,3 +125,19 @@ test("jsx children spread", () => {
 		{...[1, 2]}
 	</>, [1, 2]);
 });
+
+test("jsx custom element", () => {
+	const Element = () => {
+
+	};
+
+	assert.deepEqual(<Element />, {name: Element});
+});
+
+test("jsx namespace", () => {
+	const thing = (name) => {
+		return name;
+	}
+
+	assert.deepEqual(<thing:div/>, "div");
+});
