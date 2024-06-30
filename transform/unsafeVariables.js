@@ -20,6 +20,7 @@ const transform = (source, options) => {
 	const decls = [];
 	const ignoreDecls = new Set();
 	const callSites = new Map();
+	const fors = [];
 
 	const scope = collectVariables(ast, node => {
 		if (node.type === 'FunctionExpression') {
@@ -66,6 +67,8 @@ const transform = (source, options) => {
 			node.body = reorder;
 		} else if (node.type === 'CallExpression' && node.callee.type === 'Identifier') {
 			callSites.set(node.callee, node);
+		} else if (['ForStatement', 'ForOfStatement', 'ForInStatement'].includes(node.type)) {
+			fors.push(node);
 		}
 	});
 
@@ -84,13 +87,23 @@ const transform = (source, options) => {
 			}
 
 			if (decls.length === 1) {
-				repl = decls[0];
+				repl = t.expressionStatement(decls[0]);
 			} else {
 				repl = t.expressionStatement(t.sequenceExpression(decls));
 			}
 		}
 
 		replace(node, repl);
+	}
+
+	// the above for statemet will always generate expression statements. These
+	// do not work if placed inside of for statements so fix them up here.
+	for (const f of fors) {
+		if (f.type === 'ForStatement') {
+			if (f.init?.type === 'ExpressionStatement') f.init = f.init.expression;
+		} else {
+			if (f.left.type === 'ExpressionStatement') f.left = f.left.expression;
+		}
 	}
 
 	const functionArgSize = new Map();
