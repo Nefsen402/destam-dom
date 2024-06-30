@@ -111,7 +111,7 @@ const addArrayMount = (elem, mounter, old, item, next) => {
 				cur = n;
 			}
 
-			if (a) a.focus();
+			a?.focus();
 		}
 
 		mounted.prev_.next_ = mounted.next_;
