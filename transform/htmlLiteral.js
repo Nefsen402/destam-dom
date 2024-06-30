@@ -219,13 +219,13 @@ export const transformBabelAST = (ast, options = {}) => {
 				specs.push(t.importSpecifier(currentTag, t.identifier(name)));
 			}
 		} else {
-			const init = node.tag.assignment.init;
+			const init = node.tag.assignment.assignments.length === 1 &&
+				node.tag.assignment.init;
 
 			if (init && init.type === 'CallExpression' &&
 					init.callee.type === 'Identifier' &&
 					init.callee.name === 'htm' &&
-					init.arguments.length === 1 &&
-					init.arguments[0].type === 'Identifier') {
+					init.arguments.length === 1) {
 				currentTag = init.arguments[0];
 			}
 		}
