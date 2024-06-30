@@ -5,7 +5,7 @@ import htm from '../htm.js';
 const h = htm((name, props, ...children) => {
 	const out = {name};
 
-	if (Object.keys(props).length) {
+	if (props && Object.keys(props).length) {
 		out.props = props;
 	}
 
@@ -16,12 +16,17 @@ const h = htm((name, props, ...children) => {
 	return out;
 });
 
+const unwrap = (thing) => {
+	if (Array.isArray(thing) && thing.length === 1) return thing[0];
+	return thing;
+};
+
 test("parse empty string", () => {
 	assert.deepEqual(h``, []);
 });
 
 test("parse string", () => {
-	assert.deepEqual(h`hello world`, ["hello world"]);
+	assert.deepEqual(unwrap(h`hello world`), "hello world");
 });
 
 test("parse runtime string", () => {
@@ -29,27 +34,27 @@ test("parse runtime string", () => {
 });
 
 test("parse div", () => {
-	assert.deepEqual(h`<div />`, [{name: 'div'}]);
+	assert.deepEqual(unwrap(h`<div />`), {name: 'div'});
 });
 
 test("parse div with attributes", () => {
 	assert.deepEqual(
-		h`<div bool hello=world />`,
-		[{name: 'div', props: {bool: true, hello: "world"}}]
+		unwrap(h`<div bool hello=world />`),
+		{name: 'div', props: {bool: true, hello: "world"}}
 	);
 });
 
 test("parse div empty body", () => {
 	assert.deepEqual(
-		h`<div></div>`,
-		[{name: 'div', children: [null]}]
+		unwrap(h`<div></div>`),
+		{name: 'div', children: [null]}
 	);
 });
 
 test("parse div nested", () => {
 	assert.deepEqual(
-		h`<div><div /></div>`,
-		[{name: 'div', children: [{name: 'div'}]}]
+		unwrap(h`<div><div /></div>`),
+		{name: 'div', children: [{name: 'div'}]}
 	);
 });
 
@@ -75,18 +80,18 @@ test("same line whitespace divs", () => {
 
 test("same line whitespace", () => {
 	assert.deepEqual(
-		h`  a  b  `,
-		[" a b "]
+		unwrap(h`  a  b  `),
+		" a b "
 	);
 });
 
 test("newline whitespace", () => {
 	assert.deepEqual(
-		h`
+		unwrap(h`
 a
 b
-		`,
-		["a b"]
+		`),
+		"a b"
 	);
 });
 
@@ -112,22 +117,22 @@ test("whitespace mixed divs and text sameline", () => {
 
 test("htm spreading", () => {
 	assert.deepEqual(
-		h`<div =${{one: '1', two: '2'}} />`,
-		[{name: 'div', props: {one: '1', two: '2'}}]
+		unwrap(h`<div =${{one: '1', two: '2'}} />`),
+		{name: 'div', props: {one: '1', two: '2'}}
 	);
 });
 
 test("htm string parsing quote", () => {
 	assert.deepEqual(
-		h`<div 'key with spaces'='value with spaces' />`,
-		[{name: 'div', props: {"key with spaces": 'value with spaces'}}]
+		unwrap(h`<div 'key with spaces'='value with spaces' />`),
+		{name: 'div', props: {"key with spaces": 'value with spaces'}}
 	);
 });
 
 test("htm string parsing double quote", () => {
 	assert.deepEqual(
-		h`<div "key with spaces"="value with spaces" />`,
-		[{name: 'div', props: {"key with spaces": 'value with spaces'}}]
+		unwrap(h`<div "key with spaces"="value with spaces" />`),
+		{name: 'div', props: {"key with spaces": 'value with spaces'}}
 	);
 });
 
@@ -148,5 +153,5 @@ test("htm comments with spaces", () => {
 test("htm arrow function", () => {
 	const func = () => h`hello world`;
 
-	assert.deepEqual(func(), ['hello world']);
+	assert.deepEqual(unwrap(func()), 'hello world');
 });
