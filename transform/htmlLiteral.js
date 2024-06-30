@@ -66,10 +66,6 @@ const parse = (node, importer) => {
 				value = value.expression;
 			}
 
-			if (name.type !== 'JSXIdentifier') {
-				throw new Error("Attribute name must be an identifier");
-			}
-
 			return t.objectProperty(t.stringLiteral(name.name), value);
 		})));
 	}
@@ -183,10 +179,6 @@ export const transformBabelAST = (ast, options = {}) => {
 		} else if (node.type === 'ImportDeclaration') {
 			imports.set(node, lets);
 		} else if (node.type === 'TaggedTemplateExpression') {
-			if (!node.tag) {
-				return;
-			}
-
 			templates.push([node, lets]);
 		} else if (node.type === 'JSXElement' || node.type === 'JSXFragment') {
 			jsx.push([node, lets]);
@@ -256,7 +248,7 @@ export const transformBabelAST = (ast, options = {}) => {
 				if (typeof child === 'string') {
 					return t.stringLiteral(child);
 				} else if (child === null) {
-					return t.identifier('null');
+					return t.nullLiteral();
 				} else {
 					return child;
 				}
@@ -272,7 +264,7 @@ export const transformBabelAST = (ast, options = {}) => {
 			props[key] = obj;
 		}, strings => {
 			if (strings.length === 1) {
-				return strings[0]
+				return strings[0];
 			}
 
 			return t.callExpression(
@@ -288,13 +280,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		});
 
 		const {expressions, quasis} = node.quasi;
-		const out = html(quasis.map(node => node.value.raw), ...expressions.map(exp => {
-			if (exp.type === 'stringLiteral') {
-				return exp.value;
-			}
-
-			return exp;
-		})).map(node => {
+		const out = html(quasis.map(node => node.value.raw), ...expressions).map(node => {
 			if (typeof node === 'string') {
 				node = t.stringLiteral(node);
 			}
