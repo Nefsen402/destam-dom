@@ -3,13 +3,12 @@ import {observerGetter} from 'destam/Observer.js';
 import {isEqual, len, createProxy, push, createClass, assert} from 'destam/util.js';
 import * as Network from 'destam/Network.js';
 
-const splice = (reg, start, count, arr) => {
+const splice = (reg, start = 0, count, arr) => {
 	const init = reg.init_;
 	const indexes = reg.indexes_;
 	const addCount = len(arr);
 	const events = [];
 
-	start = start ?? 0;
 	count = Math.min(count ?? len(init), len(init) - start);
 
 	assert(!isNaN(start) && !isNaN(count), 'expected integers');
