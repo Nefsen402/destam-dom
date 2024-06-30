@@ -107,10 +107,43 @@ test("jsx whitespace mixed divs and text sameline", () => {
 	);
 });
 
-test("jsx htm spreading", () => {
+test("jsx spreading", () => {
 	assert.deepEqual(
 		<div {...{one: '1', two: '2'}} />,
 		{name: 'div', props: {one: '1', two: '2'}}
+	);
+});
+
+test("jsx expression", () => {
+	const val = {};
+	assert.deepEqual(
+		<div val={val} />,
+		{name: 'div', props: {val}}
+	);
+});
+
+test("jsx nested fragment", () => {
+	const val = {};
+	assert.deepEqual(
+		<div>
+			<>
+				<div />
+			</>
+		</div>,
+		{name: 'div', children: [{name: 'div'}]}
+	);
+});
+
+test("jsx nested fragment multiple", () => {
+	const val = {};
+	assert.deepEqual(
+		<div>
+			<>
+				<div />
+				<div />
+			</>
+		</div>,
+		{name: 'div', children: [{name: 'div'}, {name: 'div'}]}
 	);
 });
 

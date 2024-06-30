@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert';
 import htm from '../htm.js';
 
-const h = htm((name, props, ...children) => {
+const handler = (name, props, ...children) => {
 	const out = {name};
 
 	if (props && Object.keys(props).length) {
@@ -14,7 +14,9 @@ const h = htm((name, props, ...children) => {
 	}
 
 	return out;
-});
+};
+
+const h = htm(handler);
 
 const unwrap = (thing) => {
 	if (Array.isArray(thing)) {
@@ -33,7 +35,7 @@ test("parse string", () => {
 });
 
 test("parse runtime string", () => {
-	assert.deepEqual(h`hello ${"middle"} world`, ["hello ", "middle", " world"]);
+	assert.deepEqual(unwrap(h`hello ${"middle"} world`), ["hello ", "middle", " world"]);
 });
 
 test("parse div", () => {
@@ -63,20 +65,20 @@ test("parse div nested", () => {
 
 test("newline whitespace divs", () => {
 	assert.deepEqual(
-		h`
+		unwrap(h`
 		<div/>
 		<div/>
 		<div/>
-		`,
+		`),
 		[{name: 'div'}, {name: 'div'}, {name: 'div'}]
 	);
 });
 
 test("same line whitespace divs", () => {
 	assert.deepEqual(
-		h`
+		unwrap(h`
 		<div/> <div/> <div/>
-		`,
+		`),
 		[{name: 'div'}, " ", {name: 'div'}, " ", {name: 'div'}]
 	);
 });
@@ -100,20 +102,20 @@ b
 
 test("whitespace mixed divs and text", () => {
 	assert.deepEqual(
-		h`
+		unwrap(h`
 		<div/>
 		a
 		<div/>
-		`,
+		`),
 		[{name: 'div'}, "a", {name: 'div'}]
 	);
 });
 
 test("whitespace mixed divs and text sameline", () => {
 	assert.deepEqual(
-		h`
+		unwrap(h`
 		<div/> a <div/>
-		`,
+		`),
 		[{name: 'div'}, " a ", {name: 'div'}]
 	);
 });
@@ -141,14 +143,34 @@ test("htm string parsing double quote", () => {
 
 test("htm comments", () => {
 	assert.deepEqual(
-		h`<div/><!-- this is a comment --><div />`,
+		unwrap(h`<div/><!-- this is a comment --><div />`),
 		[{name: 'div'}, {name: 'div'}]
+	);
+});
+
+test("htm nested string", () => {
+	assert.deepEqual(
+		unwrap(h`
+			<div>
+				hello world
+			</div>
+		`),
+		{name: 'div', children: ["hello world"]}
+	);
+});
+
+test("htm string literal attribute", () => {
+	assert.deepEqual(
+		unwrap(h`
+			<div val="${"hello"} ${"world"}" />
+		`),
+		{name: 'div', props: {val: "hello world"}}
 	);
 });
 
 test("htm comments with spaces", () => {
 	assert.deepEqual(
-		h`<div/> <!-- this is a comment --> <div />`,
+		unwrap(h`<div/> <!-- this is a comment --> <div />`),
 		[{name: 'div'}, " ", {name: 'div'}]
 	);
 });
