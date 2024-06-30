@@ -6,21 +6,12 @@ import htm, {validTags} from '../htm.js';
 import {collectVariables, createIdent, createUse, assignVariables, checkImport} from './util.js';
 
 const traversed = Symbol();
+const spreadKeys = Symbol();
 
 const createTag = (args, tag, lets) => {
 	const expr = t.callExpression(createUse(tag, lets), args);
 	return expr;
 };
-
-const createArray = (items) => {
-	if (items.length === 1) {
-		return items[0];
-	} else {
-		return t.arrayExpression(items);
-	}
-};
-
-const spreadKeys = Symbol();
 
 const jsxName = (name, check) => {
 	if (name[0].toLowerCase() !== name[0]) {
@@ -297,21 +288,27 @@ export const transformBabelAST = (ast, options = {}) => {
 		});
 
 		const {expressions, quasis} = node.quasi;
-		replace(node, createArray(
-			html(quasis.map(node => node.value.raw), ...expressions.map(exp => {
-				if (exp.type === 'stringLiteral') {
-					return exp.value;
-				}
+		const out = html(quasis.map(node => node.value.raw), ...expressions.map(exp => {
+			if (exp.type === 'stringLiteral') {
+				return exp.value;
+			}
 
-				return exp;
-			})).map(node => {
-				if (typeof node === 'string') {
-					node = t.stringLiteral(node);
-				}
+			return exp;
+		})).map(node => {
+			if (typeof node === 'string') {
+				node = t.stringLiteral(node);
+			}
 
-				return node;
-			})
-		));
+			return node;
+		});
+
+		if (out.length === 0) {
+			replace(node, t.nullLiteral());
+		} else if (out.length === 1) {
+			replace(node, out[0]);
+		} else {
+			replace(node, t.arrayExpression(out));
+		}
 	}
 
 	let jsxAutoImport = new Map();

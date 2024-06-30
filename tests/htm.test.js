@@ -17,12 +17,15 @@ const h = htm((name, props, ...children) => {
 });
 
 const unwrap = (thing) => {
-	if (Array.isArray(thing) && thing.length === 1) return thing[0];
+	if (Array.isArray(thing)) {
+		if (thing.length === 0) return null;
+		if (thing.length === 1) return thing[0];
+	}
 	return thing;
 };
 
 test("parse empty string", () => {
-	assert.deepEqual(h``, []);
+	assert.deepEqual(unwrap(h``), null);
 });
 
 test("parse string", () => {
