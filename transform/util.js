@@ -214,7 +214,7 @@ export const collectVariables = (node, seeker, cont) => {
 
 			if (traverse(body, scope, true)) {
 				type = 'expression';
-				traverseExpression(body, scope);
+				traverseExpression(body, scope, true);
 			}
 		}
 
@@ -279,11 +279,11 @@ export const collectVariables = (node, seeker, cont) => {
 		orphanUndecl(cont);
 	};
 
-	const traverseExpression = (node, lets) => {
+	const traverseExpression = (node, lets, noCallSeeker) => {
 		if (!lets) throw new Error("assert: lets in null");
 		if (!node) throw new Error("assert: node in null");
 
-		if (seeker && seeker(node, lets)) return;
+		if (!noCallSeeker && seeker && seeker(node, lets)) return;
 
 		if (node.type === 'ArrayExpression') {
 			for (const elem of node.elements) {
@@ -577,7 +577,7 @@ export const collectVariables = (node, seeker, cont) => {
 	};
 
 	if (traverse(node, cont || (cont = context()), true)) {
-		traverseExpression(node, cont);
+		traverseExpression(node, cont, true);
 	}
 
 	return cont;
