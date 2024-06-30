@@ -133,6 +133,9 @@ if (lib in libs) {
 	};
 
 	config = defineConfig({
+		optimizeDeps: {
+			entries: [],
+		},
 		plugins: [
 			...(process.env.N_DEBUG ? [createTransform('assert-remove', assertRemove)] : []),
 			createTransform('transform-literal-html', compileHTMLLiteral, true, {
