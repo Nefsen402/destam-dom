@@ -208,7 +208,8 @@ export const transformBabelAST = (ast, options = {}) => {
 			if (init && init.type === 'CallExpression' &&
 					init.callee.type === 'Identifier' &&
 					init.callee.name === 'htm' &&
-					init.arguments.length === 1) {
+					init.arguments.length === 1 &&
+					init.arguments[0].type === 'Identifier') {
 				currentTag = init.arguments[0];
 			}
 		}
