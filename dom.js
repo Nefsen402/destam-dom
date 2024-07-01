@@ -6,7 +6,7 @@ export const getFirst = Symbol();
 
 const mapNode = elem => {
 	let bef;
-	return elem[getFirst]?.map(([func, val, handler, pbef]) => {
+	return elem[getFirst]?.map(({func_: func, val_: val, handler_: handler, pbef_: pbef}) => {
 		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
 	});
 };
@@ -317,12 +317,12 @@ const propertySignal = (val, handler) => {
 };
 const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
-		push(signals, [propertySignal, val.register_, () => {
+		push(signals, {func_: propertySignal, val_: val.register_, handler_: () => {
 			const v = val();
 			assert(!isInstance(v, Observer),
 				"destam-dom does not support nested observers");
 			return set(name, v, e);
-		}, 0]);
+		}, pbef_: 0})
 
 		val = val.get;
 	} else if (typeof val !== 'object' || Array.isArray(val)) {
@@ -431,7 +431,7 @@ export const h = (e, props = {}, ...children) => {
 			if (type !== 'object' && type !== 'function') {
 				child = document.createTextNode(child);
 			} else {
-				push(signals, [mount, e, child, bef]);
+				push(signals, {func_: mount, val_: e, handler_: child, pbef_: bef});
 				bef = child = null;
 			}
 		}
