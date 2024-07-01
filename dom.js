@@ -1,6 +1,6 @@
 import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
-import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
+import {isInstance, len, push, callAll, assert, noop, isSymbol} from 'destam/util.js';
 
 export const getFirst = Symbol();
 
@@ -311,7 +311,7 @@ const attributeSetter = (name, val, e) => {
 };
 
 const propertySignal = (val, handler) => {
-	const remove = shallowListener({register_: val}, handler);
+	const remove = val(handler, isSymbol);
 	handler();
 	return remove;
 };

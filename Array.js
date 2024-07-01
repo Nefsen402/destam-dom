@@ -53,7 +53,7 @@ const splice = (reg, start, count, arr) => {
 	return ret;
 };
 
-const OArray = init => {
+const OArray = createClass(init => {
 	const indexes = [];
 	const reg = Network.createReg(OArray);
 
@@ -107,7 +107,6 @@ const OArray = init => {
 
 		return true;
 	}, Array, OArray);
-};
+});
 
-createClass(OArray);
 export default OArray;
