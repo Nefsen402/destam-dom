@@ -248,7 +248,7 @@ export const mount = (elem, item, before = noop) => {
 		assert(!isInstance(val, Observer),
 			"destam-dom does not support nested observers");
 
-		if (val === null) {
+		if (val == null) {
 			mounted?.();
 			mounted = lastFunc = val;
 		} else {
