@@ -17,7 +17,11 @@ global.Node = class Node {
 		if (this.name === '') {
 			this.textContent_ = String(content);
 		} else if (content === '') {
-			this.childNodes.length === 0;
+			for (const child of this.childNodes) {
+				child.parentElement = null;
+			}
+
+			this.childNodes.splice(0, this.childNodes.length);
 		} else {
 			throw new Error("not supported");
 		}
