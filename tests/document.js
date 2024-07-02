@@ -3,7 +3,7 @@
 global.Node = class Node {
 	constructor (name) {
 		this.name = name;
-		this.children = [];
+		this.childNodes = [];
 		this.attributes = {};
 
 		const style = {};
@@ -17,10 +17,14 @@ global.Node = class Node {
 		if (this.name === '') {
 			this.textContent_ = String(content);
 		} else if (content === '') {
-			this.children.length === 0;
+			this.childNodes.length === 0;
 		} else {
 			throw new Error("not supported");
 		}
+	}
+
+	get children () {
+		return this.childNodes.filter(e => e.name);
 	}
 
 	get textContent () {
@@ -32,23 +36,23 @@ global.Node = class Node {
 	}
 
 	get firstChild () {
-		return this.children[0] ?? null;
+		return this.childNodes[0] ?? null;
 	}
 
 	get lastChild () {
-		return this.children[this.children.length - 1] ?? null;
+		return this.childNodes[this.childNodes.length - 1] ?? null;
 	}
 
 	get nextSibling () {
 		if (!this.parentElement) throw new Error("does not belong to a parent");
-		let c = this.parentElement.children;
+		let c = this.parentElement.childNodes;
 		let i = c.indexOf(this);
 		return c[i + 1] ?? null;
 	}
 
 	get previousSibling () {
 		if (!this.parentElement) throw new Error("does not belong to a parent");
-		let c = this.parentElement.children;
+		let c = this.parentElement.childNodes;
 		let i = c.indexOf(this);
 		return c[i - 1] ?? null;
 	}
@@ -56,13 +60,13 @@ global.Node = class Node {
 	append (node) {
 		node.remove();
 		node.parentElement = this;
-		this.children.push(node);
+		this.childNodes.push(node);
 	}
 
 	prepend (node) {
 		node.remove();
 		node.parentElement = this;
-		this.children.unshift(node);
+		this.childNodes.unshift(node);
 	}
 
 	insertBefore (node, before) {
@@ -78,26 +82,26 @@ global.Node = class Node {
 		node.remove();
 		node.parentElement = this;
 
-		const i = this.children.indexOf(before);
+		const i = this.childNodes.indexOf(before);
 		if (i === -1) throw new Error("node not found");
-		this.children.splice(i, 0, node);
+		this.childNodes.splice(i, 0, node);
 	}
 
 	replaceChild (node, before) {
-		const i = this.children.indexOf(before);
+		const i = this.childNodes.indexOf(before);
 		if (i === -1) throw new Error("node not found");
 
 		node.remove();
 		node.parentElement = this;
 		before.parentElement = null;
-		this.children[i] = node;
+		this.childNodes[i] = node;
 	}
 
 	removeChild (child) {
-		const i = this.children.indexOf(child);
+		const i = this.childNodes.indexOf(child);
 		if (i === -1) throw new Error("node not found");
 		child.parentElement = null;
-		this.children.splice(i, 1);
+		this.childNodes.splice(i, 1);
 	}
 
 	remove () {
@@ -137,10 +141,9 @@ global.Node = class Node {
 		const ret = Object.fromEntries(Object.entries(this));
 		delete ret.parentElement;
 
-		if (this.children.length) {
-			ret.children = this.children.map(child => child.tree());
-		} else {
-			delete ret.children;
+		delete ret.childNodes;
+		if (this.childNodes.length) {
+			ret.children = this.childNodes.map(child => child.tree());
 		}
 
 		if (!Object.keys(this.attributes).length) {
