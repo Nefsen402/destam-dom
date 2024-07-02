@@ -77,7 +77,7 @@ export const collectVariables = (node, seeker, cont) => {
 			assignments.push(param.argument);
 		} else if (param.type === 'ArrayPattern') {
 			if (param.elements) for (let elem of param.elements) {
-				traverseAssignment(assignments, elem, lets);
+				if (elem) traverseAssignment(assignments, elem, lets);
 			}
 		} else if (param.type === 'AssignmentPattern') {
 			traverseAssignment(assignments, param.left, lets);
@@ -250,7 +250,7 @@ export const collectVariables = (node, seeker, cont) => {
 		const cont = context(lets);
 		cont.func = node;
 
-		if (node.id) collectAssignment(node.id, glob ? lets : ret, glob ? lets : ret, {
+		if (node.id) collectAssignment(node.id, glob ? lets : cont, glob ? lets : cont, {
 			type: 'class',
 		});
 
@@ -361,7 +361,8 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 		} else if (node.type === 'ThisExpression' ||
 				node.type === 'DebuggerExpression' ||
-				node.type === 'Super') {
+				node.type === 'Super' ||
+				node.type === 'Import') {
 			//fallthrough
 		} else if (node.type === 'TemplateLiteral') {
 			for (const exp of node.expressions) {
