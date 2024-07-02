@@ -22,6 +22,9 @@ const nodeMounter = (elem, e, before) => {
 	return val => {
 		if (!e || val === getFirst) return e;
 
+		assert(!elem || e.bulkRemoved || e.parentElement === elem,
+			"Refusing to modify node not part of the expected parent");
+
 		if (!val) {
 			e.remove();
 			if (remove) callAll(remove);
@@ -44,7 +47,7 @@ const primitiveMounter = (elem, e, before) => {
 	return val => {
 		if (!e || val === getFirst) return e;
 
-		assert(e.parentElement === elem,
+		assert(e.bulkRemoved || e.parentElement === elem,
 			"Refusing to modify node not part of the expected parent");
 
 		if (val != null) {
@@ -134,6 +137,14 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 	const destroy = orphaned => {
 		if (!orphaned && elem.firstChild === root.next_(getFirst) && !root()) {
+			assert((() => {
+				for (const child of elem.childNodes) {
+					child.bulkRemoved = true;
+				}
+
+				return true;
+			})());
+
 			elem.textContent = '';
 		}
 
