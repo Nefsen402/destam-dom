@@ -160,7 +160,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 		mountAll(orphaned);
 
-		arrayListener = observer && shallowListener(observer, commit => {
+		arrayListener = observer?.register_(commit => {
 			assert(elem, "Cannot move mount on an empty mount");
 
 			// fast path when removing everything
@@ -212,7 +212,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 			}
 
 			callAllSafe(not);
-		});
+		}, isSymbol);
 	};
 
 	mountList(val);
