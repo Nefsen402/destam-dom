@@ -395,12 +395,16 @@ const computeNode = (rep, cleanup, node) => {
 	} else {
 		return t.callExpression(createUse(rep.callee), [temporary || name, props, ...children]);
 	}
-}
+};
 
 export const transformBabelAST = (ast, options = {}) => {
 	let importer;
 
 	const found = [];
+	const updateScopes = (node, lets) => {
+		let f = found.find(n => n[0] === node);
+		if (f) f[1] = lets;
+	};
 
 	const scope = collectVariables(ast, (node, lets) => {
 		if (node.type === 'Program') {
@@ -418,7 +422,7 @@ export const transformBabelAST = (ast, options = {}) => {
 					node.body.unshift(t.importDeclaration(decls, t.stringLiteral(`${options.util_import}/util.js`)));
 				}
 
-				const temp = createIdent(lets);
+				const temp = createIdent(lets, {type: 'import'});
 				decls.push(t.importSpecifier(temp, t.identifier(name)));
 				table.set(name, temp);
 
@@ -473,10 +477,10 @@ export const transformBabelAST = (ast, options = {}) => {
 			}
 
 			for (let e of rep) {
-				collectVariables(e, null, body.scope);
+				collectVariables(e, updateScopes, body.scope);
 			}
 
-			collectVariables(node, null, lets);
+			collectVariables(node, updateScopes, lets);
 			body.placeBefore(...rep);
 		}
 	}
