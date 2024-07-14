@@ -35,15 +35,15 @@ const jsxName = (name, check, lets) => {
 			return t.stringLiteral(name);
 		}
 	} else if (name.type === 'JSXMemberExpression') {
-		const parse = node => {
+		const parse = (node, left) => {
 			if (node.type === 'JSXIdentifier') {
-				return ident(node.name);
+				return left ? ident(node.name) : t.identifier(node.name);
 			} else {
-				return t.memberExpression(parse(node.object), parse(node.property));
+				return t.memberExpression(parse(node.object, left), parse(node.property, false));
 			}
 		};
 
-		return parse(name);
+		return parse(name, true);
 	} else {
 		throw new Error("Unknown JSX name type: " + name.type);
 	}
