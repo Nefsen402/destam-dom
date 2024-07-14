@@ -35,18 +35,6 @@ const createAssignment = (ident, mix) => {
 	return Object.assign(obj, mix || {});
 };
 
-const assignIdentifier = (ident, assignment, scope) => {
-	ident.assignment = assignment;
-
-	if (assignment.type === 'var') {
-		while (scope.parent && !scope.func) {
-			scope = scope.parent;
-		}
-	}
-
-	ident.scope = scope;
-};
-
 export const context = parent => {
 	const ret = new Map();
 	ret.parent = parent;
@@ -131,8 +119,12 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 		}
 
-		assignment.assignments.push(ident);
-		assignIdentifier(ident, assignment, orig);
+		if (!assignment.assignments.includes(ident)) {
+			assignment.assignments.push(ident);
+		}
+
+		ident.assignment = assignment;
+		ident.scope = orig;
 		return assignment;
 	};
 
@@ -143,8 +135,12 @@ export const collectVariables = (node, seeker, cont) => {
 			assignment.rootScope = lets;
 		}
 
-		assignment.uses.push(ident);
-		assignIdentifier(ident, assignment, lets);
+		if (!assignment.uses.includes(ident)) {
+			assignment.uses.push(ident);
+		}
+
+		ident.assignment = assignment;
+		ident.scope = lets;
 		return assignment;
 	};
 
