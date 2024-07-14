@@ -31,6 +31,16 @@ test("jsx parse div", () => {
 	assert.deepEqual(<div />, {name: 'div'});
 });
 
+test("jsx parse div in member expression", () => {
+	let a = {
+		b: {
+			c: 'div',
+		}
+	}
+
+	assert.deepEqual(<a.b.c />, {name: 'div'});
+});
+
 test("jsx parse div with attributes", () => {
 	assert.deepEqual(
 		<div bool hello="world" />,

@@ -13,34 +13,127 @@ const createTag = (args, tag, lets) => {
 	return expr;
 };
 
-const jsxName = (name, check) => {
-	if (name[0].toLowerCase() !== name[0]) {
-		return t.identifier(name);
-	} else {
-		if (check && !validTags.includes(name.toUpperCase()) && !name.includes('-')) {
-			throw new Error("Invalid tag name: " + name);
+const jsxName = (name, check, lets) => {
+	const ident = name => {
+		let v = lets.search(name);
+		if (v) {
+			return createUse(v, lets);
 		}
 
-		return t.stringLiteral(name);
+		return t.identifier(name);
+	};
+
+	if (name.type === 'JSXIdentifier') {
+		name = name.name;
+		if (name[0].toLowerCase() !== name[0]) {
+			return ident(name);
+		} else {
+			if (check && !validTags.includes(name.toUpperCase()) && !name.includes('-')) {
+				throw new Error("Invalid tag name: " + name);
+			}
+
+			return t.stringLiteral(name);
+		}
+	} else if (name.type === 'JSXMemberExpression') {
+		const parse = node => {
+			if (node.type === 'JSXIdentifier') {
+				return ident(node.name);
+			} else {
+				return t.memberExpression(parse(node.object), parse(node.property));
+			}
+		};
+
+		return parse(name);
+	} else {
+		throw new Error("Unknown JSX name type: " + name.type);
 	}
 };
 
-const parse = (node, importer) => {
+const parse = (node, importer, lets) => {
 	node[traversed] = true;
 
+	const transformChildren = node => {
+		if (node.type !== 'JSXFragment' && !node.closingElement) {
+			if (node.children.length) throw new Error("Expected no children if there is no closing element");
+			return null;
+		}
+
+		const children = [];
+		let canExclude = true, newline = false, whitespace = false, cur = '';
+
+		const flush = () => {
+			if (whitespace) {
+				if (!newline) cur += ' ';
+
+				newline = false;
+				whitespace = false;
+			}
+
+			if (cur) children.push(t.stringLiteral(cur));
+			canExclude = true;
+			cur = '';
+		};
+
+		for (const child of node.children) {
+			if (child.type === 'JSXText') {
+				for (let i = 0; i < child.value.length; i++) {
+					const char = child.value[i];
+
+					if ("\n\r \t".includes(char)) {
+						if (char === '\n') {
+							newline = true;
+						}
+
+						whitespace = true;
+					} else {
+						if (whitespace) {
+							if (!canExclude || !newline) cur += ' ';
+							whitespace = false;
+							newline = false;
+							canExclude = false;
+						}
+
+						cur += char;
+					}
+				}
+
+				continue;
+			}
+
+			flush();
+
+			if (child.type === 'JSXElement') {
+				children.push(parse(child, importer, lets));
+			} else if (child.type === 'JSXExpressionContainer') {
+				if (child.expression.type !== 'JSXEmptyExpression') {
+					children.push(child.expression);
+				}
+			} else if (child.type === 'JSXFragment') {
+				child[traversed] = true;
+
+				children.push(...transformChildren(child));
+			} else if (child.type === 'JSXSpreadChild') {
+				children.push(t.spreadElement(child.expression));
+			} else {
+				throw new Error("Unknown AST type for JSX child: " + child.type);
+			}
+		}
+
+		flush();
+		return children;
+	};
+
 	if (node.type === 'JSXFragment') {
-		return t.arrayExpression(transformChildren(node, importer));
+		return t.arrayExpression(transformChildren(node));
 	}
 
 	let impl = 'h';
+	let check = true;
 	let name = node.openingElement.name;
 	if (name.type === 'JSXNamespacedName') {
 		impl = name.namespace.name;
-		name = jsxName(name.name.name, false);
-	}
-
-	if (name.type === 'JSXIdentifier') {
-		name = jsxName(name.name, true);
+		name = name.name;
+		check = false;
 	}
 
 	impl = importer(impl);
@@ -49,10 +142,10 @@ const parse = (node, importer) => {
 	}
 
 	const args = [
-		name,
+		jsxName(name, check, lets),
 	];
 
-	const children = transformChildren(node, importer);
+	const children = transformChildren(node);
 	if (children || node.openingElement.attributes.length) {
 		args.push(t.objectExpression(node.openingElement.attributes.map(attr => {
 			if (attr.type === 'JSXSpreadAttribute') {
@@ -79,77 +172,6 @@ const parse = (node, importer) => {
 	}
 
 	return createTag(args, impl, importer.scope);
-};
-
-const transformChildren = (node, importer) => {
-	if (node.type !== 'JSXFragment' && !node.closingElement) {
-		if (node.children.length) throw new Error("Expected no children if there is no closing element");
-		return null;
-	}
-
-	const children = [];
-	let canExclude = true, newline = false, whitespace = false, cur = '';
-
-	const flush = () => {
-		if (whitespace) {
-			if (!newline) cur += ' ';
-
-			newline = false;
-			whitespace = false;
-		}
-
-		if (cur) children.push(t.stringLiteral(cur));
-		canExclude = true;
-		cur = '';
-	};
-
-	for (const child of node.children) {
-		if (child.type === 'JSXText') {
-			for (let i = 0; i < child.value.length; i++) {
-				const char = child.value[i];
-
-				if ("\n\r \t".includes(char)) {
-					if (char === '\n') {
-						newline = true;
-					}
-
-					whitespace = true;
-				} else {
-					if (whitespace) {
-						if (!canExclude || !newline) cur += ' ';
-						whitespace = false;
-						newline = false;
-						canExclude = false;
-					}
-
-					cur += char;
-				}
-			}
-
-			continue;
-		}
-
-		flush();
-
-		if (child.type === 'JSXElement') {
-			children.push(parse(child, importer));
-		} else if (child.type === 'JSXExpressionContainer') {
-			if (child.expression.type !== 'JSXEmptyExpression') {
-				children.push(child.expression);
-			}
-		} else if (child.type === 'JSXFragment') {
-			child[traversed] = true;
-
-			children.push(...transformChildren(child, importer));
-		} else if (child.type === 'JSXSpreadChild') {
-			children.push(t.spreadElement(child.expression));
-		} else {
-			throw new Error("Unknown AST type for JSX child: " + child.type);
-		}
-	}
-
-	flush();
-	return children;
 };
 
 const replace = (node, replace) => {
@@ -336,7 +358,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		};
 
 		importer.scope = lets;
-		replace(node, parse(node, importer));
+		replace(node, parse(node, importer, lets));
 	}
 
 	assignVariables(scope);
