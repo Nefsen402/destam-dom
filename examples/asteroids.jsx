@@ -27,9 +27,9 @@ const resetGame = () => {
 	asteroids.splice(0);
 };
 
-const dist = (x1, y1, x2, y2) => {
-	let dx = x1 - x2;
-	let dy = y1 - y2;
+const dist = (x, y) => {
+	let dx = x[0] - y[0];
+	let dy = x[1] - y[1];
 	return Math.sqrt(dx * dx + dy * dy);
 };
 
@@ -86,68 +86,6 @@ paused.watch(delta => {
 const simulate = (delta) => {
 	delta /= 10;
 
-	for (let i = 0; i < bullets.length; i++) {
-		const bullet = bullets[i];
-		bullet.x += bullet.dx * delta;
-		bullet.y += bullet.dy * delta;
-
-		let [x, y] = pos.get();
-		x = bullet.x - x;
-		y = bullet.y - y;
-
-		if (Math.sqrt(x * x + y * y) > 5000) bullets.splice(i--, 1);
-	}
-
-	for (let i = 0; i < asteroids.length; i++) {
-		const asteroid = asteroids[i];
-		asteroid.x += asteroid.dx * delta;
-		asteroid.y += asteroid.dy * delta;
-
-		let [x, y] = pos.get();
-		x = asteroid.x - x;
-		y = asteroid.y - y;
-
-		if (Math.sqrt(x * x + y * y) > 5000) {
-			console.log(i);
-			asteroids.splice(i--, 1);
-			continue;
-		}
-
-		// check for player collision
-		if (dist(x, y, 0, 0) < asteroid.radius) {
-			metrics[1] = Date.now() - metrics[1];
-			startGame.set(metrics);
-			return;
-		}
-
-		// check for collision with bullets
-		for (let ii = 0; ii < bullets.length; ii++) {
-			const bullet = bullets[ii];
-			const distance = dist(bullet.x, bullet.y, asteroid.x, asteroid.y);
-
-			if (distance < asteroid.radius) {
-				metrics[0]++;
-
-				bullets.splice(ii--, 1);
-				asteroids.splice(i--, 1);
-
-				if (asteroid.radius > 40) {
-					let children = Math.random() < .5 ? 2 : 3;
-
-					for (let iii = 0 ; iii < children; iii++) {
-						asteroids.push(createAsteroid(
-							asteroid.radius / 2 + (Math.random() * 2 - 1) * 0.1,
-							asteroid.speed,
-							asteroid.dir + (Math.random() * 2 - 1) * 0.6,
-							asteroid.x,
-							asteroid.y
-						));
-					}
-				}
-			}
-		}
-	}
-
 	if (keys[37] || keys[65]) { // left key
 		rotationSpeed += 0.005 * delta;
 	}
@@ -169,6 +107,63 @@ const simulate = (delta) => {
 	velocityx -= velocityx * 0.1 * delta;
 	velocityy -= velocityy * 0.1 * delta;
 	rotationSpeed -= rotationSpeed * 0.1 * delta;
+
+	for (let i = 0; i < bullets.length; i++) {
+		const bullet = bullets[i];
+		bullet.pos = [
+			bullet.pos[0] + bullet.dx * delta,
+			bullet.pos[1] + bullet.dy * delta,
+		];
+
+		if (dist(bullet.pos, pos.get()) > 5000) bullets.splice(i--, 1);
+	}
+
+	for (let i = 0; i < asteroids.length; i++) {
+		const asteroid = asteroids[i];
+		asteroid.pos = [
+			asteroid.pos[0] + asteroid.dx * delta,
+			asteroid.pos[1] + asteroid.dy * delta,
+		];
+
+		if (dist(asteroid.pos, pos.get()) > 5000) {
+			asteroids.splice(i--, 1);
+			continue;
+		}
+
+		// check for player collision
+		if (dist(asteroid.pos, pos.get()) < asteroid.radius) {
+			metrics[1] = Date.now() - metrics[1];
+			startGame.set(metrics);
+			return;
+		}
+
+		// check for collision with bullets
+		for (let ii = 0; ii < bullets.length; ii++) {
+			const bullet = bullets[ii];
+			const distance = dist(bullet.pos, asteroid.pos);
+
+			if (distance < asteroid.radius) {
+				metrics[0]++;
+
+				bullets.splice(ii--, 1);
+				asteroids.splice(i--, 1);
+
+				if (asteroid.radius > 40) {
+					let children = Math.random() < .5 ? 2 : 3;
+
+					for (let iii = 0 ; iii < children; iii++) {
+						asteroids.push(createAsteroid(
+							asteroid.radius / 2 + (Math.random() * 2 - 1) * 0.1,
+							asteroid.speed,
+							asteroid.dir + (Math.random() * 2 - 1) * 0.6,
+							asteroid.pos,
+						));
+					}
+				}
+			}
+		}
+	}
+
 };
 
 let lastTimestamp = Date.now();
@@ -210,11 +205,11 @@ window.addEventListener('blur', () => {
 	}
 });
 
-const createAsteroid = (radius, speed, dir, x, y) => {
+const createAsteroid = (radius, speed, dir, pos) => {
 	const numPoints = Math.max(3, Math.ceil(radius / 6));
 
 	return OObject({
-		x, y,
+		pos,
 		dx: Math.sin(dir) * speed,
 		dy: Math.cos(dir) * speed,
 		radius,
@@ -232,28 +227,38 @@ const createAsteroid = (radius, speed, dir, x, y) => {
 	});
 };
 
+const viewBox = Observer.all([
+	pos,
+	Observer.event(window, 'resize')
+]).map(([[x, y]]) => {
+	const w = window.innerWidth;
+	const h = window.innerHeight;
+	x -= w / 2;
+	y -= h / 2;
+
+	return [x, y, w, h];
+});
+
 const genAsteroid = () => {
 	if (startGame.get()) return;
 	timer(genAsteroid, (500 + Math.random() * 1000) / ((Date.now() - metrics[1]) / 100000 + 1));
-
-	const width = window.innerWidth;
-	const height = window.innerHeight;
 
 	const rotation = Math.random() * Math.PI * 2;
 	const dir = rotation + Math.PI + (Math.random() * 2 - 1) * 0.2;
 	const radius = 40 + Math.random() * 40;
 
 	const asteroidVector = [
-		0, 0,
+		...pos.get(),
 		Math.sin(rotation), Math.cos(rotation)
 	];
 
 	let t = Infinity;
+	const view = viewBox.get();
 	for (const vector of [
-		[-width / 2 - radius, -height / 2 - radius, 0, 1],
-		[-width / 2 - radius, -height / 2 - radius, 1, 0],
-		[width / 2 + radius, height / 2 + radius, 0, 1],
-		[width / 2 + radius, height / 2 + radius, 1, 0],
+		[view[0] - radius, view[1] - radius, 0, 1],
+		[view[0] - radius, view[1] - radius, 1, 0],
+		[view[0] + view[2] + radius, view[1] + view[3] + radius, 0, 1],
+		[view[0] + view[2] + radius, view[1] + view[3] + radius, 1, 0],
 	]) {
 		let d = -intersection(vector, asteroidVector);
 
@@ -263,12 +268,10 @@ const genAsteroid = () => {
 	}
 
 	const speed = 2 * Math.random() + 2;
-
-	const [x, y] = pos.get();
-	asteroids.push(createAsteroid(radius, speed, dir,
-		Math.sin(rotation) * t + x,
-		Math.cos(rotation) * t + y,
-	));
+	asteroids.push(createAsteroid(radius, speed, dir, [
+		asteroidVector[0] + asteroidVector[2] * t,
+		asteroidVector[1] + asteroidVector[3] * t,
+	]));
 };
 
 const shooter = () => {
@@ -282,8 +285,7 @@ const shooter = () => {
 		const dy = Math.cos(rotation.get());
 
 		bullets.push(OObject({
-			x: dx * 30 + x,
-			y: dy * 30 + y,
+			pos: [dx * 30 + x, dy * 30 + y],
 			dx: dx * 10,
 			dy: dy * 10,
 		}));
@@ -296,8 +298,8 @@ window.requestAnimationFrame(frame);
 
 const Bullet = ({each: bullet}) => {
 	return <svg:circle
-		cx={bullet.observer.path('x')}
-		cy={bullet.observer.path('y')}
+		cx={bullet.observer.path('pos').map(p => p[0])}
+		cy={bullet.observer.path('pos').map(p => p[1])}
 		r="4"
 		fill="white"
 	/>;
@@ -305,24 +307,12 @@ const Bullet = ({each: bullet}) => {
 
 const Asteroid = ({each: asteroid}) => {
 	return <svg:polygon
-		transform={asteroid.observer.anyPath('x', 'y').map(([x, y]) => `translate(${x} ${y})`)}
+		transform={asteroid.observer.path('pos').map(([x, y]) => `translate(${x} ${y})`)}
 		stroke="white"
 		fill="none"
 		points={asteroid.points.map(point => `${point.x},${point.y}`).join(' ')}
 	/>;
 };
-
-const viewBox = Observer.all([
-	pos,
-	Observer.event(window, 'resize')
-]).map(([[x, y]]) => {
-	const w = window.innerWidth;
-	const h = window.innerHeight;
-	x -= w / 2;
-	y -= h / 2;
-
-	return [x, y, w, h];
-});
 
 const Shown = ({visible, children}) => visible.map(e => e ? children : null);
 
