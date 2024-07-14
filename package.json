@@ -24,6 +24,9 @@
     "@rollup/plugin-terser": "^0.4.4",
     "vite": "^5.2.6"
   },
+  "overrides": {
+    "terser": "^5.31.2"
+  },
   "peerDependencies": {
     "destam": ">=0.3.0"
   }
