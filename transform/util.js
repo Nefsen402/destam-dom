@@ -117,8 +117,7 @@ export const collectVariables = (node, seeker, cont) => {
 		} else if (defs) {
 			// javascript maps are ordered. Make sure the order matches how they
 			// are assigned.
-			if (!assignment.type) {
-				_lets.delete(ident.name);
+			if (!assignment.type && _lets.delete(ident.name)) {
 				_lets.set(ident.name, assignment);
 			}
 
