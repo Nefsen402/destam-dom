@@ -2,7 +2,14 @@ import Observer, {shallowListener} from 'destam/Observer.js';
 import {isInstance, noop} from 'destam/util.js';
 export { mount, getFirst } from './dom.js';
 
-export const createElement = elem => document.createElement(elem);
+export const createElement = (elem, ns) => {
+	if (ns) {
+		return document.createElementNS(ns, elem);
+	} else {
+		return document.createElement(elem);
+	}
+};
+
 export const createTextNode = text => document.createTextNode(text);
 
 export const watch = (obs, cb) => {

@@ -7,10 +7,16 @@ const canAppend = Symbol();
 const traversed = Symbol();
 
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
-const createElement = (importer, name) => {
+const createElement = (importer, name, ns) => {
 	let elem;
 	if (importer) {
-		elem = t.callExpression(importer('createElement'), [name]);
+		if (ns) {
+			elem = t.callExpression(importer('createElement'), [name, t.stringLiteral(ns)]);
+	 	} else {
+			elem = t.callExpression(importer('createElement'), [name]);
+	 	}
+	} else if (ns) {
+		elem = t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("createElementNS")), [t.stringLiteral(ns), name]);
 	} else {
 		elem = t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("createElement")), [name]);
 	}
@@ -98,6 +104,7 @@ const computeNode = (rep, cleanup, node) => {
 		return node;
 	}
 
+	const ns = null;
 	const isBase = !cleanup;
 	cleanup = cleanup || [];
 
@@ -110,7 +117,7 @@ const computeNode = (rep, cleanup, node) => {
 			} else {
 				temporary = createIdent(null, {thing: 'temp'});
 				temporary[canAppend] = true;
-				rep.push(declare(temporary, createElement(rep.importer, createUse(name))));
+				rep.push(declare(temporary, createElement(rep.importer, createUse(name), ns)));
 				temp = createUse(temporary);
 			}
 		} else {
@@ -370,7 +377,7 @@ const computeNode = (rep, cleanup, node) => {
 		const val = createIdent();
 		const before = createIdent();
 		const arg = createIdent();
-		const ret = temporary || createElement(rep.importer, name);
+		const ret = temporary || createElement(rep.importer, name, ns);
 
 		const idents = cleanup.map((_, i) => _.temporary || createIdent());
 		return t.arrowFunctionExpression([elem, val, before], t.blockStatement([
@@ -391,7 +398,7 @@ const computeNode = (rep, cleanup, node) => {
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
 		if (temporary) return createUse(temporary);
-		return createElement(rep.importer, name);
+		return createElement(rep.importer, name, ns);
 	} else {
 		return t.callExpression(createUse(rep.callee), [temporary || name, props, ...children]);
 	}
