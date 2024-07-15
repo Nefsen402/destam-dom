@@ -108,18 +108,13 @@ const computeNode = (rep, cleanup, node) => {
 	const isBase = !cleanup;
 	cleanup = cleanup || [];
 
-	let temporary = null;
+	let temporary = discoverRef(ref) ? ref : null;
 	const getTemp = () => {
 		let temp;
 		if (!temporary) {
-			if (discoverRef(ref)) {
-				temp = ref;
-			} else {
-				temporary = createIdent(null, {thing: 'temp'});
-				temporary[canAppend] = true;
-				rep.push(declare(temporary, createElement(rep.importer, createUse(name), ns)));
-				temp = createUse(temporary);
-			}
+			temporary = createIdent(null, {thing: 'temp'});
+			rep.push(declare(temporary, createElement(rep.importer, createUse(name), ns)));
+			temp = createUse(temporary);
 		} else {
 			temp = createUse(temporary);
 		}
@@ -397,7 +392,10 @@ const computeNode = (rep, cleanup, node) => {
 			])))
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
-		if (temporary) return createUse(temporary);
+		if (temporary) {
+			temporary[canAppend] = true;
+			return temporary;
+		}
 		return createElement(rep.importer, name, ns);
 	} else {
 		return t.callExpression(createUse(rep.callee), [temporary || name, props, ...children]);
