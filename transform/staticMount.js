@@ -332,7 +332,7 @@ const computeNode = (rep, cleanup, node) => {
 			child = temporary;
 			child[canAppend] = true;
 		} else if (child.type === 'CallExpression' && child.callee.type === 'Identifier' &&
-				rep.callee.assignment === node.callee.assignment) {
+				child.callee.assignment === node.callee.assignment) {
 			child = computeNode(rep, cleanup, child);
 		}
 
