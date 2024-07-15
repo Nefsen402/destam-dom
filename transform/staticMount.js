@@ -230,7 +230,7 @@ const computeNode = (rep, cleanup, node) => {
 			} else if (isRawSetter) {
 				const create = val => t.assignmentExpression('=',
 					t.memberExpression(getTemp(), name, name.type === 'StringLiteral'),
-					val
+					t.logicalExpression('??', val, t.nullLiteral())
 				);
 
 				if (isJoinPattern || [
