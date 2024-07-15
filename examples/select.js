@@ -31,7 +31,7 @@ const Entry = ({each: item, key}) => {
 					"border-radius": "5px",
 					background: selected.map(sel => {
 						if (sel[key] !== item.completed) {
-							return undefined;
+							return null;
 						} else if (!sel.right || !sel.left){
 							return '#CCF';
 						} else {
