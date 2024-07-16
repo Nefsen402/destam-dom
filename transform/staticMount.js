@@ -387,15 +387,17 @@ const computeNode = (rep, cleanup, node) => {
 					t.binaryExpression('===', createUse(arg), rep.importer('getFirst')),
 					t.returnStatement(createUse(ret))
 				),
-				t.expressionStatement(t.callExpression(t.memberExpression(ret, t.identifier('remove')), [])),
+				t.expressionStatement(t.callExpression(t.memberExpression(createUse(ret), t.identifier('remove')), [])),
 				...idents.map(ident => t.expressionStatement(t.callExpression(ident, [])))
 			])))
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
 		if (temporary) {
-			temporary[canAppend] = true;
-			return temporary;
+			const use = createUse(temporary);
+			use[canAppend] = true;
+			return use;
 		}
+
 		return createElement(rep.importer, name, ns);
 	} else {
 		return t.callExpression(createUse(rep.callee), [temporary || name, props, ...children]);
