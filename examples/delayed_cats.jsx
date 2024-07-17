@@ -1,4 +1,4 @@
-import {h, mount, Observer} from 'destam-dom';
+import {mount, Observer} from 'destam-dom';
 
 const loadCats = async () => {
 	// simulate a slow network request
