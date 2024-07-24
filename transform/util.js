@@ -529,7 +529,7 @@ export const collectVariables = (node, seeker, cont) => {
 			if (node.handler) {
 				const cont = context(lets);
 				const idents = [];
-				traverseAssignment(idents, node.handler.param, cont);
+				if (node.handler.param) traverseAssignment(idents, node.handler.param, cont);
 
 				for (const ident of idents) {
 					collectAssignment(ident, cont, cont, {
