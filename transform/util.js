@@ -396,6 +396,8 @@ export const collectVariables = (node, seeker, cont) => {
 			// fallthrough
 		} else if (node.type === 'ClassDeclaration') {
 			traverseClass(node, lets, true);
+		} else if (node.type === 'TSAsExpression') {
+			traverseExpression(node.expression, lets);
 		} else if (!node.type.includes("Literal")) {
 			throw new Error("Unknown expression: " + node.type);
 		}
@@ -562,6 +564,8 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 		} else if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
 			traverseClass(node, lets, true);
+		} else if (node.type.startsWith('TS')) {
+			// ignore ts
 		} else {
 			if (!noFail) {
 				throw new Error("Unknown statement: " + node.type);
