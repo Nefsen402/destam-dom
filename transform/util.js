@@ -592,7 +592,11 @@ export const assignVariables = scope => {
 		'do', 'if', 'else', 'try', 'catch', 'finally', 'export', 'import',
 		'default', 'switch', 'case', 'break', 'continue', 'throw', 'new', 'this',
 		'return', 'from', 'as', 'null', 'undefined', 'true', 'false', 'debugger',
-		'with',
+		'with', 'yield', 'static', 'async', 'await', 'void', 'super', 'instanceof',
+		'extends', 'delete', 'typeof',
+
+		'implements', 'interface', 'package', 'private', 'protected', 'public',
+		'enum',
 	];
 
 	const used = new Map();
