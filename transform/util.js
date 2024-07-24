@@ -355,6 +355,7 @@ export const collectVariables = (node, seeker, cont) => {
 				traverseExpression(exp, lets);
 			}
 		} else if (node.type === 'ThisExpression' ||
+				node.type === 'YieldExpression' ||
 				node.type === 'DebuggerExpression' ||
 				node.type === 'Super' ||
 				node.type === 'Import') {
