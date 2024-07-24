@@ -339,7 +339,8 @@ export const transformBabelAST = (ast, options = {}) => {
 				return found;
 			}
 
-			if (!options.jsx_auto_import?.[name]) {
+			const option = options.jsx_auto_import[name];
+			if (!option) {
 				return null;
 			}
 
@@ -347,12 +348,15 @@ export const transformBabelAST = (ast, options = {}) => {
 				return jsxAutoImport.get(name);
 			}
 
+			const importName = typeof option === 'object' ? option.name : name;
+			const importLocation = typeof option === 'object' ? option.location : option;
+
 			const decls = [];
 			program.node.body.unshift(
-				t.importDeclaration(decls, t.stringLiteral(options.jsx_auto_import[name])));
+				t.importDeclaration(decls, t.stringLiteral(importLocation)));
 
 			const temp = createIdent(program.lets);
-			decls.push(t.importSpecifier(temp, t.identifier(name)));
+			decls.push(t.importSpecifier(temp, t.identifier(importName)));
 			jsxAutoImport.set(name, temp);
 			return temp;
 		};
