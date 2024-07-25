@@ -431,25 +431,24 @@ export const h = (e, props = {}, ...children) => {
 	for (let i = len(children); i > 0; i--) {
 		let child = children[i - 1];
 		assert(child !== undefined, "Cannot mount undefined");
+		if (child == null) continue;
+
+		if (child[getFirst]) {
+			signals.push(...child[getFirst]);
+			child = child.elem_;
+		} else if (!isInstance(child, Node)) {
+			const type = typeof child;
+			if (type !== 'object' && type !== 'function') {
+				child = document.createTextNode(child);
+			} else {
+				push(signals, {func_: mount, val_: e, handler_: child, pbef_: bef});
+				bef = child = null;
+			}
+		}
 
 		if (child) {
-			if (child[getFirst]) {
-				signals.push(...child[getFirst]);
-				child = child.elem_;
-			} else if (!isInstance(child, Node)) {
-				const type = typeof child;
-				if (type !== 'object' && type !== 'function') {
-					child = document.createTextNode(child);
-				} else {
-					push(signals, {func_: mount, val_: e, handler_: child, pbef_: bef});
-					bef = child = null;
-				}
-			}
-
-			if (child) {
-				if (!child.parentElement) e.insertBefore(child, insertLoc);
-				bef = insertLoc = child;
-			}
+			if (!child.parentElement) e.insertBefore(child, insertLoc);
+			bef = insertLoc = child;
 		}
 	}
 
