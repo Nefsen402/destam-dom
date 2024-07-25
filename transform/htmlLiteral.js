@@ -159,7 +159,15 @@ const parse = (node, importer, lets) => {
 				value = value.expression;
 			}
 
-			return t.objectProperty(t.stringLiteral(name.name), value);
+			if (name.type === 'JSXNamespacedName') {
+				name = `${name.namespace.name}:${name.name.name}`
+			} else if (name.type === 'JSXIdentifier') {
+				name = name.name;
+			} else {
+				throw new Error("Unknown JSX attribute name type: " + name.type);
+			}
+
+			return t.objectProperty(t.stringLiteral(name), value);
 		})));
 	}
 
