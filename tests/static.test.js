@@ -452,6 +452,20 @@ test("static h mount 0", () => {
 	});
 });
 
+test("static h mount boolean", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {}, true, false));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["true", "false"]
+		}],
+	});
+});
+
 test("Redefine h function", () => {
 	const h = (name, props, ...children) => {
 		return name;
