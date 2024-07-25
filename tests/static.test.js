@@ -25,6 +25,17 @@ test("mount text", () => {
 	});
 });
 
+test("mount 0", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, 0);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["0"],
+	});
+});
+
 test("mount number", () => {
 	const elem = document.createElement("body");
 
@@ -423,6 +434,20 @@ test("static reuse node", () => {
 		children: [{
 			name: 'div',
 			children: ["Hello world"]
+		}],
+	});
+});
+
+test("static h mount 0", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {}, 0));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["0"]
 		}],
 	});
 });
