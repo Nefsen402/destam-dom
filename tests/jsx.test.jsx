@@ -180,7 +180,15 @@ test("jsx custom element", () => {
 test("jsx namespace", () => {
 	const thing = (name) => {
 		return name;
-	}
+	};
 
 	assert.deepEqual(<thing:div/>, "div");
+});
+
+test("jsx prop namespace", () => {
+	const thing = (_, props) => {
+		return props;
+	};
+
+	assert.deepEqual(<thing:div hello:world/>, {'hello:world': true});
 });
