@@ -1,4 +1,4 @@
-import {mount} from 'destam-dom';
+import {mount, Observer} from 'destam-dom';
 
 const createContext = () => {
 	const getter = Symbol();
@@ -12,17 +12,23 @@ const createContext = () => {
 	};
 
 	Context.use = (component) => (props, cleanup, mounted, parentElement) => {
-		let current = parentElement, val;
-		while (current) {
-			if (getter in current) {
-				val = current[getter];
-				break;
+		const mount = Observer.mutable(null);
+
+		mounted(() => {
+			let current = parentElement, val;
+			while (current) {
+				if (getter in current) {
+					val = current[getter];
+					break;
+				}
+
+				current = current.parentNode;
 			}
 
-			current = current.parentNode;
-		}
+			mount.set(component(val)(props, cleanup, mounted, parentElement));
+		});
 
-		return component(val)(props, cleanup, mounted, parentElement);
+		return mount;
 	};
 
 	return Context;
@@ -36,7 +42,9 @@ const Rect = Context.use(value => () => {
 
 mount(document.body, <div>
 	<Context value={{background: 'blue'}}>
-		<Rect />
+		<div>
+			<Rect />
+		</div>
 	</Context>
 	<Context value={{background: 'red'}}>
 		<Rect />
