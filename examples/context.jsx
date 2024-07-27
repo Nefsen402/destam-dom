@@ -11,24 +11,26 @@ const createContext = () => {
 		return <Span>{children}</Span>;
 	};
 
-	Context.use = (component) => (props, cleanup, mounted, parentElement) => {
-		const mount = Observer.mutable(null);
+	Context.use = (component) => (props, cleanup, mounted) => {
+		const ret = Observer.mutable(null);
 
 		mounted(() => {
-			let current = parentElement, val;
-			while (current) {
-				if (getter in current) {
-					val = current[getter];
-					break;
+			ret.set((elem, _, before) => {
+				let current = elem, val;
+				while (current) {
+					if (getter in current) {
+						val = current[getter];
+						break;
+					}
+
+					current = current.parentNode;
 				}
 
-				current = current.parentNode;
-			}
-
-			mount.set(component(val)(props, cleanup, mounted, parentElement));
+				return mount(elem, component(val)(props, cleanup, mounted), before);
+			});
 		});
 
-		return mount;
+		return ret;
 	};
 
 	return Context;
