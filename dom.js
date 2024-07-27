@@ -378,7 +378,7 @@ export const h = (e, props = {}, ...children) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The mount function must be passed a function");
 						notifyMount.push(...cb);
-					}),
+					}, elem),
 					before
 				);
 				if (!cleanup) {
