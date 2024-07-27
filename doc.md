@@ -371,6 +371,8 @@ html`
 
 The lifetime of observers are undefined when used with destam-dom. Do not depend on an observer listener being added/removed for anything more than unregistering the listener when creating custom observers.
 
+One last note is that custom components also have access to the dom node they are about to be mounted to. This is passed as the fourth paramater after the mounted callback. This allows components to inspect dom state before they render. See `examples/context.js` for an example of this usage.
+
 ## Lists
 Destam can interpret arrays of items like a list of names.
 
