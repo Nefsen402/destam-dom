@@ -14,21 +14,19 @@ const createContext = () => {
 	Context.use = (component) => (props, cleanup, mounted) => {
 		const ret = Observer.mutable(null);
 
-		mounted(() => {
-			ret.set((elem, _, before) => {
-				let current = elem, val;
-				while (current) {
-					if (getter in current) {
-						val = current[getter];
-						break;
-					}
-
-					current = current.parentNode;
+		mounted(() => ret.set((elem, _, before) => {
+			let current = elem, val;
+			while (current) {
+				if (getter in current) {
+					val = current[getter];
+					break;
 				}
 
-				return mount(elem, component(val)(props, cleanup, mounted), before);
-			});
-		});
+				current = current.parentNode;
+			}
+
+			return mount(elem, component(val)(props, cleanup, mounted), before);
+		}));
 
 		return ret;
 	};
@@ -41,7 +39,6 @@ const Rect = Context.use(value => () => {
 	return <div $style={{...value, width: '100px', height: '100px'}} />;
 });
 
-
 mount(document.body, <div>
 	<Context value={{background: 'blue'}}>
 		<div>
@@ -51,4 +48,4 @@ mount(document.body, <div>
 	<Context value={{background: 'red'}}>
 		<Rect />
 	</Context>
-</div>)
+</div>);
