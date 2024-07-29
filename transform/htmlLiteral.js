@@ -347,7 +347,7 @@ export const transformBabelAST = (ast, options = {}) => {
 				return found;
 			}
 
-			const option = options.jsx_auto_import[name];
+			const option = options.jsx_auto_import?.[name];
 			if (!option) {
 				return null;
 			}
