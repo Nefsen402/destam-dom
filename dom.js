@@ -339,6 +339,8 @@ const populateSignals = (signals, val, e, name, set) => {
 	} else if (typeof val !== 'object' || Array.isArray(val)) {
 		set(name, val, e);
 	} else {
+		assert(set !== attributeSetter, "Node attribute cannot be an object: " + name);
+
 		for (let o in val) {
 			populateSignals(signals, val[o], e[name], o, set);
 		}
