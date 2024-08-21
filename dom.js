@@ -355,7 +355,8 @@ export const h = (e, props = {}, ...children) => {
 			"Children must be null or an array");
 		children = props.children || children;
 	} else {
-		assert(!("children" in props), "Overwriting children property because element has a body");
+		assert(!("children" in props) || (Array.isArray(props.children) && props.children.length === 0),
+			"Overwriting children property because element has a body");
 	}
 
 	if (typeof e === 'function') {
