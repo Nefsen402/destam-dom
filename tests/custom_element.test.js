@@ -233,6 +233,7 @@ test("custom element pass properties", () => {
 		return null;
 	}, {...props}));
 
+	props.children = [];
 	assert.deepEqual(props, passed);
 });
 
@@ -249,4 +250,15 @@ test("custom element pass properties and children", () => {
 	props.children = children;
 
 	assert.deepEqual(props, passed);
+});
+
+test("Pass null children for auto closed component", () => {
+	let passed;
+	const Comp = ({children}) => {
+		passed = children;
+	}
+
+	mount(null, h(Comp));
+
+	assert.deepEqual(passed, []);
 });

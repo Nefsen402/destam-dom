@@ -360,9 +360,7 @@ export const h = (e, props = {}, ...children) => {
 	}
 
 	if (typeof e === 'function') {
-		if (len(children)) {
-			props.children = children;
-		}
+		props.children = children;
 
 		const each = props.each;
 		const mounter = (elem, item, before) => {
