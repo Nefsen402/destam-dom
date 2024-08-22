@@ -192,3 +192,10 @@ test("jsx prop namespace", () => {
 
 	assert.deepEqual(<thing:div hello:world/>, {'hello:world': true});
 });
+
+test("jsx spread children", () => {
+	assert.deepEqual(<div>{...["a", "b"]}</div>, {
+		name: 'div',
+		children: ["a", "b"]
+	})
+});
