@@ -380,7 +380,11 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 
 			if (node.children) for (const child of node.children) {
-				traverseExpression(child, lets);
+				if (child.type === 'JSXSpreadChild') {
+					traverseExpression(child.expression, lets);
+				} else {
+					traverseExpression(child, lets);
+				}
 			}
 		} else if (node.type === 'JSXExpressionContainer') {
 			traverseExpression(node.expression, lets);
