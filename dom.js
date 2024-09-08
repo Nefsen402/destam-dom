@@ -347,6 +347,7 @@ const populateSignals = (signals, val, e, name, set) => {
 	}
 };
 
+let currentErrorContext;
 export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
@@ -362,8 +363,16 @@ export const h = (e, props = {}, ...children) => {
 	if (typeof e === 'function') {
 		props.children = children;
 
+		let errorContext;
+		assert(errorContext = {
+			prev: currentErrorContext,
+			func: e,
+			err: new Error(),
+		});
+
 		const each = props.each;
 		const mounter = (elem, item, before) => {
+			assert(currentErrorContext = errorContext);
 			try {
 				if (each) props.each = item;
 
@@ -394,8 +403,25 @@ export const h = (e, props = {}, ...children) => {
 					return cleanup = 0;
 				};
 			} catch (err) {
-				console.error(err);
-				assert(true, console.error("The error above happened in the " + e.name + " component"));
+				assert(true, (() => {
+					let str;
+
+					if (e.name) {
+						str = "An error occurred in the " + e.name + " component";
+					} else {
+						str = "An error occurred in an annonymous component";
+					}
+
+					let cur = errorContext;
+					while (cur) {
+						str += '\n\t' + (cur.func.name || '<annonymous>') + ': ' + cur.err.stack.split('\n')[1];
+						cur = cur.prev;
+					}
+
+					console.error(new Error(str, {cause: err}));
+				})());
+			} finally {
+				assert((currentErrorContext = errorContext.prev) || true);
 			}
 
 			return () => noop;
