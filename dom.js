@@ -418,8 +418,10 @@ export const h = (e, props = {}, ...children) => {
 						cur = cur.prev;
 					}
 
-					console.error(new Error(str, {cause: err}));
+					err = new Error(str, {cause: err});
 				})());
+
+				console.error(err);
 			} finally {
 				assert((currentErrorContext = errorContext.prev) || true);
 			}
