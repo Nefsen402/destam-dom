@@ -2,7 +2,7 @@
 
 This is a dom manipulation library built on [destam](https://github.com/equator-studios/destam) (delta state manager). This library's purpose is to provide bindings to interpret destam deltas as mutations on the dom.
 
-See the [documentation](doc.md)
+See the [documentation](docs/doc.md)
 
 ## Basic counter
 ```js
