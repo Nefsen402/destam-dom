@@ -187,3 +187,5 @@ const DestamComponent = (_, cleanup, mounted) => {
 	return <H1>{text.map(text => text.substring(0, 10))}</H1>;
 };
 ```
+
+Note that React and destam-dom exhibit slightly different behaviors here: destam-dom being synchronous will call mounted() as soon as the component is mounted and visible from the dom tree. React only performs updates for the most part upon an idle source.
