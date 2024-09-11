@@ -189,3 +189,45 @@ const DestamComponent = (_, cleanup, mounted) => {
 ```
 
 Note that React and destam-dom exhibit slightly different behaviors here: destam-dom being synchronous will call mounted() as soon as the component is mounted and visible from the dom tree. React only performs updates for the most part upon an idle source.
+
+### Static list:
+```jsx
+const ReactComponent = () => {
+	const list = [1, 2, 3];
+
+	return list.map(item => <span>{item}</span>);
+};
+
+const DestamComponent = (_, cleanup, mounted) => {
+	const list = [1, 2, 3];
+
+	return list.map(item => <span>{item}</span>);
+};
+```
+
+This is a trick scenario, since we never mutate the list, we are safe to just
+immediately compute the entire dom for the destam-dom case during construction.
+
+### Dynamic list:
+```jsx
+const ReactComponent = () => {
+	const [list, setList] = React.useState([]);
+
+	window.addItem = item => setList([...list, item]);
+
+	return list.map(item => <span>{item}</span>);
+};
+
+const DestamComponent = (_, cleanup, mounted) => {
+	// higher order components are encouraged in destam-dom.
+	const ListItem = ({each: item}) => {
+		return <span>{item}</span>;
+	};
+
+	const list = OArray();
+
+	window.addItem = item => list.push(item);
+
+	return <ListItem each={list} />;
+};
+```
