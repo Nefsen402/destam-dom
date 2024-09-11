@@ -24,7 +24,7 @@ as the component is mounted. Lifetimes in destam-dom don't end up being too much
 
 ## Cheat sheet
  - React.useState(() => default): Observer.mutable(default)
- - React.useEffect(cb, deps): Observer.all(deps).effect(cb)
+ - React.useEffect(cb, deps): cleanup(Observer.all(deps).effect(cb).remove)
  - React.useEffect(cb, []): constructor / cleanup()
  - const memo = React.useMemo(val): const memo = val
  - React.useLayoutEffect(cb): mounted(cb)
@@ -141,17 +141,17 @@ const ReactComponent = ({close}) => {
 	}, [close]);
 };
 
-const DestamComponent = ({close}) => {
+const DestamComponent = ({close}, cleanup) => {
 	// Observer.immutable ensures close is always an observer of some kind so we
 	// don't call .effect() on a random value.
-	Observer.immutable(close).effect(close => {
+	cleanup(Observer.immutable(close).effect(close => {
 		const handle = (e) => {
 			if (e.key === 'Escape') close();
 		};
 
 		window.addEventListener('keydown', handle):
 		return () => window.removeEventListener('keydown', handle);
-	});
+	}).remove);
 };
 
 // This works when the prop value is not part of the dom representation.
