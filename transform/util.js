@@ -159,6 +159,7 @@ export const collectVariables = (node, seeker, cont) => {
 				if (lets.parent.has(assignment.name)) {
 					assignment.replace(lets.parent.get(assignment.name));
 				} else {
+					assignment.rootScope = lets.parent;
 					lets.parent.set(assignment.name, assignment);
 				}
 
