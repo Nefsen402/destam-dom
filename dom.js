@@ -414,7 +414,19 @@ export const h = (e, props = {}, ...children) => {
 
 					let cur = errorContext;
 					while (cur) {
-						str += '\n\t' + (cur.func.name || '<annonymous>') + ': ' + cur.err.stack.split('\n')[1];
+						str += '\n\t' + (cur.func.name || '<annonymous>');
+
+						const s = cur.err.stack.split('\n').slice(1).filter(e => e);
+						for (let i = 0; i < s.length; i++) {
+							let l = s[i].trim();
+							if (l.startsWith('at ')) l = l.substring(3);
+
+							if (l[0].toLowerCase() !== l[0] || i === s.length - 1) {
+								str += ': ' + l;
+								break;
+							}
+						}
+
 						cur = cur.prev;
 					}
 
