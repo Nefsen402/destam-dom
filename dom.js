@@ -160,6 +160,11 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 		const mountAll = orphaned => {
 			link = observer?.linkNext_;
 			let mounted = root;
+
+			assert(val[Symbol.iterator],
+				"Objects passed to destam-dom must be iterable (like arrays). " +
+				"Maybe you passed in a raw object?")
+
 			for (const item of val) {
 				mounted = addArrayMount(elem, mounter, orphaned, item, mounted.next_);
 				if (link) {
