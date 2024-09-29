@@ -80,12 +80,10 @@ if (lib in libs) {
 		},
 	});
 } else {
-	const getExample = (loc) => {
-		if (!loc.startsWith('/examples/')) {
-			return null;
-		}
+	const getExample = (file) => {
+		if (!file.startsWith('/')) return null;
 
-		const file = loc.substring(10);
+		file = file.substring(1);
 		let i = file.lastIndexOf('.');
 		const name = file.substring(0, i);
 
@@ -94,7 +92,7 @@ if (lib in libs) {
 			return null;
 		}
 
-		const relative = '/examples/' + name + '.html';
+		const relative = '/' + name + '.html';
 		return {
 			name,
 			file: name + existed,
@@ -111,7 +109,7 @@ if (lib in libs) {
 		}
 
 		return examples = fs.readdirSync(resolve(__dirname, 'examples')).map(file => {
-			return getExample('/examples/' + file);
+			return getExample('/' + file);
 		});
 	};
 
@@ -126,7 +124,7 @@ if (lib in libs) {
 					<title>Destam-Dom</title>
 				</head>
 				<body>
-					<script type="module" src="./${entry.file}"></script>
+					<script type="module" src="./examples/${entry.file}"></script>
 				</body>
 			</html>
 		`;
