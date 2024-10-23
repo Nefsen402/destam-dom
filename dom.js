@@ -388,6 +388,7 @@ export const h = (e, props = {}, ...children) => {
 		const mounter = (elem, item, before) => {
 			let cleanup = null, m = noop;
 			const func = arg => {
+				if (!m) return;
 				if (arg === getFirst) return m(getFirst);
 
 				m();
@@ -408,7 +409,11 @@ export const h = (e, props = {}, ...children) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The cleanup function must be passed a function");
 
-						cleanup = cleanup?.concat(cb) || cb;
+						if (!m) {
+							callAllSafe(cb);
+						} else {
+							cleanup = cleanup?.concat(cb) || cb;
+						}
 					}, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The mount function must be passed a function");
