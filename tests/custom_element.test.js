@@ -326,3 +326,19 @@ test("Remove custom component while mounting recursive invert", () => {
 		name: 'body',
 	});
 });
+
+test("cleanup on unmount", () => {
+	let cleaned = false;
+	const Component = (_, cleanup) => {
+		comp.set(null);
+
+		cleanup(() => cleaned = true)
+
+		return "hello world";
+	};
+
+	const comp = Observer.mutable(h(Component));
+	mount(null, comp)();
+
+	assert(cleaned);
+});
