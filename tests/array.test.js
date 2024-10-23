@@ -256,7 +256,7 @@ test("array modify from mount", () => {
 		name: 'body',
 		children: ['1', '2', '3']
 	});
-	assert(count === 2)
+	assert(count === 2);
 });
 
 test("replace empty oarray", () => {
@@ -308,5 +308,24 @@ test("each double up", () => {
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
 		children: ['content', 'content']
+	});
+});
+
+test("unmount from custom component", () => {
+	const elem = document.createElement("body");
+	const arr = OArray();
+
+	mount(elem, arr);
+
+	const Comp = () => {
+		arr.splice(0);
+
+		return "hello world";
+	};
+
+	arr.push(h(Comp));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
 	});
 });

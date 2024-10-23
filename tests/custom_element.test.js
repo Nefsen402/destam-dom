@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert';
 import './document.js';
 
-import {mount, h} from '../index.js';
+import {mount, h, Observer} from '../index.js';
 
 const silence = (cb) => () => {
 	const orig = console.error;
@@ -167,7 +167,6 @@ test("custom element mounted tree", () => {
 	assert(mounted);
 });
 
-
 test("custom element children", () => {
 	const elem = document.createElement("body");
 
@@ -261,4 +260,69 @@ test("Pass null children for auto closed component", () => {
 	mount(null, h(Comp));
 
 	assert.deepEqual(passed, []);
+});
+
+test("Remove custom component while mounting", () => {
+	const Component = () => {
+		comp.set(null);
+
+		return "hello world";
+	};
+
+	const comp = Observer.mutable(h(Component));
+
+	const elem = document.createElement("body");
+	mount(elem, comp);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
+test("Remove custom component while mounting recursive", () => {
+	const Component2 = () => {
+		comp2.set(null);
+
+		return "hello world";
+	};
+	const comp2 = Observer.mutable(h(Component2));
+
+	const Component = () => {
+		comp.set(null);
+
+		return comp2;
+	};
+
+	const comp = Observer.mutable(h(Component));
+
+	const elem = document.createElement("body");
+	mount(elem, comp);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
+test("Remove custom component while mounting recursive invert", () => {
+	const Component2 = () => {
+		comp.set(null);
+
+		return "hello world";
+	};
+	const comp2 = Observer.mutable(h(Component2));
+
+	const Component = () => {
+		comp2.set(null);
+
+		return comp2;
+	};
+
+	const comp = Observer.mutable(h(Component));
+
+	const elem = document.createElement("body");
+	mount(elem, comp);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
 });
