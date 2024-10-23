@@ -89,45 +89,6 @@ const cleanupArrayMounts = mounts => {
 	}
 };
 
-const addArrayMount = (elem, mounter, old, item, next) => {
-	let mounted = old?.get(item)?.pop();
-	if (mounted === next) return mounted;
-
-	if (!mounted) {
-		mounted = mounter(
-			elem, item,
-			() => (next || mounted.next_)(getFirst),
-		);
-
-		mounted.item_ = item;
-	} else {
-		assert(elem, "Cannot move mount on an empty mount");
-
-		let mountAt, term, cur;
-		if ((mountAt = next(getFirst)) !== (term = mounted.next_(getFirst)) &&
-				mountAt !== (cur = mounted(getFirst))) {
-			const a = document.activeElement;
-
-			while (cur != term) {
-				const n = cur.nextSibling;
-				elem.insertBefore(cur, mountAt);
-				cur = n;
-			}
-
-			a?.focus();
-		}
-
-		mounted.prev_.next_ = mounted.next_;
-		mounted.next_.prev_ = mounted.prev_;
-	}
-
-	mounted.prev_ = next.prev_;
-	mounted.next_ = next;
-	mounted.prev_.next_ = next.prev_ = mounted;
-	next = 0;
-	return mounted;
-};
-
 const arrayMounter = (elem, val, before, mounter = mount) => {
 	const root = () => before(getFirst);
 	root.next_ = root.prev_ = root;
@@ -157,6 +118,48 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 	const mountList = (val, orphaned) => {
 		const observer = val[observerGetter];
+
+		const addMount = (old, item, next, pending) => {
+			let mounted = old?.get(item)?.pop();
+			if (mounted === next) return mounted;
+
+			if (!mounted) {
+				mounted = mounter(
+					elem, item,
+					() => (next || mounted.next_)(getFirst),
+					true
+				);
+
+				if (mounted.mount_) push(pending, mounted.mount_);
+				mounted.item_ = item;
+			} else {
+				assert(elem, "Cannot move mount on an empty mount");
+
+				let mountAt, term, cur;
+				if ((mountAt = next(getFirst)) !== (term = mounted.next_(getFirst)) &&
+						mountAt !== (cur = mounted(getFirst))) {
+					const a = document.activeElement;
+
+					while (cur != term) {
+						const n = cur.nextSibling;
+						elem.insertBefore(cur, mountAt);
+						cur = n;
+					}
+
+					a?.focus();
+				}
+
+				mounted.prev_.next_ = mounted.next_;
+				mounted.next_.prev_ = mounted.prev_;
+			}
+
+			mounted.prev_ = next.prev_;
+			mounted.next_ = next;
+			mounted.prev_.next_ = next.prev_ = mounted;
+			next = 0;
+			return mounted;
+		};
+
 		const mountAll = orphaned => {
 			link = observer?.linkNext_;
 			let mounted = root;
@@ -165,16 +168,17 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 				"Objects passed to destam-dom must be iterable (like arrays). " +
 				"Maybe you passed in a raw object?")
 
+			const pending = [];
 			for (const item of val) {
-				mounted = addArrayMount(elem, mounter, orphaned, item, mounted.next_);
+				mounted = addMount(orphaned, item, mounted.next_, pending);
 				if (link) {
 					link[linkGetter] = mounted;
 					link = link.linkNext_;
 				}
 			}
-		};
 
-		mountAll(orphaned);
+			callAll(pending);
+		};
 
 		arrayListener = observer?.register_(commit => {
 			assert(elem, "Cannot move mount on an empty mount");
@@ -216,19 +220,22 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 					}
 				}
 
+				const pending = [];
 				for (let insert of inserts) {
 					let next = insert.linkNext_[linkGetter] || root;
 					for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-						next = insert[linkGetter] = addArrayMount(elem, mounter, orphaned, insert.dom_val_, next);
+						next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next, pending);
 						delete insert.dom_val_;
 					}
 				}
-
+				callAll(pending);
 				cleanupArrayMounts(orphaned);
 			}
 
 			callAllSafe(not);
 		}, isSymbol);
+
+		mountAll(orphaned);
 	};
 
 	mountList(val);
@@ -251,12 +258,12 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 	};
 };
 
-export const mount = (elem, item, before = noop) => {
+export const mount = (elem, item, before = noop, forwardMount) => {
 	assert(elem === null || isInstance(elem, Node),
 		"The first argument to mount must be null or an dom node");
 
 	let lastFunc, mounted = null;
-	const update = () => {
+	const update = (callMount) => {
 		if (mode === 2) return;
 
 		let val = mode ? item.get() : item;
@@ -289,6 +296,8 @@ export const mount = (elem, item, before = noop) => {
 				mounted = (lastFunc = func)(elem, val, before);
 				assert(typeof mounted === 'function',
 					"Mount function must return a higher order destroy callback");
+
+				if (callMount) mounted.mount_?.();
 			}
 
 			callAllSafe(not);
@@ -298,7 +307,7 @@ export const mount = (elem, item, before = noop) => {
 	let mode = isInstance(item, Observer);
 	if (mode) {
 		const watcher = shallowListener(item, update);
-		update();
+		update(1);
 
 		return arg => {
 			if (arg === getFirst) return (mounted || before)(getFirst);
@@ -308,7 +317,7 @@ export const mount = (elem, item, before = noop) => {
 			return mounted?.();
 		};
 	} else {
-		update();
+		update(!forwardMount);
 		return mounted || before;
 	}
 };
@@ -377,14 +386,25 @@ export const h = (e, props = {}, ...children) => {
 
 		const each = props.each;
 		const mounter = (elem, item, before) => {
-			assert(currentErrorContext = errorContext);
-			try {
-				if (each) props.each = item;
+			let cleanup = null, m = noop;
+			const func = arg => {
+				if (arg === getFirst) return m(getFirst);
 
-				let cleanup = null;
-				const m = mount(
-					elem,
-					e(props, (...cb) => {
+				m();
+				callAllSafe(cleanup);
+				return m = cleanup = 0;
+			};
+
+			func.mount_ = () => {
+				assert(currentErrorContext = errorContext);
+
+				try {
+					if (each) props.each = item;
+
+					const save = notifyMount;
+					notifyMount = 0;
+
+					const dom = e(props, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The cleanup function must be passed a function");
 
@@ -392,58 +412,49 @@ export const h = (e, props = {}, ...children) => {
 					}, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The mount function must be passed a function");
-						notifyMount.push(...cb);
-					}),
-					before
-				);
-				if (!cleanup) {
-					return m;
-				}
+						save.push(...cb);
+					});
 
-				return arg => {
-					if (arg === getFirst) return m(getFirst);
+					notifyMount = save;
+					if (m) m = mount(elem, dom, before);
+				} catch (err) {
+					assert(true, (() => {
+						let str;
 
-					m();
-					callAllSafe(cleanup);
-					return cleanup = 0;
-				};
-			} catch (err) {
-				assert(true, (() => {
-					let str;
-
-					if (e.name) {
-						str = "An error occurred in the " + e.name + " component";
-					} else {
-						str = "An error occurred in an annonymous component";
-					}
-
-					let cur = errorContext;
-					while (cur) {
-						str += '\n\t' + (cur.func.name || '<annonymous>');
-
-						const s = cur.err.stack.split('\n').slice(1).filter(e => e);
-						for (let i = 0; i < s.length; i++) {
-							let l = s[i].trim();
-							if (l.startsWith('at ')) l = l.substring(3);
-
-							if (l[0].toLowerCase() !== l[0] || i === s.length - 1) {
-								str += ': ' + l;
-								break;
-							}
+						if (e.name) {
+							str = "An error occurred in the " + e.name + " component";
+						} else {
+							str = "An error occurred in an annonymous component";
 						}
 
-						cur = cur.prev;
-					}
+						let cur = errorContext;
+						while (cur) {
+							str += '\n\t' + (cur.func.name || '<annonymous>');
 
-					err = new Error(str, {cause: err});
-				})());
+							const s = cur.err.stack.split('\n').slice(1).filter(e => e);
+							for (let i = 0; i < s.length; i++) {
+								let l = s[i].trim();
+								if (l.startsWith('at ')) l = l.substring(3);
 
-				console.error(err);
-			} finally {
-				assert((currentErrorContext = errorContext.prev) || true);
-			}
+								if (l[0].toLowerCase() !== l[0] || i === s.length - 1) {
+									str += ': ' + l;
+									break;
+								}
+							}
 
-			return () => noop;
+							cur = cur.prev;
+						}
+
+						err = new Error(str, {cause: err});
+					})());
+
+					console.error(err);
+				} finally {
+					assert((currentErrorContext = errorContext.prev) || true);
+				}
+			};
+
+			return func;
 		};
 
 		if (!each) {
