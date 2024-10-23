@@ -397,6 +397,7 @@ export const h = (e, props = {}, ...children) => {
 			};
 
 			func.mount_ = () => {
+				assert(m === noop);
 				assert(currentErrorContext = errorContext);
 
 				try {
