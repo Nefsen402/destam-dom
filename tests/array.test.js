@@ -348,3 +348,47 @@ test("unmount from custom component indirection", () => {
 		name: 'body',
 	});
 });
+
+test("unmount two custom elements", () => {
+	const elem = document.createElement("body");
+	const arr = OArray();
+	mount(elem, arr);
+
+	const Comp = () => {
+		arr.splice(0);
+
+		return "hello world";
+	};
+
+	const Comp2 = () => {
+		return "hello world";
+	};
+
+	arr.push(h(Comp), h(Comp2));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
+test("unmount two custom elements inverted", () => {
+	const elem = document.createElement("body");
+	const arr = OArray();
+	mount(elem, arr);
+
+	const Comp = () => {
+		return "hello world";
+	};
+
+	const Comp2 = () => {
+		arr.splice(0);
+
+		return "hello world";
+	};
+
+	arr.push(h(Comp), h(Comp2));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
