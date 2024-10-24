@@ -166,7 +166,12 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 			assert(val[Symbol.iterator],
 				"Objects passed to destam-dom must be iterable (like arrays). " +
-				"Maybe you passed in a raw object?")
+				"Maybe you passed in a raw object?");
+
+			let not;
+			if (!notifyMount) {
+				not = notifyMount = [];
+			}
 
 			const pending = [];
 			for (const item of val) {
@@ -178,6 +183,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 			}
 
 			callAll(pending);
+			callAllSafe(not);
 		};
 
 		arrayListener = observer?.register_(commit => {
@@ -189,17 +195,17 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 				return;
 			}
 
-			let not;
-			if (!notifyMount) {
-				not = notifyMount = [];
-			}
-
 			// fast path when adding from an empty array
 			if (root.next_ === root) {
 				mountAll();
 			} else {
 				let orphaned = null;
 				const inserts = [];
+
+				let not;
+				if (!notifyMount) {
+					not = notifyMount = [];
+				}
 
 				for (const delta of commit) {
 					const isModify = isInstance(delta, Modify);
@@ -230,9 +236,10 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 				}
 				callAll(pending);
 				cleanupArrayMounts(orphaned);
+
+				callAllSafe(not);
 			}
 
-			callAllSafe(not);
 		}, isSymbol);
 
 		mountAll(orphaned);
