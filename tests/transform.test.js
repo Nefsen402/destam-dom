@@ -53,13 +53,44 @@ const transform = (file, options) => async () => {
 		if (!(o in context)) context[o] = global[o];
 	}
 
+	let parsed;
+	const parse = () => {
+		if (parsed) return parsed;
+
+		const ast = parser.parse(code, {
+			sourceType: 'module',
+			code: false,
+			ast: true,
+		});
+
+		parsed = new Map();
+		for (const statement of ast.program.body) {
+			if (statement.type !== 'ExpressionStatement') continue;
+			if (statement.expression.type !== 'CallExpression') continue;
+			if (statement.expression.callee.type !== 'Identifier') continue;
+			if (statement.expression.callee.name !== 'test') continue;
+			if (statement.expression.arguments[0].type !== 'StringLiteral') continue;
+
+			parsed.set(statement.expression.arguments[0].value, statement.loc);
+		}
+
+		return parsed;
+	};
+
 	if (context.test) context.test = (name, impl) => {
 		it(name, () => {
 			try {
 				return impl();
 			} catch (e) {
-				console.log(code.split('\n').map((line, num) => (num + 1) + " " + line).join("\n"));
-				throw e;
+				let lines = code.split('\n').map((line, num) => (num + 1) + " " + line);
+				const stuff = parse();
+
+				if (stuff.has(name)) {
+					const loc = stuff.get(name);
+					lines = lines.slice(loc.start.line - 1, loc.end.line);
+				}
+
+				throw new Error('\n' + lines.join("\n"), {cause: e});
 			}
 		});
 	};
