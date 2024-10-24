@@ -461,10 +461,10 @@ export const h = (e, props = {}, ...children) => {
 					})());
 
 					console.error(err);
-				} finally {
-					notifyMount = save;
-					assert((currentErrorContext = errorContext.prev) || true);
 				}
+
+				notifyMount = save;
+				assert((currentErrorContext = errorContext.prev) || true);
 			};
 
 			return func;
