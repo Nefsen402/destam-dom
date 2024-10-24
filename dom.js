@@ -407,6 +407,8 @@ export const h = (e, props = {}, ...children) => {
 			};
 
 			const defer = () => {
+				if (!m) return;
+
 				assert(m === noop);
 				assert(currentErrorContext = errorContext);
 
