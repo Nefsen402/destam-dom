@@ -63,8 +63,19 @@ const primitiveMounter = (elem, e, before) => {
 
 let notifyMount;
 const callAllSafe = list => {
-	if (list === notifyMount) notifyMount = null;
-	if (list) for (const c of list) {
+	if (!list) return;
+
+	if (list === notifyMount) {
+		while (list.deferred_) {
+			const def = list.deferred_;
+			def();
+			list.deferred_ = def.deferred_;
+		}
+
+		notifyMount = 0;
+	}
+
+	for (const c of list) {
 		try {
 			c();
 		} catch (e) {
@@ -126,11 +137,9 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 			if (!mounted) {
 				mounted = mounter(
 					elem, item,
-					() => (next || mounted.next_)(getFirst),
-					true
+					() => (next || mounted.next_)(getFirst)
 				);
 
-				if (mounted.mount_) push(pending, mounted.mount_);
 				mounted.item_ = item;
 			} else {
 				assert(elem, "Cannot move mount on an empty mount");
@@ -173,16 +182,14 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 				not = notifyMount = [];
 			}
 
-			const pending = [];
 			for (const item of val) {
-				mounted = addMount(orphaned, item, mounted.next_, pending);
+				mounted = addMount(orphaned, item, mounted.next_);
 				if (link) {
 					link[linkGetter] = mounted;
 					link = link.linkNext_;
 				}
 			}
 
-			callAll(pending);
 			callAllSafe(not);
 		};
 
@@ -226,15 +233,13 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 					}
 				}
 
-				const pending = [];
 				for (let insert of inserts) {
 					let next = insert.linkNext_[linkGetter] || root;
 					for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-						next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next, pending);
+						next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
 						delete insert.dom_val_;
 					}
 				}
-				callAll(pending);
 				cleanupArrayMounts(orphaned);
 
 				callAllSafe(not);
@@ -265,12 +270,12 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 	};
 };
 
-export const mount = (elem, item, before = noop, forwardMount) => {
+export const mount = (elem, item, before = noop) => {
 	assert(elem === null || isInstance(elem, Node),
 		"The first argument to mount must be null or an dom node");
 
 	let lastFunc, mounted = null;
-	const update = (callMount) => {
+	const update = () => {
 		if (mode === 2) return;
 
 		let val = mode ? item.get() : item;
@@ -303,8 +308,6 @@ export const mount = (elem, item, before = noop, forwardMount) => {
 				mounted = (lastFunc = func)(elem, val, before);
 				assert(typeof mounted === 'function',
 					"Mount function must return a higher order destroy callback");
-
-				if (callMount) mounted.mount_?.();
 			}
 
 			callAllSafe(not);
@@ -314,7 +317,7 @@ export const mount = (elem, item, before = noop, forwardMount) => {
 	let mode = isInstance(item, Observer);
 	if (mode) {
 		const watcher = shallowListener(item, update);
-		update(1);
+		update();
 
 		return arg => {
 			if (arg === getFirst) return (mounted || before)(getFirst);
@@ -324,7 +327,7 @@ export const mount = (elem, item, before = noop, forwardMount) => {
 			return mounted?.();
 		};
 	} else {
-		update(!forwardMount);
+		update();
 		return mounted || before;
 	}
 };
@@ -403,7 +406,7 @@ export const h = (e, props = {}, ...children) => {
 				return m = cleanup = 0;
 			};
 
-			func.mount_ = () => {
+			const defer = () => {
 				assert(m === noop);
 				assert(currentErrorContext = errorContext);
 
@@ -466,6 +469,9 @@ export const h = (e, props = {}, ...children) => {
 				notifyMount = save;
 				assert((currentErrorContext = errorContext.prev) || true);
 			};
+
+			defer.deferred_ = notifyMount.deferred_;
+			notifyMount.deferred_ = defer;
 
 			return func;
 		};
