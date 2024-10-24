@@ -400,11 +400,11 @@ export const h = (e, props = {}, ...children) => {
 				assert(m === noop);
 				assert(currentErrorContext = errorContext);
 
+				const save = notifyMount;
+				notifyMount = 0;
+
 				try {
 					if (each) props.each = item;
-
-					const save = notifyMount;
-					notifyMount = 0;
 
 					const dom = e(props, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
@@ -421,7 +421,6 @@ export const h = (e, props = {}, ...children) => {
 						save.push(...cb);
 					});
 
-					notifyMount = save;
 					if (m) m = mount(elem, dom, before);
 				} catch (err) {
 					assert(true, (() => {
@@ -456,6 +455,7 @@ export const h = (e, props = {}, ...children) => {
 
 					console.error(err);
 				} finally {
+					notifyMount = save;
 					assert((currentErrorContext = errorContext.prev) || true);
 				}
 			};
