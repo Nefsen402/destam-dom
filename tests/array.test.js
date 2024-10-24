@@ -329,3 +329,22 @@ test("unmount from custom component", () => {
 		name: 'body',
 	});
 });
+
+test("unmount from custom component indirection", () => {
+	const elem = document.createElement("body");
+	const arr = OArray();
+	mount(elem, arr);
+
+	const Comp = () => {
+		arr.splice(0);
+
+		return "hello world";
+	};
+
+	const content = Observer.mutable(h(Comp));
+	arr.push(content);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
