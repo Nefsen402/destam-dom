@@ -327,7 +327,7 @@ test("Remove custom component while mounting recursive invert", () => {
 	});
 });
 
-test("cleanup on unmount", () => {
+test("cleanup after unmount", () => {
 	let cleaned = false;
 	const Component = (_, cleanup) => {
 		comp.set(null);
