@@ -128,7 +128,7 @@ for (const file of files) {
 	if ([
 		'custom_element.test.js',
 		'array.test.js',
-		'array_reconciliation.test.js',
+		'array.reconciliation.test.js',
 		'replacement.test.js',
 		'static.test.js',
 	].includes(file)) {
