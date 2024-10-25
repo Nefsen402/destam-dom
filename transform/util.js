@@ -9,6 +9,8 @@ const assignmentPrototype = {
 		this.name = name;
 	},
 	replace (assignment) {
+		if (this === assignment) return;
+
 		for (let ident of this.assignments) {
 			ident.assignment = assignment;
 			ident.name = assignment.name;
@@ -129,7 +131,13 @@ export const collectVariables = (node, seeker, cont) => {
 	};
 
 	const getAssignment = (ident, lets) => {
-		let assignment = ident.assignment || lets.get(ident.name);
+		let assignment = ident.assignment;
+		if (!assignment) {
+			assignment = lets.get(ident.name);
+		} else {
+			lets.set(ident.name, assignment);
+		}
+
 		if (!assignment) {
 			lets.set(ident.name, assignment = createAssignment(ident));
 			assignment.rootScope = lets;
