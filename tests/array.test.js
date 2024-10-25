@@ -440,6 +440,131 @@ test("custom component insert order nested", () => {
 	});
 });
 
+test("custom component insert order array nested", () => {
+	const elem = document.createElement("body");
+
+	const Comp2 = ({text}) => {
+		return text;
+	};
+
+	const Comp = (props) => {
+		return h(Comp2, props);
+	};
+
+	mount(elem, [
+		h(Comp, {text: 1}),
+		[
+			h(Comp, {text: 2}),
+			[
+				h(Comp, {text: 3}),
+				h(Comp, {text: 4}),
+			]
+		]
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2", "3", "4"],
+	});
+});
+
+test("custom component insert order array nested inverted", () => {
+	const elem = document.createElement("body");
+
+	const Comp2 = ({text}) => {
+		return text;
+	};
+
+	const Comp = (props) => {
+		return h(Comp2, props);
+	};
+
+	mount(elem, [
+		[
+			[
+				h(Comp, {text: 1}),
+				h(Comp, {text: 2}),
+			],
+			h(Comp, {text: 3}),
+		],
+		h(Comp, {text: 4}),
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2", "3", "4"],
+	});
+});
+
+test("custom component insert order array nested deffered", () => {
+	const elem = document.createElement("body");
+
+	const Comp2 = ({text}) => {
+		return text;
+	};
+
+	const Comp = (props) => {
+		return h(Comp2, props);
+	};
+
+	const cont = OArray();
+
+	mount(elem, [
+		h(Comp, {text: 1}),
+		cont
+	]);
+
+	cont.push(
+		h(props => {
+			cont.splice(0, 0,
+				h(Comp, {text: 2}),
+				h(Comp, {text: 3}),
+			);
+
+			return Comp(props);
+		}, {text: 4}),
+	);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2", "3", "4"],
+	});
+});
+
+test("custom component insert order array nested deferred inverted", () => {
+	const elem = document.createElement("body");
+
+	const Comp2 = ({text}) => {
+		return text;
+	};
+
+	const Comp = (props) => {
+		return h(Comp2, props);
+	};
+
+	const cont = OArray();
+
+	mount(elem, [
+		cont,
+		h(Comp, {text: 4}),
+	]);
+
+	cont.push(
+		h(props => {
+			cont.push(
+				h(Comp, {text: 2}),
+				h(Comp, {text: 3}),
+			);
+			return Comp(props)
+		}, {text: 1}),
+	);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2", "3", "4"],
+	});
+});
+
 test("custom component mixed with text insert order", () => {
 	const elem = document.createElement("body");
 
