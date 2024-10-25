@@ -398,8 +398,8 @@ export const h = (e, props = {}, ...children) => {
 		const mounter = (elem, item, before) => {
 			let cleanup = null, m = noop;
 			const func = arg => {
-				if (!m) return;
-				if (arg === getFirst) return m(getFirst);
+				if (!m) return 0;
+				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
 
 				m();
 				callAllSafe(cleanup);
