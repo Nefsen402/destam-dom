@@ -4,11 +4,13 @@ import './document.js';
 
 import {mount, h, Observer} from '../index.js';
 
+const patchedConsole = {...console, error: () => {}};
+
 const silence = (cb) => () => {
-	const orig = console.error;
-	console.error = () => {};
+	const orig = console;
+	global.console = patchedConsole;
 	cb();
-	console.error = orig;
+	global.console = orig;
 };
 
 test("custom element", () => {
@@ -255,7 +257,9 @@ test("Pass null children for auto closed component", () => {
 	let passed;
 	const Comp = ({children}) => {
 		passed = children;
-	}
+
+		return null;
+	};
 
 	mount(null, h(Comp));
 
