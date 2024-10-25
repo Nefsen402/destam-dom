@@ -392,3 +392,94 @@ test("unmount two custom elements inverted", () => {
 		name: 'body',
 	});
 });
+
+test("custom component insert order", () => {
+	const elem = document.createElement("body");
+
+	const Comp = ({text}) => {
+		return text;
+	};
+
+	mount(elem, [
+		h(Comp, {text: 1}),
+		h(Comp, {text: 2}),
+		h(Comp, {text: 3}),
+		h(Comp, {text: 4}),
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2", "3", "4"]
+	});
+});
+
+test("custom component insert order nested", () => {
+	const elem = document.createElement("body");
+
+	const Comp2 = ({text}) => {
+		return text;
+	};
+
+	const Comp = (props) => {
+		return h(Comp2, props);
+	};
+
+	mount(elem, h('div', {},
+		h(Comp, {text: 1}),
+		h(Comp, {text: 2}),
+		h(Comp, {text: 3}),
+		h(Comp, {text: 4}),
+	));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ["1", "2", "3", "4"],
+		}]
+	});
+});
+
+test("custom component mixed with text insert order", () => {
+	const elem = document.createElement("body");
+
+	const Comp = ({text}) => {
+		return text;
+	};
+
+	mount(elem, [
+		h('div'),
+		h(Comp, {text: 2}),
+		h('div'),
+		h(Comp, {text: 4}),
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}, "2", {name: 'div'}, "4"]
+	});
+});
+
+test("custom component insert order in oarray", () => {
+	const elem = document.createElement("body");
+
+	const Comp = ({text}) => {
+		return text;
+	};
+
+	const arr = OArray();
+
+	mount(elem, arr);
+
+	arr.push(
+		h(Comp, {text: 1}),
+		h(Comp, {text: 2}),
+		h(Comp, {text: 3}),
+		h(Comp, {text: 4})
+	);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2", "3", "4"]
+	});
+});

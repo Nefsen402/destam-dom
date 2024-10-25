@@ -336,7 +336,7 @@ test("cleanup after unmount", () => {
 	const Component = (_, cleanup) => {
 		comp.set(null);
 
-		cleanup(() => cleaned = true)
+		cleanup(() => cleaned = true);
 
 		return "hello world";
 	};
