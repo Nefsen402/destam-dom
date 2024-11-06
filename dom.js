@@ -453,7 +453,18 @@ export const h = (e, props = {}, ...children) => {
 								let l = s[i].trim();
 								if (l.startsWith('at ')) l = l.substring(3);
 
-								if (l[0].toLowerCase() !== l[0] || i === s.length - 1) {
+								if (i === s.length - 1) {
+									str += ': ' + l;
+									break;
+								} else if (l.startsWith('(')) {
+									const path = l.substring(1, l.indexOf(')'));
+									const name = path.substring(path.lastIndexOf('/') + 1);
+
+									if (name[0].toLowerCase() !== name[0]) {
+										str += ': ' + path;
+										break;
+									}
+								} else if (l[0].toLowerCase() !== l[0]) {
 									str += ': ' + l;
 									break;
 								}
