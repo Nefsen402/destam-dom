@@ -286,6 +286,8 @@ const computeNode = (rep, cleanup, node) => {
 		}
 	}
 
+	const context = createIdent();
+
 	let prevChild = null;
 	if (lowerChildren) for (let i = children.length - 1; i >= 0; i--) {
 		let child = children[i];
@@ -345,8 +347,14 @@ const computeNode = (rep, cleanup, node) => {
 			const mountArguments = [getTemp(), child];
 
 			if (prevChild) {
-				mountArguments.push(prevChild[canAppend] ? t.arrowFunctionExpression([], prevChild) : prevChild);
+				mountArguments.push(
+					prevChild[canAppend] ? t.arrowFunctionExpression([], prevChild) : prevChild
+				);
+			} else {
+				mountArguments.push(t.identifier('undefined'));
 			}
+
+			mountArguments.push(context);
 
 			const mount = t.callExpression(rep.importer('mount'), mountArguments);
 			mount.temporary = temporary;
@@ -375,7 +383,7 @@ const computeNode = (rep, cleanup, node) => {
 		const ret = temporary || createElement(rep.importer, name, ns);
 
 		const idents = cleanup.map((_, i) => _.temporary || createIdent());
-		return t.arrowFunctionExpression([elem, val, before], t.blockStatement([
+		return t.arrowFunctionExpression([elem, val, before, context], t.blockStatement([
 			...cleanup.map((cleanup, i) => declare(idents[i], cleanup)),
 			t.expressionStatement(t.optionalCallExpression(
 				t.optionalMemberExpression(createUse(elem), t.identifier('insertBefore'), false, true),
