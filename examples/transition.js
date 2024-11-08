@@ -17,7 +17,7 @@ const Fade = ({children, removed, $style}, cleanup, mounted) => {
 	cleanup(removed.watch(() => {
 		opacity.set(0);
 		size.set(.7);
-	}).remove);
+	}));
 
 	return html`
 		<${div} children=${children} $style=${{

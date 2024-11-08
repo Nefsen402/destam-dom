@@ -93,7 +93,7 @@ const App = ({}, cleanup) => {
 		}
 
 		input.focus();
-	}).remove);
+	}));
 
 	return html`
 		<${Message} each=${messages} />

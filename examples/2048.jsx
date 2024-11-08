@@ -76,15 +76,15 @@ document.body.addEventListener('keydown', e => {
 						prev.value.set(prev.value.get() * 2);
 
 						let watch = [
-							prev.x.watch(() => tmp.x.set(prev.x.get())).call(),
-							prev.y.watch(() => tmp.y.set(prev.y.get())).call(),
+							prev.x.effect(val => tmp.x.set(val)),
+							prev.y.effect(val => tmp.y.set(val)),
 						];
 
 						tmp.zIndex.set(-1);
 						prev.scale.set(1.3);
 
 						setTimeout(() => {
-							for (let w of watch) w.remove();
+							for (let w of watch) w();
 							let i = tiles.indexOf(tmp);
 							tiles.splice(i, 1);
 							prev.scale.set(1);

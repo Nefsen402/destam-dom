@@ -56,7 +56,7 @@ const Form = ({}, cleanup) => {
 		if (!isRetype.get()) {
 			retypePassword.set('');
 		}
-	}).remove);
+	}));
 
 	return <>
 		<Input value={password} type="password" />

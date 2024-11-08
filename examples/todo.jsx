@@ -62,7 +62,7 @@ const Undo = ({state}, cleanup) => {
 		const pos = historyPos.get();
 		history.set(history.get().slice(0, pos).concat([commit]))
 		historyPos.set(pos + 1);
-	}).remove);
+	}));
 
 	return <div>
 		<button disabled={historyPos.map(p => p === 0)} $onclick={() => {

@@ -117,7 +117,7 @@ const App = ({map}, cleanup) => {
 			left.set(randomize(left.get()));
 			right.set(randomize(right.get()));
 		}
-	}).remove);
+	}));
 
 	return html`
 		<${Center}>
