@@ -100,7 +100,7 @@ const cleanupArrayMounts = mounts => {
 	}
 };
 
-const arrayMounter = (elem, val, before, mounter = mount) => {
+const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const root = () => before(getFirst);
 	root.next_ = root.prev_ = root;
 
@@ -136,8 +136,10 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 
 			if (!mounted) {
 				mounted = mounter(
-					elem, item,
-					() => (next || mounted.next_)(getFirst)
+					elem,
+					item,
+					() => (next || mounted.next_)(getFirst),
+					context,
 				);
 
 				mounted.item_ = item;
@@ -270,7 +272,7 @@ const arrayMounter = (elem, val, before, mounter = mount) => {
 	};
 };
 
-export const mount = (elem, item, before = noop) => {
+export const mount = (elem, item, before = noop, context) => {
 	assert(elem === null || isInstance(elem, Node),
 		"The first argument to mount must be null or an dom node");
 
@@ -305,7 +307,7 @@ export const mount = (elem, item, before = noop) => {
 			}
 
 			if (!mounted?.(lastFunc === func ? val : null)) {
-				mounted = (lastFunc = func)(elem, val, before);
+				mounted = (lastFunc = func)(elem, val, before, context);
 				assert(typeof mounted === 'function',
 					"Mount function must return a higher order destroy callback");
 			}
@@ -395,7 +397,7 @@ export const h = (e, props = {}, ...children) => {
 		});
 
 		const each = props.each;
-		const mounter = (elem, item, before) => {
+		const mounter = (elem, item, before, context) => {
 			let cleanup = null, m = noop;
 			const func = arg => {
 				if (!m) return 0;
@@ -433,7 +435,7 @@ export const h = (e, props = {}, ...children) => {
 						save.push(...cb);
 					});
 
-					if (m) m = mount(elem, dom, before);
+					if (m) m = mount(elem, dom, before, context);
 				} catch (err) {
 					assert(true, (() => {
 						let str;
@@ -492,9 +494,9 @@ export const h = (e, props = {}, ...children) => {
 		if (!each) {
 			return mounter;
 		} else if (isInstance(each, Observer)) {
-			return (elem, val, before) => {
+			return (elem, val, before, context) => {
 				const listener = shallowListener(each, () => mount(each.get()));
-				const mount = arrayMounter(elem, each.get(), before, mounter);
+				const mount = arrayMounter(elem, each.get(), before, context, mounter);
 				return arg => {
 					if (arg === getFirst) return mount(getFirst);
 
@@ -503,7 +505,7 @@ export const h = (e, props = {}, ...children) => {
 				};
 			};
 		} else {
-			return (elem, val, before) => arrayMounter(elem, each, before, mounter);
+			return (elem, val, before, context) => arrayMounter(elem, each, before, context, mounter);
 		}
 	}
 
