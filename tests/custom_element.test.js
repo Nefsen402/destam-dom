@@ -360,7 +360,7 @@ test('context', () => {
 		return arr;
 	};
 
-	mount(null, h(Comp), undefined, context)
+	mount(null, h('div', {}, h(Comp)), undefined, context)
 
 	assert.deepEqual(out, [context, context])
 });
