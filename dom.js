@@ -4,16 +4,16 @@ import {isInstance, len, push, callAll, assert, noop, isSymbol} from 'destam/uti
 
 export const getFirst = Symbol();
 
-const mapNode = elem => {
-	let bef;
-	return elem[getFirst]?.map(({func_: func, val_: val, handler_: handler, pbef_: pbef}) => {
-		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef);
-	});
-};
-
-const nodeMounter = (elem, e, before) => {
+const nodeMounter = (elem, e, before, context) => {
 	assert(e.parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
+
+	const mapNode = elem => {
+		let bef;
+		return elem[getFirst]?.map(({func_: func, val_: val, handler_: handler, pbef_: pbef}) => {
+			return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
+		});
+	};
 
 	let remove = mapNode(e);
 	if (remove) e = e.elem_;
