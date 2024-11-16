@@ -4,31 +4,15 @@ const createContext = () => {
 	const getter = Symbol();
 
 	const Context = ({value, children}, cleanup, mounted) => {
-		// span is the only element that won't affect page layout so use that as a wrapper.
-		const Span = <span />;
-		Span[getter] = value;
-
-		return <Span>{children}</Span>;
+		return (elem, _, before) => {
+			return mount(elem, children, before, value)
+		};
 	};
 
 	Context.use = (component) => (props, cleanup, mounted) => {
-		const ret = Observer.mutable(null);
-
-		mounted(() => ret.set((elem, _, before) => {
-			let current = elem, val;
-			while (current) {
-				if (getter in current) {
-					val = current[getter];
-					break;
-				}
-
-				current = current.parentNode;
-			}
-
-			return mount(elem, component(val)(props, cleanup, mounted), before);
-		}));
-
-		return ret;
+		return (elem, _, before, context) => {
+			return mount(elem, component(context)(props, cleanup, mounted), before);
+		};
 	};
 
 	return Context;
