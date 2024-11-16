@@ -81,13 +81,14 @@ if (lib in libs) {
 	});
 } else {
 	const getExample = (file) => {
-		if (!file.startsWith('/')) return null;
+		if (file === '/') file = '/index.html';
+		if (!file.startsWith('/') || !file.endsWith('.html')) return null;
 
 		file = file.substring(1);
 		let i = file.lastIndexOf('.');
 		const name = file.substring(0, i);
 
-		const existed = ['.html', '.js', '.jsx'].find(ex => fs.existsSync('examples/' + name + ex));
+		const existed = ['.js', '.jsx'].find(ex => fs.existsSync('examples/' + name + ex));
 		if (!existed) {
 			return null;
 		}
@@ -109,7 +110,10 @@ if (lib in libs) {
 		}
 
 		return examples = fs.readdirSync(resolve(__dirname, 'examples')).map(file => {
-			return getExample('/' + file);
+			let i = file.lastIndexOf('.');
+			const name = file.substring(0, i);
+
+			return getExample('/' + name + '.html');
 		});
 	};
 
@@ -159,7 +163,7 @@ if (lib in libs) {
 				configureServer(server) {
 					server.middlewares.use((req, res, next) => {
 						let found = getExample(req.originalUrl);
-						if (found && found.relative === req.originalUrl && !found.file.endsWith('.html')) {
+						if (found) {
 							res.end(generateTemplate(found, true));
 						} else {
 							next();
