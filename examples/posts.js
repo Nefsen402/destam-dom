@@ -65,7 +65,7 @@ export default html`
 			currentAdding.title = currentAdding.body = '';
 		}}> Add post</button>
 	</div>
-	<div style="width: 1400px">
+	<div style="max-width: 1400px">
 		<${({each: post}) => {
 			const {title, body} = post;
 			return html`<div style="width: 300px;outline: 2px solid black; display: inline-block; margin: 10px; padding: 5px; vertical-align: top">
