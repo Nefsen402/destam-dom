@@ -538,7 +538,7 @@ export const h = (e, props = {}, ...children) => {
 		}
 
 		if (child) {
-			if (!child.parentElement) e.insertBefore(child, insertLoc);
+			e.insertBefore(child, insertLoc);
 			bef = insertLoc = child;
 		}
 	}
