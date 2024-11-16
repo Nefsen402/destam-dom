@@ -227,17 +227,29 @@ const createAsteroid = (radius, speed, dir, pos) => {
 	});
 };
 
-const viewBox = Observer.all([
-	pos,
-	Observer.event(window, 'resize')
-]).map(([[x, y]]) => {
-	const w = window.innerWidth;
-	const h = window.innerHeight;
-	x -= w / 2;
-	y -= h / 2;
+const origviewBox = Observer.mutable([0, 0, 0, 0]);
+const viewBox = origviewBox.unwrap();
+const Container = ({children}, cleanup, mounted) => {
+	const Cont = <div />
 
-	return [x, y, w, h];
-});
+	mounted(() => {
+		origviewBox.set(Observer.all([
+			pos,
+			Observer.event(window, 'resize')
+		]).map(([[x, y]]) => {
+			const w = Cont.clientWidth;
+			const h = Cont.clientHeight;
+			x -= w / 2;
+			y -= h / 2;
+
+			return [x, y, w, h];
+		}));
+	});
+
+	return <Cont style="position: absolute; inset: 0px;">;
+		{children}
+	</Cont>;
+};
 
 const genAsteroid = () => {
 	if (startGame.get()) return;
@@ -316,7 +328,7 @@ const Asteroid = ({each: asteroid}) => {
 
 const Shown = ({visible, children}) => visible.map(e => e ? children : null);
 
-export default <>
+export default <Container>
 	<style>{`
 		body {
 			background: black;
@@ -385,4 +397,4 @@ export default <>
 			})}
 		</div>
 	</Shown>
-</>;
+</Container>;
