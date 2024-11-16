@@ -1,4 +1,4 @@
-import {mount, Observer} from 'destam-dom';
+import {Observer} from 'destam-dom';
 
 const constainsOneOf = (str, chars) => {
 	for (let i = 0; i < chars.length; i++) {
@@ -80,4 +80,4 @@ const Form = ({}, cleanup) => {
 	</>;
 };
 
-mount(document.body, <Form />);
+export default <Form />;

@@ -1,4 +1,4 @@
-import {Observer, html, mount} from 'destam-dom';
+import {Observer, html} from 'destam-dom';
 
 let things = Observer.mutable([
 	html`<div><input $value="one" /></>`,
@@ -10,7 +10,7 @@ setInterval(() => {
 	things.set([old[1], old[0]]);
 }, 1000);
 
-mount(document.body, html`
+export default html`
 	<${({each: item}) => item} each=${things}/>
 	<div><input $value="three" /></>
-`)
+`;

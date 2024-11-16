@@ -1,4 +1,4 @@
-import {Observer, OArray, html, mount} from 'destam-dom';
+import {Observer, OArray, html} from 'destam-dom';
 
 let arr = OArray([0, 1]);
 
@@ -8,6 +8,6 @@ window.addEventListener('keydown', () => {
 	}
 });
 
-mount(document.body, html`
+export default html`
 	<${({each}) => html`${each}<br/>`} each=${arr} />
-`);
+`;

@@ -1,4 +1,4 @@
-import {mount, OArray, Observer, OObject} from 'destam-dom';
+import {OArray, Observer, OObject} from 'destam-dom';
 
 const CommentPoster = ({postComment, postName="Post"}) => {
 	const value = Observer.mutable("");
@@ -49,4 +49,4 @@ const CommentList = ({comments, postName}) => {
 	</div>;
 }
 
-mount(document.body, <CommentList comments={OArray()} />);
+export default <CommentList comments={OArray()} />;

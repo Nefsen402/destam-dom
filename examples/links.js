@@ -1,4 +1,4 @@
-import {html, mount} from 'destam-dom';
+import {html} from 'destam-dom';
 
 const cats = [
 	{ id: 'J---aiyznGQ', name: 'Keyboard Cat' },
@@ -15,6 +15,6 @@ const Cat = ({each: cat}) => {
 	</li>`;
 };
 
-mount(document.body, html`<ul>
+export default html`<ul>
 	<${Cat} each=${cats} />
-</ul>`);
+</ul>`;

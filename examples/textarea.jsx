@@ -1,4 +1,4 @@
-import {mount, Observer} from 'destam-dom';
+import {Observer} from 'destam-dom';
 
 const Textarea = ({value, style}, _, mounted) => {
 	const Ref = <textarea />;
@@ -39,7 +39,7 @@ const Textarea = ({value, style}, _, mounted) => {
 
 const val = Observer.mutable('This destam-dom example has a textarea with text that will wrap');
 
-mount(document.body, <div style={`
+export default <div style={`
 	position: absolute;
 	inset: 0px;
 	display: flex;
@@ -51,4 +51,4 @@ mount(document.body, <div style={`
 	<Textarea value={val} style={{
 		width: '300px'
 	}} />
-</div>);
+</div>;

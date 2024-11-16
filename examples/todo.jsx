@@ -1,4 +1,4 @@
-import {Observer, OArray, OObject, mount, Delete} from 'destam-dom';
+import {Observer, OArray, OObject, Delete} from 'destam-dom';
 import createNetwork from 'destam/Tracking';
 
 const TodoItem = ({each: item}) => {
@@ -101,4 +101,4 @@ const state = OObject({
 	filter: 'all',
 });
 
-mount(document.body, <Todo state={state} />);
+export default <Todo state={state} />;

@@ -1,3 +1,3 @@
-import {html, mount} from 'destam-dom';
+import {html} from 'destam-dom';
 
-mount(document.body, html`Hello world`);
+export default html`Hello world`;

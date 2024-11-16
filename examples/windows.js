@@ -1,4 +1,4 @@
-import {html, mount, OArray, OObject} from 'destam-dom';
+import {html, OArray, OObject} from 'destam-dom';
 import {atomic} from 'destam/Network';
 
 const windows = window.windows = OArray();
@@ -113,7 +113,7 @@ const Window = ({each: window}) => {
 	`;
 };
 
-mount(document.body, html`
+export default html`
 	<style>
 		.center {
 			display: flex;
@@ -132,4 +132,4 @@ mount(document.body, html`
 		}))
 	}}>Open browser</button>
 	<${Window} each=${windows} />
-`);
+`;

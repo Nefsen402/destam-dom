@@ -1,4 +1,4 @@
-import {html, mount, OArray, OObject, Observer} from 'destam-dom';
+import {html, OArray, OObject, Observer} from 'destam-dom';
 
 const scores = OArray([
 	OObject({ name: "Mark", score: 3 }),
@@ -44,7 +44,7 @@ const PlayerAdmin = ({each}) => {
 const newPlayerName = Observer.mutable("");
 const newPlayerScore = Observer.mutable("");
 
-mount(document.body, html`
+export default html`
 	<${Player} each=${scores.observer.skip().path('score').map(() => scores.toSorted((a, b) => b.score - a.score))} />
 
 	<div class=admin>
@@ -59,4 +59,4 @@ mount(document.body, html`
 			}}>Add player</button>
 		</div>
 	</>
-`);
+`;

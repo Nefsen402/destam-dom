@@ -1,4 +1,4 @@
-import {OArray, OObject, html, mount, Observer} from 'destam-dom';
+import {OArray, OObject, html, Observer} from 'destam-dom';
 
 const posts = OArray();
 const loading = Observer.mutable(false);
@@ -33,7 +33,7 @@ const Input = ({value, style}) => {
 	/>`;
 };
 
-mount(document.body, html`
+export default html`
 	<button $onclick=${load}> Load more </button> ${loading.map(loading => loading ? 'Loading...' : null)}
 	<div>
 		${currentAdding.observer.path('error').map(e => !!e).map(error => {
@@ -80,4 +80,4 @@ mount(document.body, html`
 			</div>`;
 		}} each=${posts} />
 	</div>
-`);
+`;

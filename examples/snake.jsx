@@ -1,4 +1,4 @@
-import {Observer, mount} from 'destam-dom';
+import {Observer} from 'destam-dom';
 
 let width, height, ps = 40;
 
@@ -130,7 +130,7 @@ const SnakeElement = ({each: snake}) => {
 	}} />;
 };
 
-mount(document.body, <>
+export default <>
 	<SnakeElement each={snake.map(snake => {
 		return {
 			[Symbol.iterator]: () => {
@@ -152,4 +152,4 @@ mount(document.body, <>
 	})} />
 	{fruit}
 	<div style="top:0px;right:0px;text-align:right;color:green;position:absolute;">{score}</div>
-</>);
+</>;

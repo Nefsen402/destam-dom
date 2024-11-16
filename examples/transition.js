@@ -1,4 +1,4 @@
-import {html, mount, Observer, OArray} from 'destam-dom';
+import {html, Observer, OArray} from 'destam-dom';
 
 const Fade = ({children, removed, $style}, cleanup, mounted) => {
 	const opacity = Observer.mutable(0);
@@ -65,4 +65,4 @@ setInterval(() => {
 	boxes.push(box);
 }, 300);
 
-mount(document.body, boxes);
+export default boxes;

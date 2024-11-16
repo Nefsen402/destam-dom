@@ -1,4 +1,4 @@
-import {mount, OArray, Observer} from 'destam-dom';
+import {OArray, Observer} from 'destam-dom';
 
 const size = 500;
 const transitionDuration = 200;
@@ -169,10 +169,10 @@ const Tile = ({each: {value, x, y, zIndex, scale}}, cleanup, mount) => {
 	</div>;
 };
 
-mount(document.body, <>
+export default <>
 	<div style="display: flex; align-items: center; justify-content: center; inset: 0px; position: absolute;">
 		<div style={`width: ${size}px; height: ${size}px; position: relative; border-radius: 10px; background: #222; zIndex: -2`}>
 			<Tile each={tiles} />
 		</div>
 	</div>
-</>);
+</>;

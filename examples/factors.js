@@ -1,8 +1,8 @@
-import {html, mount, Observer} from 'destam-dom';
+import {html, Observer} from 'destam-dom';
 
 const text = Observer.mutable('');
 
-mount(document.body, html`
+export default html`
 	<input $value=${text} $oninput=${e => text.set(e.target.value)} />
 	<button $onclick=${() => text.set(String(BigInt(text.get()) + 1n))}>Increment</button>
 	<p>${null}</p>
@@ -42,4 +42,4 @@ mount(document.body, html`
 		out.pop();
 		return out;
 	})}</p>
-`);
+`;

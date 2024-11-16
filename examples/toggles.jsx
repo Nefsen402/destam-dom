@@ -1,4 +1,3 @@
-import {mount} from 'destam-dom';
 import OArray, {positionIndex, indexPosition} from 'destam/Array';
 
 const cssColor = col => {
@@ -46,8 +45,8 @@ toggles.observer.watch(delta => {
 	}
 });
 
-mount(document.body, <div style="transform: scale(3); transform-origin: top left; padding: 10px">
+export default <div style="transform: scale(3); transform-origin: top left; padding: 10px">
 	<Toggle tag="FAST" color={[1, 0, 0]} value={toggles.observer.path([positionIndex(toggles, 0)])} />
 	<Toggle tag="CHEAP" color={[0, 1, 0]}  value={toggles.observer.path([positionIndex(toggles, 1)])} />
 	<Toggle tag="GOOD" color={[0, 0, 1]}  value={toggles.observer.path([positionIndex(toggles, 2)])} />
-</div>);
+</div>;

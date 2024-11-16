@@ -1,4 +1,4 @@
-import {mount, Observer} from 'destam-dom';
+import {Observer} from 'destam-dom';
 
 const loadCats = async () => {
 	// simulate a slow network request
@@ -37,4 +37,4 @@ const Cats = suspense(Loading, async () => {
 	});
 });
 
-mount(document.body, <Cats />);
+export default <Cats />;

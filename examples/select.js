@@ -1,4 +1,4 @@
-import {Observer, html, mount} from 'destam-dom';
+import {Observer, html} from 'destam-dom';
 
 const value = Observer.mutable(true);
 
@@ -132,11 +132,11 @@ const App = ({map}, cleanup) => {
 	`;
 }
 
-mount(document.body, html`
+export default html`
 	<style>
 		body {
 			background: black;
 		}
 	</style>
 	<${App} map=${map}/>
-`);
+`;

@@ -124,7 +124,12 @@ if (lib in libs) {
 					<title>Destam-Dom</title>
 				</head>
 				<body>
-					<script type="module" src="./examples/${entry.file}"></script>
+					<script type="module">
+						import { mount } from './index';
+						import example from './examples/${entry.file}';
+
+						mount(document.body, example);
+					</script>
 				</body>
 			</html>
 		`;

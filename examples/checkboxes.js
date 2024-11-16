@@ -1,4 +1,4 @@
-import {Observer, html, mount} from 'destam-dom';
+import {Observer, html} from 'destam-dom';
 
 const Checkbox = ({value, name}) => {
 	return html`
@@ -36,4 +36,4 @@ const App = () => {
 	`;
 };
 
-mount(document.body, App());
+export default App();

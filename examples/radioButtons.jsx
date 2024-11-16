@@ -1,4 +1,4 @@
-import {mount, Observer} from 'destam-dom';
+import {Observer} from 'destam-dom';
 
 const RadioButton = ({value, name}) => {
 	return <>
@@ -15,6 +15,6 @@ const List = ({each}) => {
 	return <RadioButton value={selector(each)} name={each} />;
 };
 
-mount(document.body, <>
+export default <>
 	<List each={Array.from(Array(10), (_, i) => i)} />
-</>);
+</>;

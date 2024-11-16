@@ -1,4 +1,4 @@
-import {html, mount, Observer} from 'destam-dom';
+import {html, Observer} from 'destam-dom';
 
 function randomHexColorString() {
 	return "#" + Math.floor(Math.random() * 16777215).toString(16);
@@ -9,7 +9,7 @@ const blockSize = 500;
 
 const sizeRepeat = size.map(size => `repeat(${size}, ${blockSize / size}px)`);
 
-mount(document.body, html`
+export default html`
 	<style>
 		.cell {
 			outline: 1px solid #efefef;
@@ -35,4 +35,4 @@ mount(document.body, html`
 			`;
 		})} each=${size.map(size => Array.from(Array(size ** 2), (_, i) => i))} />
 	</div>
-`);
+`;

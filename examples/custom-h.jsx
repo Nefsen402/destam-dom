@@ -156,10 +156,10 @@ const style = OObject({
 	left: leftObserver,
 });
 
-mount(document.body, <div onClick={() => {
+export default <div onClick={() => {
 	numClicks.set(numClicks.get() + 1);
 	style.top += 30;
 	leftObserver.set(leftObserver.get() + 10);
 }} style={style}>
 	Hello world {numClicks}
-</div>);
+</div>;

@@ -1,4 +1,4 @@
-import {mount, h, Observer, OArray, OObject} from 'destam-dom';
+import {h, Observer, OArray, OObject} from 'destam-dom';
 
 const svg = (name, prop, ...children) => {
 	return h(document.createElementNS("http://www.w3.org/2000/svg", name), prop, ...children);
@@ -316,7 +316,7 @@ const Asteroid = ({each: asteroid}) => {
 
 const Shown = ({visible, children}) => visible.map(e => e ? children : null);
 
-mount(document.body, <>
+export default <>
 	<style>{`
 		body {
 			background: black;
@@ -385,4 +385,4 @@ mount(document.body, <>
 			})}
 		</div>
 	</Shown>
-</>);
+</>;

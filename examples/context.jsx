@@ -1,4 +1,4 @@
-import {mount, Observer} from 'destam-dom';
+import {Observer, mount} from 'destam-dom';
 
 const createContext = () => {
 	const getter = Symbol();
@@ -39,7 +39,7 @@ const Rect = Context.use(value => () => {
 	return <div $style={{...value, width: '100px', height: '100px'}} />;
 });
 
-mount(document.body, <div>
+export default <div>
 	<Context value={{background: 'blue'}}>
 		<div>
 			<Rect />
@@ -48,4 +48,4 @@ mount(document.body, <div>
 	<Context value={{background: 'red'}}>
 		<Rect />
 	</Context>
-</div>);
+</div>;
