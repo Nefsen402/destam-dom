@@ -35,7 +35,6 @@ const Example = ({item}) => {
 		</div>);
 
 	item().then(e => {
-		console.log(e.default);
 		out.set(e.default);
 	});
 
