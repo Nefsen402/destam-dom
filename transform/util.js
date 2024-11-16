@@ -411,6 +411,8 @@ export const collectVariables = (node, seeker, cont) => {
 			traverseClass(node, lets, true);
 		} else if (node.type === 'TSAsExpression') {
 			traverseExpression(node.expression, lets);
+		} else if (node.type === 'MetaProperty') {
+			// fallthrough
 		} else if (!node.type.includes("Literal")) {
 			throw new Error("Unknown expression: " + node.type);
 		}
