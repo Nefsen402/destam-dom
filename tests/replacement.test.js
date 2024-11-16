@@ -576,3 +576,25 @@ test("shadow with spread", () => {
 		}],
 	});
 });
+
+test("static reuse", () => {
+	const reuse = h('div');
+
+	const thing = Observer.mutable(null);
+
+	const elem = document.createElement("body");
+	mount(elem, thing);
+
+	thing.set(h('div', {}, reuse));
+	thing.set(h('div', {}, reuse));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{
+				name: 'div'
+			}]
+		}],
+	});
+});
