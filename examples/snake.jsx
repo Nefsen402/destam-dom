@@ -20,13 +20,37 @@ const Snake = (x, y, next) => {
 	return o;
 };
 
-const resize = () => {
-	pw = window.innerWidth;
-	ph = window.innerHeight;
+const reset = () => {
+	snake.set(Snake(
+		Math.floor(width / 2),
+		Math.floor(height / 2)
+	));
 
-	width = Math.floor(pw / ps);
-	height = Math.floor(ph / ps);
-}
+	snakeLength = 3;
+	snakeDirection = 3;
+	score.set('New Game');
+	genFruit();
+};
+
+const Container = ({children}, cleanup, mounted) => {
+	const Cont = <div />
+
+	mounted(() => {
+		cleanup(Observer.event(window, 'resize').effect(() => {
+			pw = Cont.clientWidth;
+			ph = Cont.clientHeight;
+
+			width = Math.floor(pw / ps);
+			height = Math.floor(ph / ps);
+		}));
+
+		reset();
+	});
+
+	return <Cont style="position: absolute; inset: 0px;">
+		{children}
+	</Cont>;
+};
 
 const genFruit = () => {
 	const taken = new Set();
@@ -52,21 +76,6 @@ const genFruit = () => {
 	}} />);
 }
 
-const reset = () => {
-	snake.set(Snake(
-		Math.floor(width / 2),
-		Math.floor(height / 2)
-	));
-
-	snakeLength = 3;
-	snakeDirection = 3;
-	score.set('New Game');
-	genFruit();
-}
-
-resize();
-reset();
-
 window.addEventListener("keydown", e => {
 	let prevDir = -1;
 	const s = snake.get();
@@ -83,7 +92,6 @@ window.addEventListener("keydown", e => {
 		snakeDirection = e.which - 37;
 	}
 });
-window.addEventListener("resize", resize);
 
 setInterval(() => {
 	let dx = snakeDirection === 0 ? -1 : snakeDirection === 2 ? 1 : 0;
@@ -130,7 +138,7 @@ const SnakeElement = ({each: snake}) => {
 	}} />;
 };
 
-export default <>
+export default <Container>
 	<SnakeElement each={snake.map(snake => {
 		return {
 			[Symbol.iterator]: () => {
@@ -152,4 +160,4 @@ export default <>
 	})} />
 	{fruit}
 	<div style="top:0px;right:0px;text-align:right;color:green;position:absolute;">{score}</div>
-</>;
+</Container>;
