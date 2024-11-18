@@ -246,7 +246,7 @@ const Container = ({children}, cleanup, mounted) => {
 		}));
 	});
 
-	return <Cont style="position: absolute; inset: 0px;">;
+	return <Cont style="position: absolute; inset: 0px;">
 		{children}
 	</Cont>;
 };
