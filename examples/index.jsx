@@ -42,10 +42,10 @@ const Example = ({item}) => {
 };
 
 export default <div style="position: absolute; inset: 0px; display: flex; flex-direction: row">
-	<div style="display: flex flex-direction: column; min-width: 200px; height: 100%; overflow-y: scroll">
+	<div style="display: flex flex-direction: column; min-width: 200px; height: 100%; overflow-y: scroll;">
 		<Button each={Object.entries(examples)} />
 	</div>
-	<div style="position: relative; width: 100%; height: 100%">
+	<div style="position: relative; width: 100%; height: 100%; overflow-y: scroll;">
 		{current.map(c => {
 			if (!c) {
 				return <div style="display: flex; position: absolute; inset: 0px; justify-content: center; align-items: center;">
