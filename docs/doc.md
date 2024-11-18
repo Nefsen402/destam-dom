@@ -323,7 +323,7 @@ html`
 For a third paramater, custom components offer another callback function after all descendents of the custom component and the custom component itself is mounted. This callback is guaranteed to be invoked when the dom elements that the custom component generates are visible from the root of the mount point.
 
 ```js
-const FadeIn = ({children}, _, mounted) => {
+const FadeIn = ({children}, cleanup, mounted) => {
 	const opacity = Observer.mutable(0);
 
 	mounted(() => {
@@ -346,6 +346,25 @@ html`
 	</>
 `
 
+```
+
+Calling cleanup is always valid, even after the component has already been unmounted.
+In this case, the cleanup function will immediately be invoked if the component
+was unmounted. However, calling mounted is only valid while the component is mounting.
+
+Note that calling cleanup from within mounted is valid:
+```js
+const Component = ({}, cleanup, mounted) => {
+	mounted(() => {
+		const timer = setInterval(() => {
+			console.log("timer");
+		}, 1000);
+
+		cleanup(() => clearInterval(timer));
+	});
+
+	return null;
+};
 ```
 
 The cleanup and mount functions can also accept multiple arguments. 0 arguments
