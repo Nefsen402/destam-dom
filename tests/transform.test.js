@@ -113,7 +113,7 @@ if (fs.existsSync(iife)) {
 }
 
 for (const file of files) {
-	if (file === 'transform.test.js') continue;
+	if (['transform.test.js', 'assert.test.js'].includes(file)) continue;
 	if (!file.endsWith('.test.js') && !file.endsWith('.test.jsx')) continue;
 
 	describe("transform with util " + file, transform(file, {
