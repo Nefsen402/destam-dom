@@ -5,7 +5,7 @@ import {isInstance, len, push, callAll, assert, noop, isSymbol} from 'destam/uti
 export const getFirst = Symbol();
 
 const nodeMounter = (elem, e, before, context) => {
-	assert(e.parentElement == null,
+	assert((e[getFirst] ? e.elem_ : e).parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
 
 	const mapNode = elem => {
