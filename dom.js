@@ -184,19 +184,21 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				not = notifyMount = [];
 			}
 
-			for (const item of val) {
-				mounted = addMount(orphaned, item, mounted.next_);
-				if (link) {
-					link[linkGetter] = mounted;
-					link = link.linkNext_;
+			try {
+				for (const item of val) {
+					mounted = addMount(orphaned, item, mounted.next_);
+					if (link) {
+						link[linkGetter] = mounted;
+						link = link.linkNext_;
+					}
 				}
+			} finally {
+				callAllSafe(not);
 			}
-
-			callAllSafe(not);
 		};
 
 		arrayListener = observer?.register_(commit => {
-			assert(elem, "Cannot move mount on an empty mount");
+			assert(elem, "Cannot modify a null mount");
 
 			// fast path when removing everything
 			if (len(val) === 0) {
@@ -235,16 +237,18 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					}
 				}
 
-				for (let insert of inserts) {
-					let next = insert.linkNext_[linkGetter] || root;
-					for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-						next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
-						delete insert.dom_val_;
+				try {
+					for (let insert of inserts) {
+						let next = insert.linkNext_[linkGetter] || root;
+						for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
+							next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
+							delete insert.dom_val_;
+						}
 					}
+				} finally {
+					cleanupArrayMounts(orphaned);
+					callAllSafe(not);
 				}
-				cleanupArrayMounts(orphaned);
-
-				callAllSafe(not);
 			}
 
 		}, isSymbol);
@@ -306,13 +310,15 @@ export const mount = (elem, item, before = noop, context) => {
 				not = notifyMount = [];
 			}
 
-			if (!mounted?.(lastFunc === func ? val : null)) {
-				mounted = (lastFunc = func)(elem, val, before, context);
-				assert(typeof mounted === 'function',
-					"Mount function must return a higher order destroy callback");
+			try {
+				if (!mounted?.(lastFunc === func ? val : null)) {
+					mounted = (lastFunc = func)(elem, val, before, context);
+					assert(typeof mounted === 'function',
+						"Mount function must return a higher order destroy callback");
+				}
+			} finally {
+				callAllSafe(not);
 			}
-
-			callAllSafe(not);
 		}
 	};
 
