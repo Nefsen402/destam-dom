@@ -1,5 +1,12 @@
-import {Observer, OArray, OObject, Delete} from 'destam-dom';
+import {Observer, Delete} from 'destam-dom';
 import createNetwork from 'destam/Tracking';
+
+// Use obsevers directly from destam because the ones that destam-dom provides
+// are simplified for more optimal operation in the common case.
+//
+// They don't generate IDs that are required for destam/Tracking to work.
+import OObject from 'destam/Object';
+import OArray from 'destam/Array';
 
 const TodoItem = ({each: item}) => {
 	return <li
