@@ -50,4 +50,5 @@ The `examples` directory provides many simple examples for how to use this libra
 ```bash
 npm run dev
 ```
-And navigate to one of the compliment `.html` files for each implementation. All examples are served from the root. For instance, if you wanted to see the result of `examples/basic.js`, navigate to `/basic.html` in the browser.
+
+Accessing the link provided will allow you to browse the examples. To view a single example, navigate to the compliment `.html` url for each implementation. All examples are served from the root. For instance, if you wanted to see the result of `examples/basic.js`, navigate to `/basic.html` in the browser.
