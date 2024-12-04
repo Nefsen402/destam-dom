@@ -99,6 +99,7 @@ global.Node = class Node {
 		node.parentElement = this;
 		before.parentElement = null;
 		this.childNodes[i] = node;
+		return node;
 	}
 
 	removeChild (child) {
@@ -106,6 +107,7 @@ global.Node = class Node {
 		if (i === -1) throw new Error("node not found");
 		child.parentElement = null;
 		this.childNodes.splice(i, 1);
+		return child;
 	}
 
 	remove () {
