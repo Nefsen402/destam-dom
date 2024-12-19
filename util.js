@@ -14,9 +14,8 @@ export const createTextNode = text => document.createTextNode(text);
 
 export const watch = (obs, cb) => {
 	if (isInstance(obs, Observer)) {
-		const l = shallowListener(obs, () => cb(obs()));
-		obs = obs.get;
-		cb(obs());
+		const l = shallowListener(obs, () => cb(obs.get()));
+		cb(obs.get());
 		return l;
 	} else {
 		cb(obs);
