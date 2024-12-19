@@ -4,19 +4,30 @@ import {isInstance, len, push, callAll, assert, noop, isSymbol} from 'destam/uti
 
 export const getFirst = Symbol();
 
-const mapNode = (elem, context) => {
-	let bef;
-	return elem[getFirst]?.map(({func_: func, val_: val, handler_: handler, pbef_: pbef}) => {
-		return bef = func(val, handler, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
-	});
+const nodeRegister = (elem, context) => {
+	const arr = elem[getFirst];
+	if (arr) {
+		let bef;
+		for (let obj of arr) {
+			bef = obj.func_(obj.val_, obj.handler_, bef, context);
+		}
+	}
+
+	return arr;
+};
+
+const nodeRemove = (arr) => {
+	for (let obj of arr) {
+		obj.remove_();
+		obj.remove_ = 0;
+	}
 };
 
 const nodeMounter = (elem, e, before, context) => {
 	assert((e[getFirst] ? e.elem_ : e).parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
 
-
-	let remove = mapNode(e, context);
+	let remove = nodeRegister(e, context);
 	if (remove) e = e.elem_;
 	elem?.insertBefore(e, before(getFirst));
 
@@ -28,13 +39,13 @@ const nodeMounter = (elem, e, before, context) => {
 
 		if (!val) {
 			e.remove();
-			if (remove) callAll(remove);
+			if (remove) nodeRemove(remove);
 		} else {
 			const old = remove;
-			remove = mapNode(val, context);
+			remove = nodeRegister(val, context);
 			if (remove) val = val.elem_;
 			e.replaceWith(val);
-			if (old) callAll(old);
+			if (old) nodeRemove(old);
 		}
 
 		return e = val;
@@ -341,8 +352,23 @@ export const mount = (elem, item, before = noop, context) => {
 	}
 };
 
-const propertySetter = (name, val, e) => e[name] = val ?? null;
-const attributeSetter = (name, val, e) => {
+const registerSetter = (set) => {
+	set.dyn_ = function (e, val) {
+		const handler = () => {
+			const v = val.get();
+			assert(!isInstance(v, Observer),
+				"destam-dom does not support nested observers");
+			set(this.name_, v, e);
+		};
+
+		this.remove_ = val.register_(handler, isSymbol);
+		handler();
+	};
+	return set;
+};
+
+const propertySetter = registerSetter((name, val, e) => e[name] = val ?? null);
+const attributeSetter = registerSetter((name, val, e) => {
 	val = val ?? false;
 	assert(['boolean', 'string', 'number'].includes(typeof val),
 		`type ${typeof val} is used as the attribute: ${name}`);
@@ -352,21 +378,11 @@ const attributeSetter = (name, val, e) => {
 	} else {
 		e.setAttribute(name, val);
 	}
-};
+});
 
-const propertySignal = (val, handler) => {
-	const remove = val.register_(handler, isSymbol);
-	handler();
-	return remove;
-};
 const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
-		push(signals, {func_: propertySignal, val_: val, handler_: () => {
-			const v = val.get();
-			assert(!isInstance(v, Observer),
-				"destam-dom does not support nested observers");
-			return set(name, v, e);
-		}, pbef_: 0})
+		push(signals, {func_: set.dyn_, val_: e, handler_: val, pbef_: 0, name_: name, remove_: 0});
 	} else if (typeof val !== 'object' || Array.isArray(val)) {
 		set(name, val, e);
 	} else {
@@ -376,6 +392,11 @@ const populateSignals = (signals, val, e, name, set) => {
 			populateSignals(signals, val[o], e[name], o, set);
 		}
 	}
+};
+
+const signalMount = function (e, val, bef, context) {
+	const pbef = this.pbef_;
+	this.remove_ = mount(e, val, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
 };
 
 let currentErrorContext;
@@ -537,7 +558,7 @@ export const h = (e, props = {}, ...children) => {
 			if (type !== 'object' && type !== 'function') {
 				child = document.createTextNode(child);
 			} else {
-				push(signals, {func_: mount, val_: e, handler_: child, pbef_: bef});
+				push(signals, {func_: signalMount, val_: e, handler_: child, pbef_: bef});
 				bef = child = null;
 			}
 		}
