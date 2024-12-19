@@ -23,9 +23,7 @@ const transform = (source, options) => {
 	const fors = [];
 
 	const scope = collectVariables(ast, node => {
-		if (node.type === 'FunctionExpression') {
-			node.type = 'ArrowFunctionExpression';
-		} else if (node.type === 'VariableDeclaration') {
+		if (node.type === 'VariableDeclaration') {
 			decls.push(node);
 		} else if (node.type === 'BinaryExpression') {
 			if (node.operator === '===') {
