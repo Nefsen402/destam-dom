@@ -9,7 +9,7 @@ const nodeRegister = (elem, context) => {
 	if (arr) {
 		let bef;
 		for (let obj of arr) {
-			bef = obj.func_(obj.val_, obj.handler_, bef, context);
+			bef = obj.func_(bef, context);
 		}
 	}
 
@@ -353,16 +353,16 @@ export const mount = (elem, item, before = noop, context) => {
 };
 
 const registerSetter = (set) => {
-	set.dyn_ = function (e, val) {
-		const handler = () => {
-			const v = val.get();
-			assert(!isInstance(v, Observer),
-				"destam-dom does not support nested observers");
-			set(this.name_, v, e);
-		};
+	const handler = (self) => {
+		const v = self.handler_.get();
+		assert(!isInstance(v, Observer),
+			"destam-dom does not support nested observers");
+		set(self.name_, v, self.val_);
+	};
 
-		this.remove_ = val.register_(handler, isSymbol);
-		handler();
+	set.dyn_ = function () {
+		this.remove_ = this.handler_.register_(handler.bind(null, this), isSymbol);
+		handler(this);
 	};
 	return set;
 };
@@ -394,9 +394,9 @@ const populateSignals = (signals, val, e, name, set) => {
 	}
 };
 
-const signalMount = function (e, val, bef, context) {
+const signalMount = function (bef, context) {
 	const pbef = this.pbef_;
-	this.remove_ = mount(e, val, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
+	this.remove_ = mount(this.val_, this.handler_, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
 };
 
 let currentErrorContext;

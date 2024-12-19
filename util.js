@@ -12,10 +12,14 @@ export const createElement = (elem, ns) => {
 
 export const createTextNode = text => document.createTextNode(text);
 
+const update = (cb, obs) => {
+	cb(obs.get());
+};
+
 export const watch = (obs, cb) => {
 	if (isInstance(obs, Observer)) {
-		const l = shallowListener(obs, () => cb(obs.get()));
-		cb(obs.get());
+		const l = shallowListener(obs, update.bind(null, cb, obs));
+		update(cb, obs);
 		return l;
 	} else {
 		cb(obs);
