@@ -357,7 +357,7 @@ const registerSetter = (set) => {
 		const v = self.handler_.get();
 		assert(!isInstance(v, Observer),
 			"destam-dom does not support nested observers");
-		set(self.name_, v, self.val_);
+		set(v, self.name_, self.val_);
 	};
 
 	set.dyn_ = function () {
@@ -367,8 +367,8 @@ const registerSetter = (set) => {
 	return set;
 };
 
-const propertySetter = registerSetter((name, val, e) => e[name] = val ?? null);
-const attributeSetter = registerSetter((name, val, e) => {
+const propertySetter = registerSetter((val, name, e) => e[name] = val ?? null);
+const attributeSetter = registerSetter((val, name, e) => {
 	val = val ?? false;
 	assert(['boolean', 'string', 'number'].includes(typeof val),
 		`type ${typeof val} is used as the attribute: ${name}`);
@@ -384,7 +384,7 @@ const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
 		push(signals, {func_: set.dyn_, val_: e, handler_: val, pbef_: 0, name_: name, remove_: 0});
 	} else if (typeof val !== 'object' || Array.isArray(val)) {
-		set(name, val, e);
+		set(val, name, e);
 	} else {
 		assert(set !== attributeSetter, "Node attribute cannot be an object: " + name);
 
