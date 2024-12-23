@@ -403,7 +403,7 @@ const populateSignals = (signals, val, e, name, set) => {
 
 const signalMount = function (bef, context) {
 	const pbef = this.pbef_;
-	this.remove_ = mount(this.val_, this.handler_, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
+	return this.remove_ = mount(this.val_, this.handler_, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
 };
 
 let currentErrorContext;
@@ -565,7 +565,7 @@ export const h = (e, props = {}, ...children) => {
 			if (type !== 'object' && type !== 'function') {
 				child = document.createTextNode(child);
 			} else {
-				push(signals, {func_: signalMount, val_: e, handler_: child, pbef_: bef});
+				push(signals, {func_: signalMount, val_: e, handler_: child, pbef_: bef, name_: 0, remove_: 0});
 				bef = child = null;
 			}
 		}
