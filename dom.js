@@ -297,7 +297,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 export const mount = (elem, item, before = noop, context) => {
 	assert(elem.insertBefore && elem.replaceChild && elem.removeChild,
-		"The first argument to mount must be null or a ducked type node");
+		"The first argument to mount must be a ducked type node");
 
 	let lastFunc, mounted = null;
 	const update = () => {
