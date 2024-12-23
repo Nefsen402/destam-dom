@@ -34,17 +34,14 @@ const nodeMounter = (elem, e, before, context) => {
 	return val => {
 		if (!e || val === getFirst) return e;
 
-		assert(!elem || e.bulkRemoved || e.parentElement === elem,
-			"Refusing to modify node not part of the expected parent");
-
 		if (!val) {
-			e.remove();
+			elem?.removeChild(e);
 			if (remove) nodeRemove(remove);
 		} else {
 			const old = remove;
 			remove = nodeRegister(val, context);
 			if (remove) val = val.elem_;
-			e.replaceWith(val);
+			elem?.replaceChild(val, e);
 			if (old) nodeRemove(old);
 		}
 
@@ -59,14 +56,11 @@ const primitiveMounter = (elem, e, before) => {
 	return val => {
 		if (!e || val === getFirst) return e;
 
-		assert(e.bulkRemoved || e.parentElement === elem,
-			"Refusing to modify node not part of the expected parent");
-
 		if (val != null) {
 			e.textContent = val;
 			return 1;
 		} else {
-			e.remove();
+			elem.removeChild(e);
 			e = val;
 			return 0;
 		}
@@ -112,6 +106,21 @@ const cleanupArrayMounts = mounts => {
 	}
 };
 
+const arrayMounterElem = {
+	removeChild (child) {
+		if (!this.remove_) this.parent_.removeChild(child);
+	},
+	replaceChild (newNode, oldNode) {
+		this.parent_.replaceChild(newNode, oldNode);
+	},
+	insertBefore (newNode, before) {
+		this.parent_.insertBefore(newNode, before);
+	},
+	set textContent (content) {
+		this.parent_.textContent = content;
+	},
+};
+
 const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const root = () => before(getFirst);
 	root.next_ = root.prev_ = root;
@@ -119,17 +128,13 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const linkGetter = Symbol();
 	let link, arrayListener;
 
+	const mountElem = Object.create(arrayMounterElem);
+	mountElem.parent_ = elem;
+
 	const destroy = orphaned => {
 		if (!orphaned && elem.firstChild === root.next_(getFirst) && !root()) {
-			assert((() => {
-				for (const child of elem.childNodes) {
-					child.bulkRemoved = true;
-				}
-
-				return true;
-			})());
-
 			elem.textContent = '';
+			mountElem.remove_ = true;
 		}
 
 		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
@@ -148,7 +153,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 			if (!mounted) {
 				mounted = mounter(
-					elem,
+					mountElem,
 					item,
 					() => (next || mounted.next_)(getFirst),
 					context,
@@ -289,8 +294,8 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 };
 
 export const mount = (elem, item, before = noop, context) => {
-	assert(elem === null || isInstance(elem, Node),
-		"The first argument to mount must be null or an dom node");
+	assert(elem === null || (elem.insertBefore && elem.replaceChild && elem.removeChild),
+		"The first argument to mount must be null or a ducked type node");
 
 	let lastFunc, mounted = null;
 	const update = () => {
