@@ -131,6 +131,7 @@ for (const file of files) {
 		'array.reconciliation.test.js',
 		'replacement.test.js',
 		'static.test.js',
+		'duck_typing.test.js',
 	].includes(file)) {
 		describe("iife " + file, transform(file, {
 			assure_import: /^$/,
