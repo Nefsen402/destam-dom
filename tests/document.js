@@ -177,3 +177,9 @@ global.document = {
 		return node;
 	},
 };
+
+global.document.dummy = {
+	removeChild (child) {},
+	replaceChild (newNode, oldNode) {},
+	insertBefore (newNode, before) {},
+};

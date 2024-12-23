@@ -229,7 +229,7 @@ test("custom element pass properties", () => {
 	const props = {a: 1, b: 2, c: 3, [Symbol()]: {}};
 	let passed;
 
-	mount(null, h(props => {
+	mount(document.dummy, h(props => {
 		passed = props;
 		return null;
 	}, {...props}));
@@ -243,7 +243,7 @@ test("custom element pass properties and children", () => {
 	let passed;
 	const children = [{}, {}, {}];
 
-	mount(null, h(props => {
+	mount(document.dummy, h(props => {
 		passed = props;
 		return null;
 	}, {...props}, ...children));
@@ -261,7 +261,7 @@ test("Pass null children for auto closed component", () => {
 		return null;
 	};
 
-	mount(null, h(Comp));
+	mount(document.dummy, h(Comp));
 
 	assert.deepEqual(passed, []);
 });
@@ -342,7 +342,7 @@ test("cleanup after unmount", () => {
 	};
 
 	const comp = Observer.mutable(h(Component));
-	mount(null, comp)();
+	mount(document.dummy, comp)();
 
 	assert(cleaned);
 });
@@ -360,7 +360,7 @@ test('context', () => {
 		return arr;
 	};
 
-	mount(null, h('div', {}, h(Comp)), undefined, context)
+	mount(document.dummy, h('div', {}, h(Comp)), undefined, context)
 
 	assert.deepEqual(out, [context, context])
 });

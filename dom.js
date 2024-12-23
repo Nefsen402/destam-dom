@@ -29,19 +29,19 @@ const nodeMounter = (elem, e, before, context) => {
 
 	let remove = nodeRegister(e, context);
 	if (remove) e = e.elem_;
-	elem?.insertBefore(e, before(getFirst));
+	elem.insertBefore(e, before(getFirst));
 
 	return val => {
 		if (!e || val === getFirst) return e;
 
 		if (!val) {
-			elem?.removeChild(e);
+			elem.removeChild(e);
 			if (remove) nodeRemove(remove);
 		} else {
 			const old = remove;
 			remove = nodeRegister(val, context);
 			if (remove) val = val.elem_;
-			elem?.replaceChild(val, e);
+			elem.replaceChild(val, e);
 			if (old) nodeRemove(old);
 		}
 
@@ -50,7 +50,6 @@ const nodeMounter = (elem, e, before, context) => {
 };
 
 const primitiveMounter = (elem, e, before) => {
-	assert(elem, "Trying to mount a primitive to a null mount.");
 	elem.insertBefore(e = document.createTextNode(e), before(getFirst));
 
 	return val => {
@@ -294,7 +293,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 };
 
 export const mount = (elem, item, before = noop, context) => {
-	assert(elem === null || (elem.insertBefore && elem.replaceChild && elem.removeChild),
+	assert(elem.insertBefore && elem.replaceChild && elem.removeChild,
 		"The first argument to mount must be null or a ducked type node");
 
 	let lastFunc, mounted = null;

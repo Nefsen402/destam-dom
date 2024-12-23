@@ -11,12 +11,32 @@ destam-dom is designed to be as simple as possible and only provides two functio
 mount(document.body, "Hello, world!");
 ```
 
-`mount()` also supports mounting to null. This can be useful if you want destam-dom to manage the DOM nodes, but otherwise you want to mount it yourself.
+Note that `mount()` supports a node that follows the duck type of a regular js node implementing:
+ - `insertElement()`
+ - `replaceChild()`
+ - `removeChild()`
+ - `set textContent` (for clearing an element)
 
 ```js
 const div = document.createElement('div');
 
-mount(null, html`
+const elem = {
+	insertElement: elem => {
+		console.log(elem, "has been added";
+	},
+	replaceChild: (newNode, oldNode) => {
+		console.log(oldNode, 'has been replaced with', newNode);
+	},
+	removeChild: (node) => {
+		console.log(node, "has been removed");
+	},
+	set textContent (content) {
+		assert(content === '');
+		console.log("element has been cleared");
+	},
+};
+
+mount(elem, html`
 	<${div}>Hello, world!</>
 `);
 

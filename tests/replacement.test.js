@@ -442,7 +442,7 @@ test("replacement reuse node", () => {
 	const elem = document.createElement("body");
 	let Elem = document.createElement('div');
 
-	mount(null, h(Elem, {},
+	mount(document.dummy, h(Elem, {},
 		Observer.immutable("Hello world"),
 	));
 

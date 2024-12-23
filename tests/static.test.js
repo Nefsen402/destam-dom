@@ -384,7 +384,7 @@ test("mount custom element", () => {
 test("mount to null", () => {
 	const div = document.createElement("div");
 
-	mount(null, h(div, {prop: 'prop'}));
+	mount(document.dummy, h(div, {prop: 'prop'}));
 
 	assert.deepEqual(div.tree(), {
 		name: 'div',
@@ -395,7 +395,7 @@ test("mount to null", () => {
 test("mount to null and remove", () => {
 	const div = document.createElement("div");
 
-	const remove = mount(null, h(div, {prop: 'prop'}));
+	const remove = mount(document.dummy, h(div, {prop: 'prop'}));
 	remove();
 
 	assert.deepEqual(div.tree(), {
@@ -407,7 +407,7 @@ test("mount to null and remove", () => {
 test("mount node as child", () => {
 	const div = document.createElement("div");
 
-	const remove = mount(null, h(div, {}, document.createTextNode(0)));
+	const remove = mount(document.dummy, h(div, {}, document.createTextNode(0)));
 	remove();
 });
 
@@ -423,7 +423,7 @@ test("static reuse node", () => {
 	const elem = document.createElement("body");
 	let Elem = document.createElement('div');
 
-	mount(null, h(Elem, {},
+	mount(document.dummy, h(Elem, {},
 		"Hello world"
 	));
 
