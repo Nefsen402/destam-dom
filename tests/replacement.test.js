@@ -598,3 +598,40 @@ test("static reuse", () => {
 		}],
 	});
 });
+
+test("mount out of order", () => {
+	const stuff = Array(4).fill(null).map(() => Observer.mutable(null));
+
+	const elem = document.createElement("body");
+	mount(elem, stuff);
+
+	stuff[3].set('4');
+	stuff[0].set('1');
+	stuff[2].set('3');
+	stuff[1].set('2');
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['1', '2', '3', '4'],
+	});
+});
+
+test("mount out of order in div children", () => {
+	const stuff = Array(4).fill(null).map(() => Observer.mutable(null));
+
+	const elem = document.createElement("body");
+	mount(elem, h('div', {}, ...stuff));
+
+	stuff[3].set('4');
+	stuff[0].set('1');
+	stuff[2].set('3');
+	stuff[1].set('2');
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ['1', '2', '3', '4'],
+		}],
+	});
+});
