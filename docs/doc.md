@@ -15,6 +15,9 @@ Note that `mount()` supports a node that follows the duck type of a regular js n
  - `insertElement()`
  - `replaceChild()`
  - `removeChild()`
+
+To get better performance with array clears, you must also implement:
+ - `get firstChild` (to check if a fast clear is possible)
  - `set textContent` (for clearing an element)
 
 ```js
@@ -29,10 +32,6 @@ const elem = {
 	},
 	removeChild: (node) => {
 		console.log(node, "has been removed");
-	},
-	set textContent (content) {
-		assert(content === '');
-		console.log("element has been cleared");
 	},
 };
 
