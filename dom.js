@@ -118,6 +118,9 @@ const arrayMounterElem = {
 	set textContent (content) {
 		this.parent_.textContent = content;
 	},
+	get firstChild () {
+		return this.parent_.firstChild;
+	},
 };
 
 const arrayMounter = (elem, val, before, context, mounter = mount) => {
