@@ -78,19 +78,3 @@ test("move element on null mount", () => {
 
 	assert(throwed);
 });
-
-test("array clear then partial clear", () => {
-	const body = document.createElement('body');
-
-	const arr = OArray([1, 2, 3]);
-	mount(body, arr);
-
-	arr.splice(0, arr.length);
-	arr.push('1', '2', '3');
-	arr.pop();
-
-	assert.deepEqual(body.tree(), {
-		name: 'body',
-		children: ['1', '2'],
-	});
-});

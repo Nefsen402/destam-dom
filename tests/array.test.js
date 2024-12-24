@@ -608,3 +608,35 @@ test("custom component insert order in oarray", () => {
 		children: ["1", "2", "3", "4"]
 	});
 });
+
+test("array clear then partial clear", () => {
+	const body = document.createElement('body');
+
+	const arr = OArray([1, 2, 3]);
+	mount(body, arr);
+
+	arr.splice(0, arr.length);
+	arr.push('1', '2', '3');
+	arr.pop();
+
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: ['1', '2'],
+	});
+});
+
+test("observer array clear then partial clear", () => {
+	const body = document.createElement('body');
+
+	const arr = Observer.mutable([1, 2, 3]);
+	mount(body, arr);
+
+	arr.set([]);
+	arr.set([1, 2, 3]);
+	arr.set([1, 2]);
+
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: ['1', '2'],
+	});
+});

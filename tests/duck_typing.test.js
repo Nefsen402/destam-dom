@@ -83,3 +83,14 @@ test("duck type array nested clear", () => {
 	assert.deepEqual(elem.elems.map(e => e.tree()), []);
 	assert(elem.fastClear === true)
 });
+
+test("duck type observer array clear", () => {
+	const elem = createCustomNode();
+
+	const obs = Observer.mutable([1, 2, 3]);
+	mount(elem, obs);
+	obs.set([]);
+
+	assert.deepEqual(elem.elems.map(e => e.tree()), []);
+	assert(elem.fastClear === true)
+});
