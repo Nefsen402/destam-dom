@@ -136,7 +136,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const destroy = orphaned => {
 		if (!orphaned && elem.firstChild === root.next_(getFirst) && !root()) {
 			elem.textContent = '';
-			mountElem.remove_ = true;
+			mountElem.remove_ = 1;
 		}
 
 		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
@@ -204,6 +204,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 			}
 
 			try {
+				mountElem.remove_ = 0;
 				for (const item of val) {
 					mounted = addMount(orphaned, item, mounted.next_);
 					if (link) {
