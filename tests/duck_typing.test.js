@@ -19,6 +19,7 @@ const createCustomNode = () => {
 		replaceChild: (newNode, oldNode) => {
 			const i = elems.indexOf(oldNode);
 			elems.splice(i, 1, newNode);
+			obj.replaced = true;
 		},
 		removeChild: (node) => {
 			const i = elems.indexOf(node);
@@ -93,4 +94,17 @@ test("duck type observer array clear", () => {
 
 	assert.deepEqual(elem.elems.map(e => e.tree()), []);
 	assert(elem.fastClear === true)
+});
+
+test("duck type replacement", () => {
+	const elem = createCustomNode();
+	const node1 = document.createElement('div');
+	const node2 = document.createElement('div');
+
+	const obs = Observer.mutable(node1);
+	mount(elem, obs);
+	obs.set(node2);
+
+	assert.deepEqual(elem.elems, [node2]);
+	assert(elem.replaced === true);
 });
