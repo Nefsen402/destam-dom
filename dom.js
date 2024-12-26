@@ -218,8 +218,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 		};
 
 		arrayListener = observer?.register_(commit => {
-			assert(elem, "Cannot modify a null mount");
-
 			// fast path when removing everything
 			if (len(val) === 0) {
 				destroy();
