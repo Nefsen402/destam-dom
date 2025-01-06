@@ -26,6 +26,20 @@ test("custom element", () => {
 	});
 });
 
+test("custom element remove", () => {
+	const elem = document.createElement("body");
+
+	const stuff = mount(elem, h(() => {
+		return "hello world";
+	}));
+
+	stuff();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("custom element cleanup", () => {
 	const elem = document.createElement("body");
 
