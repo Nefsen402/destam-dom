@@ -69,8 +69,8 @@ const primitiveMounter = (elem, e, before) => {
 let deferred;
 const callDeferred = () => {
 	let def;
-	while (def = deferred.deferred_) {
-		deferred.deferred_ = def.deferred_;
+	while (def = deferred.next_) {
+		deferred.next_ = def.next_;
 		def();
 	}
 
@@ -514,8 +514,8 @@ export const h = (e, props = {}, ...children) => {
 				assert((currentErrorContext = errorContext.prev) || true);
 			};
 
-			defer.deferred_ = deferred.deferred_;
-			deferred.deferred_ = defer;
+			defer.next_ = deferred.next_;
+			deferred.next_ = defer;
 
 			return func;
 		};
