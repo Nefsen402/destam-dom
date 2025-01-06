@@ -437,15 +437,6 @@ export const h = (e, props = {}, ...children) => {
 		const each = props.each;
 		const mounter = (elem, item, before, context) => {
 			let cleanup = {}, m = noop;
-			const func = arg => {
-				if (!m) return 0;
-				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
-
-				m();
-				callLinked(cleanup);
-				cleanup.done_ = 1;
-				return m = 0;
-			};
 
 			const defer = () => {
 				if (!m) return;
@@ -517,7 +508,15 @@ export const h = (e, props = {}, ...children) => {
 			defer.next_ = deferred.next_;
 			deferred.next_ = defer;
 
-			return func;
+			return arg => {
+				if (!m) return 0;
+				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
+
+				m();
+				callLinked(cleanup);
+				cleanup.done_ = 1;
+				return m = 0;
+			};
 		};
 
 		if (!each) {
