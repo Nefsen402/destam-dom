@@ -66,27 +66,15 @@ const primitiveMounter = (elem, e, before) => {
 	};
 };
 
-let notifyMount;
-const callAllSafe = list => {
-	if (!list) return;
-
-	if (list === notifyMount) {
-		while (list.deferred_) {
-			const def = list.deferred_;
-			list.deferred_ = def.deferred_;
-			def();
-		}
-
-		notifyMount = 0;
+let deferred;
+const callDeferred = () => {
+	let def;
+	while (def = deferred.deferred_) {
+		deferred.deferred_ = def.deferred_;
+		def();
 	}
 
-	for (const c of list) {
-		try {
-			c();
-		} catch (e) {
-			console.error(e);
-		}
-	}
+	deferred = 0;
 };
 
 const insertMap = (map, item) => {
@@ -199,8 +187,8 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				"Maybe you passed in a raw object?");
 
 			let not;
-			if (!notifyMount) {
-				not = notifyMount = [];
+			if (!deferred) {
+				not = deferred = {};
 			}
 
 			try {
@@ -213,7 +201,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					}
 				}
 			} finally {
-				callAllSafe(not);
+				if (not) callDeferred();
 			}
 		};
 
@@ -232,8 +220,8 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				const inserts = [];
 
 				let not;
-				if (!notifyMount) {
-					not = notifyMount = [];
+				if (!deferred) {
+					not = deferred = {};
 				}
 
 				for (const delta of commit) {
@@ -265,7 +253,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					}
 				} finally {
 					cleanupArrayMounts(orphaned);
-					callAllSafe(not);
+					if (not) callDeferred();
 				}
 			}
 
@@ -324,8 +312,8 @@ export const mount = (elem, item, before = noop, context) => {
 			}
 
 			let not;
-			if (!notifyMount) {
-				not = notifyMount = [];
+			if (!deferred) {
+				not = deferred = {};
 			}
 
 			try {
@@ -335,7 +323,7 @@ export const mount = (elem, item, before = noop, context) => {
 						"Mount function must return a higher order destroy callback");
 				}
 			} finally {
-				callAllSafe(not);
+				if (not) callDeferred();
 			}
 		}
 	};
@@ -405,6 +393,16 @@ const signalMount = function (bef, context) {
 	return this.remove_ = mount(this.val_, this.handler_, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
 };
 
+const callAllSafe = list => {
+	for (const c of list) {
+		try {
+			c();
+		} catch (e) {
+			console.error(e);
+		}
+	}
+};
+
 let currentErrorContext;
 export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
@@ -436,7 +434,7 @@ export const h = (e, props = {}, ...children) => {
 				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
 
 				m();
-				callAllSafe(cleanup);
+				if (cleanup) callAllSafe(cleanup);
 				return m = cleanup = 0;
 			};
 
@@ -449,6 +447,7 @@ export const h = (e, props = {}, ...children) => {
 				try {
 					if (each) props.each = item;
 
+					const deferred = [];
 					const dom = e(props, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The cleanup function must be passed a function");
@@ -461,10 +460,12 @@ export const h = (e, props = {}, ...children) => {
 					}, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The mount function must be passed a function");
-						notifyMount.push(...cb);
+						deferred.push(...cb);
 					});
 
 					if (m) m = mount(elem, dom, before, context);
+
+					callAllSafe(deferred);
 				} catch (err) {
 					assert(true, (() => {
 						let str;
@@ -513,8 +514,8 @@ export const h = (e, props = {}, ...children) => {
 				assert((currentErrorContext = errorContext.prev) || true);
 			};
 
-			defer.deferred_ = notifyMount.deferred_;
-			notifyMount.deferred_ = defer;
+			defer.deferred_ = deferred.deferred_;
+			deferred.deferred_ = defer;
 
 			return func;
 		};
