@@ -123,7 +123,7 @@ test("mount node explicit children", () => {
 test("mount node explicit nested children", () => {
 	const elem = document.createElement("body");
 
-	mount(elem, h('div', {children: [[1, 2, ...[3, 4]]]}));
+	mount(elem, h('div', {children: [[1, 2, [3, 4]]]}));
 
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
@@ -137,7 +137,7 @@ test("mount node explicit nested children", () => {
 test("mount node explicit nested children 2", () => {
 	const elem = document.createElement("body");
 
-	mount(elem, h('div', {children: [[1, 2], ...[3, 4]]}));
+	mount(elem, h('div', {children: [[1, 2], [3, 4]]}));
 
 	assert.deepEqual(elem.tree(), {
 		name: 'body',
