@@ -73,8 +73,8 @@ const callAllSafe = list => {
 	if (list === notifyMount) {
 		while (list.deferred_) {
 			const def = list.deferred_;
-			def();
 			list.deferred_ = def.deferred_;
+			def();
 		}
 
 		notifyMount = 0;
