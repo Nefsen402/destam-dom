@@ -364,3 +364,106 @@ test('context', () => {
 
 	assert.deepEqual(out, [context, context])
 });
+
+test('deferred mount mounted event', () => {
+	const body = document.createElement('body');
+
+	const Main = ({children}) => {
+		return (elem, item, before, context) => {
+			return mount(elem, children, before, context);
+		};
+	};
+
+	let foundRoot = false;
+
+	const Deferred = ({}, cleanup, mounted) => {
+		const elem = document.createElement('div');
+
+		mounted(() => {
+			foundRoot = elem.parentElement === body;
+		});
+
+		return elem;
+	};
+
+	mount(body, h(Main, {},
+		h(Deferred)
+	));
+
+	assert(foundRoot);
+});
+
+test("custom component insert order mounted event", () => {
+	const elem = document.createElement("body");
+
+	let mountedCounter = 0;
+	const Comp = ({text}, cleanup, mounted) => {
+		const comp = document.createElement('div');
+
+		mounted(() => {
+			if (comp.parentElement === elem) mountedCounter++;
+		});
+
+		return h(comp, {}, text);
+	};
+
+	mount(elem, [
+		h(Comp, {text: 1}),
+		h(Comp, {text: 2}),
+		h(Comp, {text: 3}),
+		h(Comp, {text: 4}),
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: ["1"]},
+			{name: 'div', children: ["2"]},
+			{name: 'div', children: ["3"]},
+			{name: 'div', children: ["4"]},
+		]
+	});
+
+	assert.equal(mountedCounter, 4);
+});
+
+test("custom component insert order nested mounted event", () => {
+	const elem = document.createElement("body");
+
+	let mountedCounter = 0;
+	const Comp2 = ({text}, cleanup, mounted) => {
+		const comp = document.createElement('div');
+
+		mounted(() => {
+			if (comp.parentElement.parentElement === elem) mountedCounter++;
+		});
+
+		return h(comp, {}, text);
+	};
+
+	const Comp = (props) => {
+		return h(Comp2, props);
+	};
+
+	mount(elem, h('div', {},
+		h(Comp, {text: 1}),
+		h(Comp, {text: 2}),
+		h(Comp, {text: 3}),
+		h(Comp, {text: 4}),
+	));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [
+				{name: 'div', children: ["1"]},
+				{name: 'div', children: ["2"]},
+				{name: 'div', children: ["3"]},
+				{name: 'div', children: ["4"]},
+			]
+		}]
+	});
+
+	assert.equal(mountedCounter, 4);
+});
