@@ -297,6 +297,31 @@ test("Remove custom component while mounting", () => {
 	});
 });
 
+test("Remove custom component while mounting and test mounted callback", () => {
+	let mountedNotCalled = true;
+	const Component = ({}, cleanup, mounted) => {
+		comp.set(null);
+
+		mounted(() => {
+			// mounted should never be invoked
+			mountedNotCalled = false;
+		});
+
+		return "hello world";
+	};
+
+	const comp = Observer.mutable(h(Component));
+
+	const elem = document.createElement("body");
+	mount(elem, comp);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+
+	assert(mountedNotCalled);
+});
+
 test("Remove custom component while mounting recursive", () => {
 	const Component2 = () => {
 		comp2.set(null);
