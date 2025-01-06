@@ -67,14 +67,18 @@ const primitiveMounter = (elem, e, before) => {
 };
 
 let deferred;
-const callDeferred = () => {
-	let def;
-	while (def = deferred.next_) {
-		deferred.next_ = def.next_;
-		def();
+const callLinked = list => {
+	let callable;
+	while (callable = list.next_) {
+		list.next_ = callable.next_;
+		try {
+			callable();
+		} catch (e) {
+			console.error(e);
+		}
 	}
 
-	deferred = 0;
+	if (list === deferred) deferred = 0;
 };
 
 const insertMap = (map, item) => {
@@ -201,7 +205,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					}
 				}
 			} finally {
-				if (not) callDeferred();
+				if (not) callLinked(not);
 			}
 		};
 
@@ -253,7 +257,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					}
 				} finally {
 					cleanupArrayMounts(orphaned);
-					if (not) callDeferred();
+					if (not) callLinked(not);
 				}
 			}
 
@@ -323,7 +327,7 @@ export const mount = (elem, item, before = noop, context) => {
 						"Mount function must return a higher order destroy callback");
 				}
 			} finally {
-				if (not) callDeferred();
+				if (not) callLinked(not);
 			}
 		}
 	};
@@ -393,12 +397,16 @@ const signalMount = function (bef, context) {
 	return this.remove_ = mount(this.val_, this.handler_, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
 };
 
-const callAllSafe = list => {
-	for (const c of list) {
-		try {
+const populate = (arr, ...cb) => {
+	assert(!cb.find(cb => typeof cb !== 'function'),
+		"When calling either cleanup/mounted all passed parameters must be functions");
+
+	for (const c of cb) {
+		if (arr.done_) {
 			c();
-		} catch (e) {
-			console.error(e);
+		} else {
+			c.next_ = arr.next_;
+			arr.next_ = c;
 		}
 	}
 };
@@ -428,14 +436,15 @@ export const h = (e, props = {}, ...children) => {
 
 		const each = props.each;
 		const mounter = (elem, item, before, context) => {
-			let cleanup = null, m = noop;
+			let cleanup = {}, m = noop;
 			const func = arg => {
 				if (!m) return 0;
 				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
 
 				m();
-				if (cleanup) callAllSafe(cleanup);
-				return m = cleanup = 0;
+				callLinked(cleanup);
+				cleanup.done_ = 1;
+				return m = 0;
 			};
 
 			const defer = () => {
@@ -447,25 +456,16 @@ export const h = (e, props = {}, ...children) => {
 				try {
 					if (each) props.each = item;
 
-					const deferred = [];
-					const dom = e(props, (...cb) => {
-						assert(!cb.find(cb => typeof cb !== 'function'),
-							"The cleanup function must be passed a function");
+					const mounted = {};
 
-						if (!m) {
-							callAllSafe(cb);
-						} else {
-							cleanup = cleanup?.concat(cb) || cb;
-						}
-					}, (...cb) => {
-						assert(!cb.find(cb => typeof cb !== 'function'),
-							"The mount function must be passed a function");
-						deferred.push(...cb);
-					});
-
-					if (m) m = mount(elem, dom, before, context);
-
-					callAllSafe(deferred);
+					const dom = e(
+						props,
+						populate.bind(null, cleanup),
+						populate.bind(null, mounted));
+					if (m) {
+						m = mount(elem, dom, before, context);
+						callLinked(mounted);
+					}
 				} catch (err) {
 					assert(true, (() => {
 						let str;
