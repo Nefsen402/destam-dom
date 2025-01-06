@@ -446,9 +446,6 @@ export const h = (e, props = {}, ...children) => {
 				assert(m === noop);
 				assert(currentErrorContext = errorContext);
 
-				const save = notifyMount;
-				notifyMount = 0;
-
 				try {
 					if (each) props.each = item;
 
@@ -464,7 +461,7 @@ export const h = (e, props = {}, ...children) => {
 					}, (...cb) => {
 						assert(!cb.find(cb => typeof cb !== 'function'),
 							"The mount function must be passed a function");
-						save.push(...cb);
+						notifyMount.push(...cb);
 					});
 
 					if (m) m = mount(elem, dom, before, context);
@@ -513,7 +510,6 @@ export const h = (e, props = {}, ...children) => {
 					console.error(err);
 				}
 
-				notifyMount = save;
 				assert((currentErrorContext = errorContext.prev) || true);
 			};
 
