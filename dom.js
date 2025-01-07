@@ -92,7 +92,7 @@ const cleanupArrayMounts = mounts => {
 		for (const mount of arr) {
 			mount.prev_.next_ = mount.next_;
 			mount.next_.prev_ = mount.prev_;
-			mount();
+			mount.func_();
 		}
 	}
 };
@@ -116,7 +116,7 @@ const arrayMounterElem = {
 };
 
 const arrayMounter = (elem, val, before, context, mounter = mount) => {
-	const root = () => before(getFirst);
+	const root = { func_: before };
 	root.next_ = root.prev_ = root;
 
 	const linkGetter = Symbol();
@@ -126,13 +126,13 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	mountElem.parent_ = elem;
 
 	const destroy = orphaned => {
-		if (!orphaned && elem.firstChild === root.next_(getFirst) && !root()) {
+		if (!orphaned && elem.firstChild === root.next_.func_(getFirst) && !root.func_()) {
 			elem.textContent = '';
 			mountElem.remove_ = 1;
 		}
 
 		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
-			(orphaned ? insertMap : cur)(orphaned, cur);
+			(orphaned ? insertMap : cur.func_)(orphaned, cur);
 		}
 
 		if (!orphaned) root.next_ = root.prev_ = root;
@@ -146,20 +146,23 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 			if (mounted === next) return mounted;
 
 			if (!mounted) {
-				mounted = mounter(
+				mounted = {
+					item_: item,
+					next_: next,
+				};
+
+				mounted.func_ = mounter(
 					mountElem,
 					item,
-					() => (next || mounted.next_)(getFirst),
+					() => mounted.next_.func_(getFirst),
 					context,
 				);
-
-				mounted.item_ = item;
 			} else {
 				assert(elem, "Cannot move mount on an empty mount");
 
 				let mountAt, term, cur;
-				if ((mountAt = next(getFirst)) !== (term = mounted.next_(getFirst)) &&
-						mountAt !== (cur = mounted(getFirst))) {
+				if ((mountAt = next.func_(getFirst)) !== (term = mounted.next_.func_(getFirst)) &&
+						mountAt !== (cur = mounted.func_(getFirst))) {
 					const a = document.activeElement;
 
 					while (cur != term) {
@@ -178,7 +181,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 			mounted.prev_ = next.prev_;
 			mounted.next_ = next;
 			mounted.prev_.next_ = next.prev_ = mounted;
-			next = 0;
 			return mounted;
 		};
 
@@ -269,7 +271,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	mountList(val);
 
 	return val => {
-		if (val === getFirst) return root.next_(getFirst);
+		if (val === getFirst) return root.next_.func_(getFirst);
 
 		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
 			delete link[linkGetter];
