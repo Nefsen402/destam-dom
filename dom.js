@@ -441,7 +441,16 @@ export const h = (e, props = {}, ...children) => {
 
 		const each = props.each;
 		const mounter = (elem, item, before, context) => {
-			let cleanup = {}, m = noop;
+			let m = noop;
+			const remove = arg => {
+				if (!m) return 0;
+				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
+
+				m();
+				callLinked(remove);
+				remove.done_ = 1;
+				return m = 0;
+			};
 
 			deferred.next_ = {
 				next_: deferred.next_,
@@ -458,7 +467,7 @@ export const h = (e, props = {}, ...children) => {
 
 						const dom = e(
 							props,
-							populate.bind(cleanup),
+							populate.bind(remove),
 							populate.bind(mounted));
 						if (m) {
 							m = mount(elem, dom, before, context);
@@ -513,15 +522,7 @@ export const h = (e, props = {}, ...children) => {
 				},
 			};
 
-			return arg => {
-				if (!m) return 0;
-				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
-
-				m();
-				callLinked(cleanup);
-				cleanup.done_ = 1;
-				return m = 0;
-			};
+			return remove;
 		};
 
 		if (!each) {
