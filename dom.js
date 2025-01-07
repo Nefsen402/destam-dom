@@ -144,11 +144,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 		const addMount = (old, item, next, pending) => {
 			let mounted = old?.get(item);
-			if (mounted) {
-				old.set(item, mounted.nextMap_);
-				mounted.nextMap_ = 0;
-				if (mounted === next) return mounted;
-			}
 
 			if (!mounted) {
 				mounted = {
@@ -163,6 +158,10 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					context,
 				);
 			} else {
+				old.set(item, mounted.nextMap_);
+				mounted.nextMap_ = 0;
+				if (mounted === next) return mounted;
+
 				assert(elem, "Cannot move mount on an empty mount");
 
 				let mountAt, term, cur;
