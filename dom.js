@@ -397,16 +397,16 @@ const signalMount = function (bef, context) {
 	return this.remove_ = mount(this.val_, this.handler_, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
 };
 
-const populate = (arr, ...cb) => {
+const populate = function (...cb) {
 	assert(!cb.find(cb => typeof cb !== 'function'),
 		"When calling either cleanup/mounted all passed parameters must be functions");
 
 	for (const c of cb) {
-		if (arr.done_) {
+		if (this.done_) {
 			c();
 		} else {
-			c.next_ = arr.next_;
-			arr.next_ = c;
+			c.next_ = this.next_;
+			this.next_ = c;
 		}
 	}
 };
@@ -451,8 +451,8 @@ export const h = (e, props = {}, ...children) => {
 
 					const dom = e(
 						props,
-						populate.bind(null, cleanup),
-						populate.bind(null, mounted));
+						populate.bind(cleanup),
+						populate.bind(mounted));
 					if (m) {
 						m = mount(elem, dom, before, context);
 						callLinked(mounted);
