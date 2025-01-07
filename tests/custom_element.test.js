@@ -506,3 +506,43 @@ test("custom component insert order nested mounted event", () => {
 
 	assert.equal(mountedCounter, 4);
 });
+
+test("custom component reuse mounted", () => {
+	let count = 0;
+	let func = () => count++;
+
+	const Comp = ({}, cleanup, mounted) => {
+		mounted(func, func);
+		return null;
+	};
+
+	mount(document.createElement("body"), [
+		h(Comp),
+		h(Comp),
+		h(Comp),
+		h(Comp),
+	]);
+
+	assert.equal(count, 4 * 2);
+});
+
+test("custom component reuse cleanup", () => {
+	let count = 0;
+	let func = () => count++;
+
+	const Comp = ({}, cleanup, mounted) => {
+		cleanup(func, func);
+		return null;
+	};
+
+	let r = mount(document.createElement("body"), [
+		h(Comp),
+		h(Comp),
+		h(Comp),
+		h(Comp),
+	]);
+
+	r();
+
+	assert.equal(count, 4 * 2);
+});
