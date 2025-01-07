@@ -82,17 +82,18 @@ const callLinked = list => {
 };
 
 const insertMap = (map, item) => {
-	let a = map.get(item.item_);
-	if (!a) map.set(item.item_, a = []);
-	push(a, item);
+	item.nextMap_ = map.get(item.item_);
+	map.set(item.item_, item);
 };
 
 const cleanupArrayMounts = mounts => {
-	if (mounts) for (const arr of mounts.values()) {
-		for (const mount of arr) {
+	if (mounts) for (let mount of mounts.values()) {
+		while (mount) {
 			mount.prev_.next_ = mount.next_;
 			mount.next_.prev_ = mount.prev_;
 			mount.func_();
+
+			mount = mount.nextMap_;
 		}
 	}
 };
@@ -142,8 +143,12 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 		const observer = val[observerGetter];
 
 		const addMount = (old, item, next, pending) => {
-			let mounted = old?.get(item)?.pop();
-			if (mounted === next) return mounted;
+			let mounted = old?.get(item);
+			if (mounted) {
+				old.set(item, mounted.nextMap_);
+				mounted.nextMap_ = 0;
+				if (mounted === next) return mounted;
+			}
 
 			if (!mounted) {
 				mounted = {
