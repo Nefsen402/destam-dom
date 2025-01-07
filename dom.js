@@ -72,7 +72,7 @@ const callLinked = list => {
 	while (callable = list.next_) {
 		list.next_ = callable.next_;
 		try {
-			callable();
+			callable.func_();
 		} catch (e) {
 			console.error(e);
 		}
@@ -405,8 +405,7 @@ const populate = function (...cb) {
 		if (this.done_) {
 			c();
 		} else {
-			c.next_ = this.next_;
-			this.next_ = c;
+			this.next_ = {func_: c, next_: this.next_};
 		}
 	}
 };
@@ -438,75 +437,75 @@ export const h = (e, props = {}, ...children) => {
 		const mounter = (elem, item, before, context) => {
 			let cleanup = {}, m = noop;
 
-			const defer = () => {
-				if (!m) return;
+			deferred.next_ = {
+				next_: deferred.next_,
+				func_: () => {
+					if (!m) return;
 
-				assert(m === noop);
-				assert(currentErrorContext = errorContext);
+					assert(m === noop);
+					assert(currentErrorContext = errorContext);
 
-				try {
-					if (each) props.each = item;
+					try {
+						if (each) props.each = item;
 
-					const mounted = {};
+						const mounted = {};
 
-					const dom = e(
-						props,
-						populate.bind(cleanup),
-						populate.bind(mounted));
-					if (m) {
-						m = mount(elem, dom, before, context);
-						callLinked(mounted);
-					}
-				} catch (err) {
-					assert(true, (() => {
-						let str;
-
-						if (e.name) {
-							str = "An error occurred in the " + e.name + " component";
-						} else {
-							str = "An error occurred in an annonymous component";
+						const dom = e(
+							props,
+							populate.bind(cleanup),
+							populate.bind(mounted));
+						if (m) {
+							m = mount(elem, dom, before, context);
+							callLinked(mounted);
 						}
+					} catch (err) {
+						assert(true, (() => {
+							let str;
 
-						let cur = errorContext;
-						while (cur) {
-							str += '\n\t' + (cur.func.name || '<annonymous>');
-
-							const s = cur.err.stack.split('\n').slice(1).filter(e => e);
-							for (let i = 0; i < s.length; i++) {
-								let l = s[i].trim();
-								if (l.startsWith('at ')) l = l.substring(3);
-
-								if (i === s.length - 1) {
-									str += ': ' + l;
-									break;
-								} else if (l.startsWith('(')) {
-									const path = l.substring(1, l.indexOf(')'));
-									const name = path.substring(path.lastIndexOf('/') + 1);
-
-									if (name[0].toLowerCase() !== name[0]) {
-										str += ': ' + path;
-										break;
-									}
-								} else if (l[0].toLowerCase() !== l[0]) {
-									str += ': ' + l;
-									break;
-								}
+							if (e.name) {
+								str = "An error occurred in the " + e.name + " component";
+							} else {
+								str = "An error occurred in an annonymous component";
 							}
 
-							cur = cur.prev;
-						}
+							let cur = errorContext;
+							while (cur) {
+								str += '\n\t' + (cur.func.name || '<annonymous>');
 
-						err = new Error(str, {cause: err});
-					})());
+								const s = cur.err.stack.split('\n').slice(1).filter(e => e);
+								for (let i = 0; i < s.length; i++) {
+									let l = s[i].trim();
+									if (l.startsWith('at ')) l = l.substring(3);
 
-					console.error(err);
-				}
+									if (i === s.length - 1) {
+										str += ': ' + l;
+										break;
+									} else if (l.startsWith('(')) {
+										const path = l.substring(1, l.indexOf(')'));
+										const name = path.substring(path.lastIndexOf('/') + 1);
 
-				assert((currentErrorContext = errorContext.prev) || true);
+										if (name[0].toLowerCase() !== name[0]) {
+											str += ': ' + path;
+											break;
+										}
+									} else if (l[0].toLowerCase() !== l[0]) {
+										str += ': ' + l;
+										break;
+									}
+								}
+
+								cur = cur.prev;
+							}
+
+							err = new Error(str, {cause: err});
+						})());
+
+						console.error(err);
+					}
+
+					assert((currentErrorContext = errorContext.prev) || true);
+				},
 			};
-
-			defer.next_ = deferred.next_;
-			deferred.next_ = defer;
 
 			return arg => {
 				if (!m) return 0;
