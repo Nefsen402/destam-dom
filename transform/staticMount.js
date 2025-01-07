@@ -386,7 +386,7 @@ const computeNode = (rep, cleanup, node) => {
 		return t.arrowFunctionExpression([elem, val, before, context], t.blockStatement([
 			...cleanup.map((cleanup, i) => declare(idents[i], cleanup)),
 			t.expressionStatement(t.optionalCallExpression(
-				t.optionalMemberExpression(createUse(elem), t.identifier('insertBefore'), false, true),
+				t.memberExpression(createUse(elem), t.identifier('insertBefore'), false, true),
 				[createUse(ret), t.callExpression(createUse(before), [rep.importer('getFirst')])],
 				false
 			)),
@@ -395,7 +395,7 @@ const computeNode = (rep, cleanup, node) => {
 					t.binaryExpression('===', createUse(arg), rep.importer('getFirst')),
 					t.returnStatement(createUse(ret))
 				),
-				t.expressionStatement(t.callExpression(t.memberExpression(createUse(ret), t.identifier('remove')), [])),
+				t.expressionStatement(t.callExpression(t.memberExpression(createUse(elem), t.identifier('removeChild')), [createUse(ret)])),
 				...idents.map(ident => t.expressionStatement(t.callExpression(ident, [])))
 			])))
 		]));
