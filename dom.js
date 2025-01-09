@@ -67,15 +67,63 @@ const primitiveMounter = (elem, e, before) => {
 };
 
 let deferred;
+let currentErrorContext;
 const callLinked = list => {
 	let callable;
 	while (callable = list.next_) {
 		list.next_ = callable.next_;
+
+		const prevErrorContext = currentErrorContext;
+		assert(currentErrorContext = callable.errorContext);
+
 		try {
 			callable.func_();
-		} catch (e) {
-			console.error(e);
+		} catch (err) {
+			assert(true, (() => {
+				let str;
+				let cur = callable.errorContext;
+
+				if (cur.func.name) {
+					str = "An error occurred in the " + cur.func.name + " component";
+				} else {
+					str = "An error occurred in an annonymous component";
+				}
+
+				while (cur) {
+					str += '\n\t' + (cur.func.name || '<annonymous>');
+
+					const s = cur.err.stack.split('\n').slice(1).filter(e => e);
+					for (let i = 0; i < s.length; i++) {
+						let l = s[i].trim();
+						if (l.startsWith('at ')) l = l.substring(3);
+
+						if (i === s.length - 1) {
+							str += ': ' + l;
+							break;
+						} else if (l.startsWith('(')) {
+							const path = l.substring(1, l.indexOf(')'));
+							const name = path.substring(path.lastIndexOf('/') + 1);
+
+							if (name[0].toLowerCase() !== name[0]) {
+								str += ': ' + path;
+								break;
+							}
+						} else if (l[0].toLowerCase() !== l[0]) {
+							str += ': ' + l;
+							break;
+						}
+					}
+
+					cur = cur.prev;
+				}
+
+				err = new Error(str, {cause: err});
+			})());
+
+			console.error(err);
 		}
+
+		assert((currentErrorContext = prevErrorContext) || true);
 	}
 
 	if (list === deferred) deferred = 0;
@@ -412,11 +460,11 @@ const populate = function (...cb) {
 			c();
 		} else {
 			this.next_ = {func_: c, next_: this.next_};
+			assert(this.next_.errorContext = this.errorContext);
 		}
 	}
 };
 
-let currentErrorContext;
 export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
@@ -433,11 +481,7 @@ export const h = (e, props = {}, ...children) => {
 		props.children = children;
 
 		let errorContext;
-		assert(errorContext = {
-			prev: currentErrorContext,
-			func: e,
-			err: new Error(),
-		});
+		assert(errorContext = new Error());
 
 		const each = props.each;
 		const mounter = (elem, item, before, context) => {
@@ -456,71 +500,29 @@ export const h = (e, props = {}, ...children) => {
 				next_: deferred.next_,
 				func_: () => {
 					if (!m) return;
-
 					assert(m === noop);
-					assert(currentErrorContext = errorContext);
 
-					try {
-						if (each) props.each = item;
+					if (each) props.each = item;
 
-						const mounted = {};
+					const mounted = {};
+					assert(mounted.errorContext = remove.errorContext);
 
-						const dom = e(
-							props,
-							populate.bind(remove),
-							populate.bind(mounted));
-						if (m) {
-							m = mount(elem, dom, before, context);
-							callLinked(mounted);
-						}
-					} catch (err) {
-						assert(true, (() => {
-							let str;
-
-							if (e.name) {
-								str = "An error occurred in the " + e.name + " component";
-							} else {
-								str = "An error occurred in an annonymous component";
-							}
-
-							let cur = errorContext;
-							while (cur) {
-								str += '\n\t' + (cur.func.name || '<annonymous>');
-
-								const s = cur.err.stack.split('\n').slice(1).filter(e => e);
-								for (let i = 0; i < s.length; i++) {
-									let l = s[i].trim();
-									if (l.startsWith('at ')) l = l.substring(3);
-
-									if (i === s.length - 1) {
-										str += ': ' + l;
-										break;
-									} else if (l.startsWith('(')) {
-										const path = l.substring(1, l.indexOf(')'));
-										const name = path.substring(path.lastIndexOf('/') + 1);
-
-										if (name[0].toLowerCase() !== name[0]) {
-											str += ': ' + path;
-											break;
-										}
-									} else if (l[0].toLowerCase() !== l[0]) {
-										str += ': ' + l;
-										break;
-									}
-								}
-
-								cur = cur.prev;
-							}
-
-							err = new Error(str, {cause: err});
-						})());
-
-						console.error(err);
+					const dom = e(
+						props,
+						populate.bind(remove),
+						populate.bind(mounted));
+					if (m) {
+						m = mount(elem, dom, before, context);
+						callLinked(mounted);
 					}
-
-					assert((currentErrorContext = errorContext.prev) || true);
 				},
 			};
+
+			assert(remove.errorContext = deferred.next_.errorContext = {
+				func: e,
+				prev: currentErrorContext,
+				err: errorContext,
+			});
 
 			return remove;
 		};
