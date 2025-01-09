@@ -125,14 +125,7 @@ for (const file of files) {
 		assure_import: /^\.\.\/index\.js$/,
 	}));
 
-	if ([
-		'custom_element.test.js',
-		'array.test.js',
-		'array.reconciliation.test.js',
-		'replacement.test.js',
-		'static.test.js',
-		'duck_typing.test.js',
-	].includes(file)) {
+	if (file.startsWith('simple.')) {
 		describe("iife " + file, transform(file, {
 			assure_import: /^$/,
 			override_import: {
