@@ -221,6 +221,20 @@ test("custom element throw error", silence(() => {
 	});
 }));
 
+test("custom element throw error aand remove", silence(() => {
+	const elem = document.createElement("body");
+
+	const rem = mount(elem, h(({children}) => {
+		throw new Error();
+	}, {children: [1, 2]}));
+
+	rem();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+}));
+
 test("custom element into node with all props", () => {
 	const elem = document.createElement("body");
 
