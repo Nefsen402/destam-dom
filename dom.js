@@ -249,18 +249,16 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				not = deferred = {};
 			}
 
-			try {
-				mountElem.remove_ = 0;
-				for (const item of val) {
-					mounted = addMount(orphaned, item, mounted.next_);
-					if (link) {
-						link[linkGetter] = mounted;
-						link = link.linkNext_;
-					}
+			mountElem.remove_ = 0;
+			for (const item of val) {
+				mounted = addMount(orphaned, item, mounted.next_);
+				if (link) {
+					link[linkGetter] = mounted;
+					link = link.linkNext_;
 				}
-			} finally {
-				if (not) callLinked(not);
 			}
+
+			if (not) callLinked(not);
 		};
 
 		arrayListener = observer?.register_(commit => {
@@ -301,18 +299,16 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					}
 				}
 
-				try {
-					for (let insert of inserts) {
-						let next = insert.linkNext_[linkGetter] || root;
-						for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-							next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
-							delete insert.dom_val_;
-						}
+				for (let insert of inserts) {
+					let next = insert.linkNext_[linkGetter] || root;
+					for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
+						next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
+						delete insert.dom_val_;
 					}
-				} finally {
-					cleanupArrayMounts(orphaned);
-					if (not) callLinked(not);
 				}
+
+				cleanupArrayMounts(orphaned);
+				if (not) callLinked(not);
 			}
 
 		}, isSymbol);
@@ -374,15 +370,13 @@ export const mount = (elem, item, before = noop, context) => {
 				not = deferred = {};
 			}
 
-			try {
-				if (!mounted?.(lastFunc === func ? val : null)) {
-					mounted = (lastFunc = func)(elem, val, before, context);
-					assert(typeof mounted === 'function',
-						"Mount function must return a higher order destroy callback");
-				}
-			} finally {
-				if (not) callLinked(not);
+			if (!mounted?.(lastFunc === func ? val : null)) {
+				mounted = (lastFunc = func)(elem, val, before, context);
+				assert(typeof mounted === 'function',
+					"Mount function must return a higher order destroy callback");
 			}
+
+			if (not) callLinked(not);
 		}
 	};
 
