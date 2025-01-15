@@ -49,6 +49,13 @@ test("parse div with attributes", () => {
 	);
 });
 
+test("parse custom component", () => {
+	assert.deepEqual(
+		unwrap(h`<custom-component />`),
+		{name: 'custom-component'}
+	);
+});
+
 test("parse div empty body", () => {
 	assert.deepEqual(
 		unwrap(h`<div></div>`),
@@ -154,6 +161,17 @@ test("htm nested string", () => {
 			<div>
 				hello world
 			</div>
+		`),
+		{name: 'div', children: ["hello world"]}
+	);
+});
+
+test("htm nested string shorthand termination", () => {
+	assert.deepEqual(
+		unwrap(h`
+			<div>
+				hello world
+			</>
 		`),
 		{name: 'div', children: ["hello world"]}
 	);

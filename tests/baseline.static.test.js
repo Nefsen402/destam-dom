@@ -515,3 +515,23 @@ test("static null property", () => {
 
 	assert(elem.children[0].attrib === null);
 });
+
+test("assert object children", () => {
+	h('div', {children: null}, 'hello');
+});
+
+test("assert object children", () => {
+	h('div', {children: []}, 'hello');
+});
+
+test("assert undefined children", () => {
+	h('div', {children: undefined});
+});
+
+test("assert undefined children", () => {
+	h('div', {children: null});
+});
+
+test("assert object children", () => {
+	h('div', {children: undefined}, 'hello');
+});

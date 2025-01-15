@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert';
 import './document.js';
 
-import {mount, h, OArray} from '../index.js';
+import {mount, h, OArray, html} from '../index.js';
 
 const testAssert = (name, cb) => test(name, () => {
 	let throwed = false;
@@ -54,30 +54,46 @@ testAssert("move element on null mount", () => {
 	arr.set([arr.get()[1], arr.get()[0]]);
 });
 
-test("assert undefined children", () => {
-	h('div', {children: undefined});
-});
-
-test("assert undefined children", () => {
-	h('div', {children: null});
-});
-
 testAssert("assert object children", () => {
 	h('div', {children: {}});
-});
-
-test("assert object children", () => {
-	h('div', {children: []}, 'hello');
 });
 
 testAssert("assert object children", () => {
 	h('div', {children: ['world']}, 'hello');
 });
 
-test("assert object children", () => {
-	h('div', {children: null}, 'hello');
+testAssert("assert object children", () => {
+	h({});
 });
 
-test("assert object children", () => {
-	h('div', {children: undefined}, 'hello');
+testAssert("assert object children", () => {
+	h(null);
+});
+
+testAssert("assert object children", () => {
+	h(undefined);
+});
+
+testAssert("assert html unterminated comment", () => {
+	html("<!--");
+});
+
+testAssert("assert html unterminated node", () => {
+	html("<div>");
+});
+
+testAssert("assert html wrong termination", () => {
+	html("<div></span>");
+});
+
+testAssert("assert html unbalanced termination", () => {
+	html("</span>");
+});
+
+testAssert("assert html unbalanced termination shorthand", () => {
+	html("</>");
+});
+
+testAssert("assert html invalid tag", () => {
+	html("<hello></>");
 });
