@@ -144,7 +144,7 @@ global.Node = class Node {
 			return this.textContent_;
 		}
 
-		const ret = Object.fromEntries(Object.entries(this));
+		const ret = {...this};
 		delete ret.parentElement;
 
 		delete ret.childNodes;
