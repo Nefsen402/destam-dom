@@ -499,3 +499,19 @@ test("static null attribute", () => {
 		}],
 	});
 });
+
+test("static undefined property", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {$attrib: undefined}));
+
+	assert(elem.children[0].attrib === undefined);
+});
+
+test("static null property", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {$attrib: null}));
+
+	assert(elem.children[0].attrib === null);
+});

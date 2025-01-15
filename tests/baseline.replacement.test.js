@@ -667,3 +667,25 @@ test("swap to null attribute", () => {
 		}],
 	});
 });
+
+test("swap to null attribute", () => {
+	const elem = document.createElement("body");
+
+	const attr = Observer.mutable('hello');
+	mount(elem, h('div', {$attrib: attr}));
+
+	attr.set(undefined);
+
+	assert(elem.children[0].attrib === undefined);
+});
+
+test("swap to null attribute", () => {
+	const elem = document.createElement("body");
+
+	const attr = Observer.mutable('hello');
+	mount(elem, h('div', {$attrib: attr}));
+
+	attr.set(null);
+
+	assert(elem.children[0].attrib === null);
+});
