@@ -1,10 +1,10 @@
-import {test as nodeTest} from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert';
 import './document.js';
 
 import {mount, h, OArray} from '../index.js';
 
-const test = (name, cb) => nodeTest(name, () => {
+const testAssert = (name, cb) => test(name, () => {
 	let throwed = false;
 	try {
 		cb();
@@ -14,14 +14,14 @@ const test = (name, cb) => nodeTest(name, () => {
 	assert(throwed);
 });
 
-test("assert multiple mount", () => {
+testAssert("assert multiple mount", () => {
 	const comp = h('div');
 	const elem = document.createElement("body");
 
 	mount(elem, [comp, comp]);
 });
 
-test("assert multiple mount dynamic", () => {
+testAssert("assert multiple mount dynamic", () => {
 	const Component = () => {
 		return null;
 	};
@@ -32,13 +32,13 @@ test("assert multiple mount dynamic", () => {
 	mount(elem, [comp, comp]);
 });
 
-test("mount primitive on null mount", () => {
+testAssert("mount primitive on null mount", () => {
 	const arr = OArray(['a', 'b']);
 
 	mount(null, arr);
 });
 
-test("move element on null mount", () => {
+testAssert("move element on null mount", () => {
 	const arr = OArray([h('div'), h('div')]);
 
 	mount(null, arr);
@@ -46,10 +46,38 @@ test("move element on null mount", () => {
 	arr.splice(0, 2, arr[1], arr[0]);
 });
 
-test("move element on null mount", () => {
+testAssert("move element on null mount", () => {
 	const arr = Observer.mutable([h('div'), h('div')]);
 
 	mount(null, arr);
 
 	arr.set([arr.get()[1], arr.get()[0]]);
+});
+
+test("assert undefined children", () => {
+	h('div', {children: undefined});
+});
+
+test("assert undefined children", () => {
+	h('div', {children: null});
+});
+
+testAssert("assert object children", () => {
+	h('div', {children: {}});
+});
+
+test("assert object children", () => {
+	h('div', {children: []}, 'hello');
+});
+
+testAssert("assert object children", () => {
+	h('div', {children: ['world']}, 'hello');
+});
+
+test("assert object children", () => {
+	h('div', {children: null}, 'hello');
+});
+
+test("assert object children", () => {
+	h('div', {children: undefined}, 'hello');
 });
