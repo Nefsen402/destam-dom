@@ -32,7 +32,7 @@ const nodeMounter = (elem, e, before, context) => {
 	elem.insertBefore(e, before(getFirst));
 
 	return val => {
-		if (!e || val === getFirst) return e;
+		if (val === getFirst) return e;
 
 		if (!val) {
 			elem.removeChild(e);
@@ -53,7 +53,7 @@ const primitiveMounter = (elem, e, before) => {
 	elem.insertBefore(e = document.createTextNode(e), before(getFirst));
 
 	return val => {
-		if (!e || val === getFirst) return e;
+		if (val === getFirst) return e;
 
 		if (val != null) {
 			e.textContent = val;
