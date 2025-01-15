@@ -415,7 +415,7 @@ const registerSetter = (set) => {
 
 const propertySetter = registerSetter((val, name, e) => e[name] = val ?? null);
 const attributeSetter = registerSetter((val, name, e) => {
-	val = val ?? false;
+	if (val == null) val = false;
 	assert(['boolean', 'string', 'number'].includes(typeof val),
 		`type ${typeof val} is used as the attribute: ${name}`);
 
@@ -429,7 +429,7 @@ const attributeSetter = registerSetter((val, name, e) => {
 const populateSignals = (signals, val, e, name, set) => {
 	if (isInstance(val, Observer)) {
 		push(signals, {func_: set.dyn_, val_: e, handler_: val, pbef_: 0, name_: name, remove_: 0});
-	} else if (typeof val !== 'object' || Array.isArray(val)) {
+	} else if (val == null || typeof val !== 'object' || Array.isArray(val)) {
 		set(val, name, e);
 	} else {
 		assert(set !== attributeSetter, "Node attribute cannot be an object: " + name);

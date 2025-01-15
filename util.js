@@ -28,7 +28,7 @@ export const watch = (obs, cb) => {
 };
 
 export const setAttribute = (e, name, val) => {
-	val = val ?? false;
+	if (val == null) val = false;
 	if (typeof val === 'boolean') {
 		e.toggleAttribute(name, val);
 	} else {
