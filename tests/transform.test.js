@@ -11,8 +11,6 @@ import parser from '@babel/parser';
 import t from '@babel/types';
 import generate from '@babel/generator';
 
-const files = fs.readdirSync(path.resolve(fileURLToPath(import.meta.url), '..'));
-
 const transform = (file, options) => async () => {
 	let source = fs.readFileSync(path.resolve(fileURLToPath(import.meta.url), '..', file)).toString();
 	const ast = parser.parse(source, {
@@ -103,8 +101,11 @@ const transform = (file, options) => async () => {
 	script.runInContext(context);
 }
 
-const iife = path.resolve(fileURLToPath(import.meta.url), '../../dist/destam-dom.iife.js');
-if (fs.existsSync(iife)) {
+const self = fileURLToPath(import.meta.url);
+
+const iife = path.resolve(self, '../../dist/destam-dom.iife.js');
+let hasIife = fs.existsSync(iife);
+if (hasIife) {
 	const script = new vm.Script(fs.readFileSync(iife), {
 		filename: 'destam-dom.iife.js',
 	});
@@ -112,10 +113,18 @@ if (fs.existsSync(iife)) {
 	script.runInThisContext();
 }
 
-for (const file of files) {
-	if (['transform.test.js', 'assert.test.js'].includes(file)) continue;
-	if (!file.endsWith('.test.js') && !file.endsWith('.test.jsx')) continue;
+const files = fs.readdirSync(path.resolve(self, '..')).filter(file =>
+	// we don't want to recursively run the transforms
+	file !== path.basename(self) &&
 
+	// don't run the assert tests because those are meant to test the asserts
+	// only present in debug builds. The static analysis tools are meant to run
+	// for production builds only, so debug asserts are not present.
+	file !== 'assert.test.js' &&
+	(file.endsWith('.test.js') || file.endsWith('.test.jsx'))
+);
+
+for (const file of files) {
 	describe("transform with util " + file, transform(file, {
 		util_import: '..',
 		assure_import: /^\.\.\/index\.js$/,
@@ -125,7 +134,9 @@ for (const file of files) {
 		assure_import: /^\.\.\/index\.js$/,
 	}));
 
-	if (file.startsWith('simple.')) {
+	// Test the iffe with the baseline tests. Baseline tests are those tests
+	// that can run on the limited release build.
+	if (hasIife && file.startsWith('baseline.')) {
 		describe("iife " + file, transform(file, {
 			assure_import: /^$/,
 			override_import: {
