@@ -635,3 +635,35 @@ test("mount out of order in div children", () => {
 		}],
 	});
 });
+
+test("swap to null attribute", () => {
+	const elem = document.createElement("body");
+
+	const attr = Observer.mutable('hello');
+	mount(elem, h('div', {attrib: attr}));
+
+	attr.set(undefined);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+		}],
+	});
+});
+
+test("swap to null attribute", () => {
+	const elem = document.createElement("body");
+
+	const attr = Observer.mutable('hello');
+	mount(elem, h('div', {attrib: attr}));
+
+	attr.set(null);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+		}],
+	});
+});

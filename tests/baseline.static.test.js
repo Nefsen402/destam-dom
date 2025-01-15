@@ -473,3 +473,29 @@ test("Redefine h function", () => {
 
 	assert(typeof h('div') === 'string');
 });
+
+test("static undefined attribute", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {attrib: undefined}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+		}],
+	});
+});
+
+test("static null attribute", () => {
+	const elem = document.createElement("body");
+
+	mount(elem, h('div', {attrib: null}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+		}],
+	});
+});
