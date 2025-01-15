@@ -47,7 +47,7 @@ const createWatcher = (rep, val, create) => {
 			setter = create(val.arguments[0].body);
 		}
 
-		val = val.callee.object;
+		val = createUse(val.callee.object);
 	} else {
 		param = createIdent();
 		setter = create(createUse(param));
@@ -55,7 +55,7 @@ const createWatcher = (rep, val, create) => {
 
 	return t.callExpression(
 		rep.importer('watch'),
-		[createUse(val), t.arrowFunctionExpression([param], setter)]
+		[val, t.arrowFunctionExpression([param], setter)]
 	);
 };
 
