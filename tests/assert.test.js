@@ -97,3 +97,7 @@ testAssert("assert html unbalanced termination shorthand", () => {
 testAssert("assert html invalid tag", () => {
 	html("<hello></>");
 });
+
+testAssert("assert mount to invalid element", () => {
+	mount({}, null);
+});

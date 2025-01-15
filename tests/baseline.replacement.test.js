@@ -689,3 +689,32 @@ test("swap to null attribute", () => {
 
 	assert(elem.children[0].attrib === null);
 });
+
+test("swap to null attribute", () => {
+	const elem = document.createElement("body");
+
+	const thing = Observer.mutable("hello");
+	const rem = mount(elem, thing);
+
+	thing.watch(() => rem());
+	thing.set("world");
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
+test("swap to null attribute inverted", () => {
+	const elem = document.createElement("body");
+
+	const thing = Observer.mutable("hello");
+	thing.watch(() => rem());
+
+	const rem = mount(elem, thing);
+
+	thing.set("world");
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});

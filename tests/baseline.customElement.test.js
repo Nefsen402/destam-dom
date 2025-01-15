@@ -560,3 +560,21 @@ test("custom component reuse cleanup", () => {
 
 	assert.equal(count, 4 * 2);
 });
+
+test("custom component nested remove", () => {
+	let called = false;
+	const Comp2 = ({}) => {
+		called = true;
+		return null;
+	};
+
+	const Comp = ({}, cleanup, mounted) => {
+		show.set(null);
+
+		return h(Comp2);
+	};
+
+	const show = Observer.mutable(h(Comp));
+	mount(document.createElement("body"), show);
+	assert(called === false);
+});
