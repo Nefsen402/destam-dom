@@ -79,6 +79,7 @@ const callLinked = list => {
 		try {
 			callable.func_();
 		} catch (err) {
+			/* node:coverage disable */
 			assert(true, (() => {
 				let str;
 				let cur = callable.errorContext;
@@ -119,6 +120,7 @@ const callLinked = list => {
 
 				err = new Error(str, {cause: err});
 			})());
+			/* node:coverage enable */
 
 			console.error(err);
 		}
