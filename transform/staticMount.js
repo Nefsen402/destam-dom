@@ -212,10 +212,7 @@ const computeNode = (rep, cleanup, node) => {
 				val.callee.property.name === 'join' &&
 				val.callee.object.type === 'ArrayExpression';
 
-			if (val.type === 'NullLiteral' || (
-					val.type === 'Identifier' && val.name === 'undefined' && rep.optimizeUndefined)) {
-				return true;
-			} else if (val.type === 'ObjectExpression') {
+			if (val.type === 'ObjectExpression') {
 				for (let ii = 0; ii < val.properties.length; ii++) {
 					const objectProp = val.properties[ii];
 					if (objectProp.type !== 'ObjectProperty') break;
@@ -233,7 +230,7 @@ const computeNode = (rep, cleanup, node) => {
 			} else if (isRawSetter) {
 				const create = val => t.assignmentExpression('=',
 					t.memberExpression(getTemp(), name, name.type === 'StringLiteral'),
-					t.logicalExpression('??', val, t.nullLiteral())
+					val,
 				);
 
 				if (isJoinPattern || [
@@ -251,6 +248,9 @@ const computeNode = (rep, cleanup, node) => {
 
 					return true;
 				}
+			} else if (val.type === 'NullLiteral' || (
+					val.type === 'Identifier' && val.name === 'undefined' && rep.optimizeUndefined)) {
+				return true;
 			} else if (binaryType === 'bool' || val.type === 'BooleanLiteral') {
 				rep.push(t.expressionStatement(t.callExpression(
 					t.memberExpression(getTemp(), t.identifier('toggleAttribute')),
