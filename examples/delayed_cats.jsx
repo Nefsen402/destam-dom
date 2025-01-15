@@ -21,7 +21,7 @@ const suspense = (fallback, cb) => props => {
 	const res = Promise.resolve(cb(props));
 	const out = Observer.mutable(fallback(props));
 
-	res.then(out.set);
+	res.then(res => out.set(res));
 	return out.unwrap();
 };
 
