@@ -413,7 +413,7 @@ const registerSetter = (set) => {
 	return set;
 };
 
-const propertySetter = registerSetter((val, name, e) => e[name] = val ?? null);
+const propertySetter = registerSetter((val, name, e) => e[name] = val);
 const attributeSetter = registerSetter((val, name, e) => {
 	if (val == null) val = false;
 	assert(['boolean', 'string', 'number'].includes(typeof val),
