@@ -463,7 +463,7 @@ export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
 	if (!len(children)) {
-		assert(!(children in props) ||  props.children === null || Array.isArray(props.children),
+		assert(!(children in props) || props.children === null || Array.isArray(props.children),
 			"Children must be null or an array");
 		children = props.children || children;
 	} else {
