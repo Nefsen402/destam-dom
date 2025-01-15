@@ -463,11 +463,11 @@ export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
 	if (!len(children)) {
-		assert(!(children in props) || props.children === null || Array.isArray(props.children),
+		assert(props.children == null || Array.isArray(props.children),
 			"Children must be null or an array");
 		children = props.children || children;
 	} else {
-		assert(!("children" in props) || (Array.isArray(props.children) && props.children.length === 0),
+		assert(props.children == null || (Array.isArray(props.children) && props.children.length === 0),
 			"Overwriting children property because element has a body");
 	}
 
