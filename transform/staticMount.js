@@ -212,7 +212,10 @@ const computeNode = (rep, cleanup, node) => {
 				val.callee.property.name === 'join' &&
 				val.callee.object.type === 'ArrayExpression';
 
-			if (val.type === 'ObjectExpression') {
+			if (val.type === 'NullLiteral' || (
+					val.type === 'Identifier' && val.name === 'undefined' && rep.optimizeUndefined)) {
+				return true;
+			} else if (val.type === 'ObjectExpression') {
 				for (let ii = 0; ii < val.properties.length; ii++) {
 					const objectProp = val.properties[ii];
 					if (objectProp.type !== 'ObjectProperty') break;
@@ -259,7 +262,7 @@ const computeNode = (rep, cleanup, node) => {
 				if (binaryType === 'other' || isJoinPattern || [
 					'StringLiteral', 'NumericLiteral',
 					'TemplateLiteral', 'UpdateExpression',
-					'NullLiteral', 'BigIntLiteral',
+					'BigIntLiteral',
 				].includes(val.type)) {
 					rep.push(t.expressionStatement(t.callExpression(
 						t.memberExpression(getTemp(), t.identifier('setAttribute')),
@@ -465,6 +468,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		if (!checkImport(node.callee, options.assure_import)) continue;
 
 		const rep = [];
+		rep.optimizeUndefined = !ast.strict_undefined;
 		rep.callee = node.callee;
 		if (importer) {
 			rep.importer = importer;
