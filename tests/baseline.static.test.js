@@ -535,3 +535,20 @@ test("assert undefined children", () => {
 test("assert object children", () => {
 	h('div', {children: undefined}, 'hello');
 });
+
+test("static namespace", () => {
+	const customNS = (name, props, ...children) => {
+		return h(document.createElementNS("namespace", name), props, children);
+	};
+
+	const body = document.createElement('body');
+	mount(body, customNS('div'));
+
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			namespace: 'namespace',
+		}],
+	});
+});
