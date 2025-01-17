@@ -527,8 +527,15 @@ export const h = (e, props = {}, ...children) => {
 			return mounter;
 		} else if (isInstance(each, Observer)) {
 			return (elem, val, before, context) => {
-				const listener = shallowListener(each, () => mount(each.get()));
+				const listener = shallowListener(each, () => {
+					const val = each.get();
+					assert(Array.isArray(val), "The 'each' property for a custom element must be an array");
+					return mount(val)
+				});
+
+				assert(Array.isArray(each.get()), "The 'each' property for a custom element must be an array");
 				const mount = arrayMounter(elem, each.get(), before, context, mounter);
+
 				return arg => {
 					if (arg === getFirst) return mount(getFirst);
 
