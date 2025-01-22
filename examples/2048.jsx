@@ -132,14 +132,17 @@ const colors = {
 const Tile = ({each: {value, x, y, zIndex, scale}}, cleanup, mount) => {
 	const opacity = Observer.mutable(0);
 
+	const Div = <div />;
+
 	mount(() => {
-		requestAnimationFrame(() => requestAnimationFrame(() => {
-			opacity.set(1);
-			scale.set(1);
-		}));
+		// force browser render
+		Div.clientWidth;
+
+		opacity.set(1);
+		scale.set(1);
 	});
 
-	return <div $style={{
+	return <Div $style={{
 		width: (size / 4 - 10) + 'px',
 		height: (size / 4 - 10) + 'px',
 		position: 'absolute',
@@ -166,7 +169,7 @@ const Tile = ({each: {value, x, y, zIndex, scale}}, cleanup, mount) => {
 		}}>
 			{value}
 		</div>
-	</div>;
+	</Div>;
 };
 
 export default <>
