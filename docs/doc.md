@@ -553,7 +553,7 @@ const myCustomHyperscript = (name, props, ...children) => {
 <myCustomHyperscript:div />;
 ```
 
-### Mount ducktyping
+## Mount ducktyping
 
 Note that `mount()` supports a node that follows the duck type of a regular dom node implementing:
  - `insertElement()`
