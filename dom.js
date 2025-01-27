@@ -487,9 +487,11 @@ export const h = (e, props = {}, ...children) => {
 				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
 
 				m();
+				m = 0;
+
 				callLinked(remove);
 				remove.done_ = 1;
-				return m = 0;
+				return 0;
 			};
 
 			deferred.next_ = {

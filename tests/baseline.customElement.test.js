@@ -578,3 +578,18 @@ test("custom component nested remove", () => {
 	mount(document.createElement("body"), show);
 	assert(called === false);
 });
+
+test("custom component nested cleanup", () => {
+	let called = false;
+	const Comp = ({}, cleanup, mounted) => {
+		cleanup(() => {
+			cleanup(() => called = true);
+		});
+
+		return null;
+	};
+
+	let cleanup = mount(document.createElement("body"), h(Comp));
+	cleanup();
+	assert(called);
+});
