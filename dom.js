@@ -489,8 +489,8 @@ export const h = (e, props = {}, ...children) => {
 				m();
 				m = 0;
 
-				callLinked(remove);
 				remove.done_ = 1;
+				callLinked(remove);
 				return 0;
 			};
 
