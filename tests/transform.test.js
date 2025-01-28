@@ -21,10 +21,7 @@ const transform = (file, options) => async () => {
 	});
 
 	htmlLiteral(ast);
-
-	if (!file.endsWith('.jsx')) {
-		staticMount(ast, options);
-	}
+	staticMount(ast, options);
 
 	const context = {};
 
