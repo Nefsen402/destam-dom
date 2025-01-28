@@ -77,7 +77,9 @@ const callLinked = list => {
 		assert(currentErrorContext = callable.errorContext);
 
 		try {
-			callable.func_();
+			const ret = callable.func_();
+			assert(ret === undefined,
+				"Got an unexpected return value from a cleanup/mounted callback");
 		} catch (err) {
 			/* node:coverage disable */
 			assert(true, (() => {
