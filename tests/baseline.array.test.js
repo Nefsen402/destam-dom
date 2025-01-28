@@ -240,12 +240,12 @@ test("array modify from mount", () => {
 
 	mount(elem, [
 		h(({}, _, mounted) => {
-			mounted(() => count++);
+			mounted(() => {count++});
 
 			return items;
 		}),
 		h(({}, _, mounted) => {
-			mounted(() => count++);
+			mounted(() => {count++});
 
 			items.push(1, 2, 3);
 			return null;

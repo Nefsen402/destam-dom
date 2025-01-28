@@ -97,8 +97,8 @@ test("custom element cleanup multiple", () => {
 	let cleaned2 = false;
 	let cleanup = mount(elem, h(({}, cleanup) => {
 		cleanup(
-			() => cleaned = true,
-			() => cleaned2 = true,
+			() => {cleaned = true},
+			() => {cleaned2 = true},
 		);
 
 		return "hello world";
@@ -150,8 +150,8 @@ test("custom element mounted multiple", () => {
 	let mounted2 = false;
 	let cleanup = mount(elem, h(({}, cleanup, mounted_) => {
 		mounted_(
-			() => mounted = true,
-			() => mounted2 = true,
+			() => {mounted = true},
+			() => {mounted2 = true},
 		);
 
 		return "hello world";
@@ -389,7 +389,7 @@ test("cleanup after unmount", () => {
 	const Component = (_, cleanup) => {
 		comp.set(null);
 
-		cleanup(() => cleaned = true);
+		cleanup(() => {cleaned = true});
 
 		return "hello world";
 	};
@@ -523,7 +523,7 @@ test("custom component insert order nested mounted event", () => {
 
 test("custom component reuse mounted", () => {
 	let count = 0;
-	let func = () => count++;
+	let func = () => {count++};
 
 	const Comp = ({}, cleanup, mounted) => {
 		mounted(func, func);
@@ -542,7 +542,7 @@ test("custom component reuse mounted", () => {
 
 test("custom component reuse cleanup", () => {
 	let count = 0;
-	let func = () => count++;
+	let func = () => {count++};
 
 	const Comp = ({}, cleanup, mounted) => {
 		cleanup(func, func);
@@ -583,7 +583,7 @@ test("custom component nested cleanup", () => {
 	let called = false;
 	const Comp = ({}, cleanup, mounted) => {
 		cleanup(() => {
-			cleanup(() => called = true);
+			cleanup(() => {called = true});
 		});
 
 		return null;
