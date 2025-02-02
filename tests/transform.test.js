@@ -11,8 +11,10 @@ import parser from '@babel/parser';
 import t from '@babel/types';
 import generate from '@babel/generator';
 
+const self = fileURLToPath(import.meta.url);
+
 const transform = (file, options) => async () => {
-	let source = fs.readFileSync(path.resolve(fileURLToPath(import.meta.url), '..', file)).toString();
+	let source = fs.readFileSync(path.resolve(self, '..', file)).toString();
 	const ast = parser.parse(source, {
 		sourceType: 'module',
 		code: false,
@@ -97,8 +99,6 @@ const transform = (file, options) => async () => {
 	vm.createContext(context);
 	script.runInContext(context);
 }
-
-const self = fileURLToPath(import.meta.url);
 
 const iife = path.resolve(self, '../../dist/destam-dom.iife.js');
 let hasIife = fs.existsSync(iife);
