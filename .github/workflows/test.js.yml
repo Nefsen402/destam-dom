@@ -17,5 +17,5 @@ jobs:
       with:
         node-version: '22.x'
     - run: npm install
-    - run: LIB=destamd N_DEBUG=1 FORMATS=iife npm run build
+    - run: FORMATS=iife npm run release
     - run: npm test
