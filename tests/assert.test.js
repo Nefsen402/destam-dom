@@ -98,6 +98,10 @@ testAssert("assert html invalid tag", () => {
 	html("<hello></>");
 });
 
+testAssert("assert useless chlidren prop", () => {
+	html(`<div children=${[1, 2]}></>`);
+});
+
 testAssert("assert mount to invalid element", () => {
 	mount({}, null);
 });
