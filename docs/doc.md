@@ -387,7 +387,7 @@ html`
 `
 ```
 
-In order to implement reactivity, an Observer can be used to wrap the array. Destam-dom will reconcile common object references (objects that compare equal in `Map`). The object references themselves act as the key. If we were to generate the div wrappers around names at the last moment such as the above example, those div wrappers would compare as different and everything would be remounted. Instead, we'll store the div wrappers as part of the array.
+In order to implement reactivity, an Observer can be used to wrap the array. Destam-dom will reconcile common object references (objects that compare equal in `Map`). The object references themselves act as the key. Note that if we were to mutate the names like in the above example, reconciliation would break. This is because if we used map, the map would re-run for every element whenever the array is mutated, generating brand now dom templates. Instead, we'll store the div wrappers as part of the array.
 
 ```js
 const names = Observer.mutable([
