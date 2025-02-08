@@ -446,7 +446,7 @@ const names = Observer.mutable([
 ]);
 
 const Name = ({each: name}) => {
-	return ;
+	return name;
 };
 
 html`
