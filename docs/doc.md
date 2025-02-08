@@ -366,7 +366,7 @@ const Component = ({}, cleanup, mounted) => {
 };
 ```
 
-The lifetime of observers are undefined when used with destam-dom. Do not depend on an observer listener being added/removed for anything more than unregistering the listener when creating custom observers.
+Note that the lifetime of observers closely follows the cleanup/mounted callbacks. It's not defined that all the obsevers will be mounted before the mount callback is called or vice-versa.
 
 ## Lists
 Destam can interpret arrays of items like a list of names.
