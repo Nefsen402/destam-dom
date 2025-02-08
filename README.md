@@ -18,7 +18,7 @@ mount(document.body, html`
 ## No virtual dom
 Virtual doms were a mistake:
 - they allocate a lot of memory just to represent the dom
-- they make it impossible to make static analysis tools to unroll dom descriptions into vanillajs
+- they make it impossible to make static analysis tools that unroll dom descriptions into vanillajs
 - they require a lot of magic called "reconciliation" in order to actually work
 - they have horrible performance with lists as virtual dom implementations are forced to iterate the entire tree
 
