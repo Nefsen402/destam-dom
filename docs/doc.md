@@ -421,7 +421,7 @@ names.push(html`<div>Ford</div>`);
 
 Because the OArray generates a delta about the insertion of an element, destam-dom can use that information to avoid comparing the entire array.
 
-## Custom element each property
+## Custom element `each` property
 Sometimes, it's inconventient to need to manage an array of components, you might just have a list of arbitrary program state. Custom components are the basis of how destam-dom manages rendering a list of items with an arbitrary format.
 
 The `each` element property can be used to iterate a list and transform the list into html elements at the same time with a custom element. In the custom element, the `each` property will no longer be the list, but instead an element of the list.
