@@ -419,7 +419,7 @@ html`
 names.push(html`<div>Ford</div>`);
 ```
 
-This has the added effect that destam-dom does not need to reconcile references. It simply detects that a new item was pushed and adds it to the dom.
+Because the OArray generates a delta about the insertion of an element, destam-dom can use that information to avoid comparing the entire array.
 
 ## Custom element each property
 Sometimes, it's inconventient to need to manage an array of components, you might just have a list of arbitrary program state. Custom components are the basis of how destam-dom manages rendering a list of items with an arbitrary format.
