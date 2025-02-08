@@ -226,8 +226,6 @@ html`
 `
 ```
 
-This example won't render anything because it is assuming the children in the body, of which there are none.
-
 Note that children must either be null, or a regular javascript array. Children cannot be an `OArray` as it will not be reactive. This is done for performance reasons. If you wanted to pass an `OArray` or anything else as a single child, first wrap it in an array.
 
 ## Custom components
