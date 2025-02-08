@@ -346,6 +346,14 @@ const Component = ({}, cleanup, mounted) => {
 };
 ```
 
+Note that the above timer example can be achieved purely with `Observer.timer`.
+
+```js
+html`
+	${Observer.timer(1000)}
+`
+```
+
 The cleanup and mount functions can also accept multiple arguments. 0 arguments is also allowed.
 ```js
 const Component = ({}, cleanup, mounted) => {
@@ -356,14 +364,6 @@ const Component = ({}, cleanup, mounted) => {
 
 	return "my custom component";
 };
-```
-
-Note that the above timer example can be achieved purely with `Observer.timer`.
-
-```js
-html`
-	${Observer.timer(1000)}
-`
 ```
 
 The lifetime of observers are undefined when used with destam-dom. Do not depend on an observer listener being added/removed for anything more than unregistering the listener when creating custom observers.
