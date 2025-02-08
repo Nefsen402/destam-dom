@@ -476,7 +476,7 @@ html`
 names.push('Ford');
 ```
 
-And of course, prefer to use `OArray` when possible to achieve constant time insertion.
+And of course, prefer to use `OArray` when possible to achieve constant time mutations.
 
 ## JSX
 JSX support is provided from the `transform/htmlLiteral` file. This can be hooked up to any build system with a vite example being provided in this repository.
