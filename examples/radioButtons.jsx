@@ -2,7 +2,7 @@ import {Observer} from 'destam-dom';
 
 const RadioButton = ({value, name}) => {
 	return <>
-		<input name={name} type="radio" $checked={value} $onclick={() => value.set(true)} />
+		<input name={name} type="radio" $checked={value} $onclick={() => value.set(name)} />
 		<label for={name}>{name}</label>
 		<br/>
 	</>;
