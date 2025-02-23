@@ -601,3 +601,68 @@ test("basic hypertest nested in iife", () => {
 		]
 	});
 });
+
+test("basic hypertest nested in iife", () => {
+	const elem = document.createElement("body");
+
+	const dyn_pre = 0;
+	const dyn = dyn_pre;
+
+	const stuff = [];
+	while (true) if (stuff.length >= 5 || void stuff.push(h('div', {dyn}))) break;
+
+	mount(elem, stuff);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+		]
+	});
+});
+
+test("hypertext in for initializer", () => {
+	const elem = document.createElement("body");
+
+	const dyn_pre = 0;
+	const dyn = dyn_pre;
+
+	const stuff = [];
+	for (stuff.push(h('div', {dyn})); false;);
+
+	mount(elem, stuff);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', attributes: {dyn: 0}},
+		]
+	});
+});
+
+test("hypertext in for incrementer", () => {
+	const elem = document.createElement("body");
+
+	const dyn_pre = 0;
+	const dyn = dyn_pre;
+
+	const stuff = [];
+	for (let i = 0; i < 5; i++, stuff.push(h('div', {dyn})));
+
+	mount(elem, stuff);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+			{name: 'div', attributes: {dyn: 0}},
+		]
+	});
+});
