@@ -37,29 +37,29 @@ const createAssignment = (ident, mix) => {
 	return Object.assign(obj, mix || {});
 };
 
-export const context = parent => {
-	const ret = new Map();
-	ret.parent = parent;
-	ret.children = [];
-	ret.unassigned = [];
+export const collectVariables = (node, seeker, cont) => {
+	const context = (parent) => {
+		const ret = new Map();
+		ret.parent = parent;
+		ret.children = [];
+		ret.unassigned = [];
 
-	ret.search = name => {
-		let current = ret;
-		while (current) {
-			const found = current.get(name) || current.unassigned.find(a => a.name === name);
-			if (found) return found;
+		ret.search = name => {
+			let current = ret;
+			while (current) {
+				const found = current.get(name) || current.unassigned.find(a => a.name === name);
+				if (found) return found;
 
-			current = current.parent;
-		}
+				current = current.parent;
+			}
 
-		return null;
+			return null;
+		};
+
+		if (parent) ret.parent.children.push(ret);
+		return ret;
 	};
 
-	if (parent) ret.parent.children.push(ret);
-	return ret;
-};
-
-export const collectVariables = (node, seeker, cont) => {
 	const traverseAssignment = (assignments, param, lets) => {
 		if (param.type === 'Identifier') {
 			assignments.push(param);
@@ -115,8 +115,7 @@ export const collectVariables = (node, seeker, cont) => {
 				assignment[o] = defs[o];
 			}
 
-			if (assignment.unassigned) {
-				assignment.unassigned = false;
+			if (!ident.name) {
 				_lets.unassigned.push(assignment);
 			}
 		}
@@ -266,7 +265,7 @@ export const collectVariables = (node, seeker, cont) => {
 					traverseExpression(cnode.key, cont);
 				}
 
-				traverseFunction(cnode, cont);
+				traverseFunction(cnode, cont, false);
 			} else if (cnode.type === 'ClassProperty') {
 				if (cnode.computed) {
 					traverseExpression(cnode.key, cont);
@@ -287,7 +286,10 @@ export const collectVariables = (node, seeker, cont) => {
 		if (!lets) throw new Error("assert: lets in null");
 		if (!node) throw new Error("assert: node in null");
 
-		if (!noCallSeeker && seeker && seeker(node, lets)) return;
+		const childContexts = [];
+		let startChildren = lets.children.length;
+
+		if (!noCallSeeker && seeker) seeker(node, lets, childContexts);
 
 		if (node.type === 'ArrayExpression') {
 			for (const elem of node.elements) {
@@ -300,7 +302,7 @@ export const collectVariables = (node, seeker, cont) => {
 		} else if (node.type === 'ArrowFunctionExpression' ||
 				node.type === 'FunctionDeclaration' ||
 				node.type === 'FunctionExpression') {
-			traverseFunction(node, lets);
+			traverseFunction(node, lets, false);
 		} else if (node.type === 'AssignmentExpression') {
 			traverseExpression(node.right, lets);
 			undecl(node.left, lets);
@@ -327,7 +329,7 @@ export const collectVariables = (node, seeker, cont) => {
 				}
 			}
 		} else if (node.type === 'ClassExpression') {
-			traverseClass(node, lets);
+			traverseClass(node, lets, false);
 		} else if (node.type === 'ConditionalExpression') {
 			traverseExpression(node.test, lets);
 			traverseExpression(node.consequent, lets);
@@ -351,7 +353,7 @@ export const collectVariables = (node, seeker, cont) => {
 					traverseExpression(prop.argument, lets);
 				} else if (prop.type === 'ObjectMethod') {
 					if (prop.computed) traverseExpression(prop.key, lets);
-					traverseFunction(prop, lets);
+					traverseFunction(prop, lets, false);
 				} else {
 					if (prop.computed) traverseExpression(prop.key, lets);
 					traverseExpression(prop.value, lets);
@@ -416,6 +418,8 @@ export const collectVariables = (node, seeker, cont) => {
 		} else if (!node.type.includes("Literal")) {
 			throw new Error("Unknown expression: " + node.type);
 		}
+
+		childContexts.push(...lets.children.slice(startChildren));
 	};
 
 	const traverse = (node, lets, noFail) => {
@@ -426,7 +430,7 @@ export const collectVariables = (node, seeker, cont) => {
 			lets = context(lets);
 		}
 
-		if (seeker && seeker(node, lets)) return;
+		if (seeker) seeker(node, lets);
 
 		if (node.type.includes("Function")) {
 			traverseFunction(node, lets, true);
@@ -503,7 +507,7 @@ export const collectVariables = (node, seeker, cont) => {
 					sourceNode: node,
 				});
 			}
-		}else if (node.type === 'SwitchStatement') {
+		} else if (node.type === 'SwitchStatement') {
 			traverseExpression(node.discriminant, lets);
 
 			const cont = context(lets);
@@ -592,7 +596,8 @@ export const collectVariables = (node, seeker, cont) => {
 		return false;
 	};
 
-	if (traverse(node, cont || (cont = context()), true)) {
+	if (!cont) cont = context(null);
+	if (traverse(node, cont, true)) {
 		traverseExpression(node, cont, true);
 	}
 
@@ -631,7 +636,7 @@ export const assignVariables = scope => {
 		}
 	};
 
-	const traverse = (scope, undef) => {
+	const traverse = scope => {
 		for (const assignment of scope.values()) {
 			collect(assignment, scope);
 		}
@@ -647,7 +652,7 @@ export const assignVariables = scope => {
 		}
 	};
 
-	traverse(scope, scope);
+	traverse(scope);
 
 	vals.sort(([a], [b]) => {
 		if (a.name && !b.name) return -1;
@@ -713,7 +718,6 @@ export const unallocate = (scope) => {
 export const createIdent = (scope, options) => {
 	const ident = t.identifier('');
 	ident.assignment = createAssignment(ident, {
-		unassigned: true,
 		name: '',
 		...options,
 	});
