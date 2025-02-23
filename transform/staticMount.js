@@ -457,7 +457,6 @@ export const transformBabelAST = (ast, options = {}) => {
 		rep.callee = node.callee;
 		if (importer) {
 			rep.importer = importer;
-			rep.cleanup = [];
 		}
 
 		let ret = computeNode(rep, null, node, createIdent());
@@ -471,19 +470,20 @@ export const transformBabelAST = (ast, options = {}) => {
 		}
 		rep.unshift(...decls);
 
-		if (ret !== node || rep.length > 0 || rep.cleanup?.length > 0) {
-			if (!body) {
-				ret = t.callExpression(t.arrowFunctionExpression([], t.blockStatement([
-					...rep,
-					t.returnStatement(ret),
-				])), []);
-			} else {
-				for (let e of rep) {
-					collectVariables(e, null, body.scope);
+		if (ret !== node || rep.length > 0) {
+			if (rep.length > 0) {
+				if (!body) {
+					ret = t.callExpression(t.arrowFunctionExpression([], t.blockStatement([
+						...rep,
+						t.returnStatement(ret),
+					])), []);
+				} else {
+					for (let e of rep) {
+						collectVariables(e, null, body.scope);
+					}
+
+					body.placeBefore(...rep);
 				}
-
-
-				body.placeBefore(...rep);
 			}
 
 			for (let o in node) {
