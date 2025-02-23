@@ -298,16 +298,8 @@ const computeNode = (rep, cleanup, node, contextIdent) => {
 		}
 
 		if (child.type === 'ArrayExpression' && child.elements.find(e => e.type !== 'SpreadElement')) {
-			const elms = child.elements.map(e => {
-				if (e.type === 'SpreadElement') {
-					return t.arrayExpression([e]);
-				}
-
-				return e;
-			});
-
-			children.splice(i, 1, ...elms);
-			i += elms.length;
+			children.splice(i, 1, ...child.elements);
+			i += child.elements.length;
 			continue;
 		}
 
@@ -420,17 +412,8 @@ export const transformBabelAST = (ast, options = {}) => {
 	const updateScopes = (node, lets, children) => {
 		let f = found.find(n => n[0] === node);
 		if (f) {
-			let body;
-			let current = lets;
-			while (current) {
-				body = current.body?.();
-				if (body) break;
-
-				current = current.parent;
-			}
-
 			f[1] = lets;
-			f[2] = body;
+			f[2] = lets.body();
 			f[3] = children;
 		}
 	};
@@ -460,16 +443,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		} else if (node.type === 'CallExpression') {
 			if (node.callee.type !== 'Identifier') return;
 
-			let body;
-			let current = lets;
-			while (current) {
-				body = current.body?.();
-				if (body) break;
-
-				current = current.parent;
-			}
-
-			found.push([node, lets, body, children]);
+			found.push([node, lets, lets.body(), children]);
 		}
 	});
 
