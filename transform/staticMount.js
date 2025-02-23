@@ -112,7 +112,7 @@ const computeNode = (rep, cleanup, node) => {
 	const getTemp = () => {
 		let temp;
 		if (!temporary) {
-			temporary = createIdent(null, {thing: 'temp'});
+			temporary = createIdent();
 			rep.push(declare(temporary, createElement(rep.importer, createUse(name), ns)));
 			temp = createUse(temporary);
 		} else {
