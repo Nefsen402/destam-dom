@@ -482,10 +482,6 @@ export const transformBabelAST = (ast, options = {}) => {
 					collectVariables(e, null, body.scope);
 				}
 
-				for (const child of children) {
-					let i = child.parent.children.indexOf(child);
-					child.parent.children.splice(i, 1);
-				}
 
 				body.placeBefore(...rep);
 			}
@@ -496,6 +492,11 @@ export const transformBabelAST = (ast, options = {}) => {
 
 			for (let o in ret) {
 				node[o] = ret[o];
+			}
+
+			for (const child of children) {
+				let i = child.parent.children.indexOf(child);
+				child.parent.children.splice(i, 1);
 			}
 
 			collectVariables(node, updateScopes, lets);
