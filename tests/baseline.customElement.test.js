@@ -418,6 +418,24 @@ test('context', () => {
 	assert.deepEqual(out, [context, context])
 });
 
+test('context nested', () => {
+	const context = Symbol();
+
+	let out = [];
+
+	const Comp = () => {
+		let arr = [];
+		arr.push((elem, item, before, context) => (out.push(context), () => {}));
+		arr.push((elem, item, before, context) => (out.push(context), () => {}));
+
+		return arr;
+	};
+
+	mount(document.dummy, h('div', {}, h('div', {}, h(Comp))), undefined, context)
+
+	assert.deepEqual(out, [context, context])
+});
+
 test('deferred mount mounted event', () => {
 	const body = document.createElement('body');
 
