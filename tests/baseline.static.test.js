@@ -234,7 +234,7 @@ test("mount div with attribute with normalizer", () => {
 test("mount div with spread attribute", () => {
 	const elem = document.createElement("body");
 
-	const s = {val: 'hello'};
+	const s = {val: 'hello', val2: 'two', val3: 'three'};
 
 	mount(elem, h('div', {...s}));
 
@@ -242,7 +242,7 @@ test("mount div with spread attribute", () => {
 		name: 'body',
 		children: [{
 			name: 'div',
-			attributes: {val: 'hello'}
+			attributes: s
 		}],
 	});
 });
@@ -250,7 +250,7 @@ test("mount div with spread attribute", () => {
 test("mount div with spread style", () => {
 	const elem = document.createElement("body");
 
-	const s = {val: 'hello'};
+	const s = {val: 'hello', val2: 'two', val3: 'three'};
 
 	mount(elem, h('div', {$style: {...s}}));
 
@@ -258,8 +258,35 @@ test("mount div with spread style", () => {
 		name: 'body',
 		children: [{
 			name: 'div',
-			style: {val: 'hello'}
+			style: s
 		}],
+	});
+});
+
+test("mount spread children", () => {
+	const elem = document.createElement("body");
+
+	const children = [
+		h('div'),
+		'one',
+		'two',
+	]
+
+	mount(elem, [
+		'before',
+		...children,
+		'after',
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			'before',
+			{name: 'div'},
+			'one',
+			'two',
+			'after',
+		],
 	});
 });
 
