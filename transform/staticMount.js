@@ -83,7 +83,7 @@ const checkHImport = (node) => {
 	return false;
 };
 
-const computeNode = (rep, cleanup, node) => {
+const computeNode = (rep, cleanup, node, contextIdent) => {
 	node[traversed] = true;
 	let [name, props, ...children] = node.arguments;
 
@@ -289,8 +289,6 @@ const computeNode = (rep, cleanup, node) => {
 		}
 	}
 
-	const context = createIdent();
-
 	let prevChild = null;
 	if (lowerChildren) for (let i = children.length - 1; i >= 0; i--) {
 		let child = children[i];
@@ -333,7 +331,7 @@ const computeNode = (rep, cleanup, node) => {
 			child[canAppend] = true;
 		} else if (child.type === 'CallExpression' && child.callee.type === 'Identifier' &&
 				child.callee.assignment === node.callee.assignment) {
-			child = computeNode(rep, cleanup, child);
+			child = computeNode(rep, cleanup, child, contextIdent);
 		}
 
 		if (child[canAppend]) {
@@ -349,15 +347,15 @@ const computeNode = (rep, cleanup, node) => {
 
 			const mountArguments = [getTemp(), child];
 
-			if (prevChild) {
-				mountArguments.push(
-					prevChild[canAppend] ? t.arrowFunctionExpression([], prevChild) : prevChild
-				);
-			} else {
+			if (!prevChild) {
 				mountArguments.push(t.identifier('undefined'));
+			} else if (prevChild[canAppend]) {
+				mountArguments.push(t.arrowFunctionExpression([], prevChild));
+			} else {
+				mountArguments.push(prevChild);
 			}
 
-			mountArguments.push(context);
+			mountArguments.push(createUse(contextIdent));
 
 			const mount = t.callExpression(rep.importer('mount'), mountArguments);
 			mount.temporary = temporary;
@@ -386,7 +384,7 @@ const computeNode = (rep, cleanup, node) => {
 		const ret = temporary || createElement(rep.importer, name, ns);
 
 		const idents = cleanup.map((_, i) => _.temporary || createIdent());
-		return t.arrowFunctionExpression([elem, val, before, context], t.blockStatement([
+		return t.arrowFunctionExpression([elem, val, before, contextIdent], t.blockStatement([
 			...cleanup.map((cleanup, i) => declare(idents[i], cleanup)),
 			t.expressionStatement(t.optionalCallExpression(
 				t.memberExpression(createUse(elem), t.identifier('insertBefore'), false, true),
@@ -488,7 +486,7 @@ export const transformBabelAST = (ast, options = {}) => {
 			rep.cleanup = [];
 		}
 
-		const ret = computeNode(rep, null, node);
+		const ret = computeNode(rep, null, node, createIdent());
 
 		// reorder all variable declarations to the top
 		const decls = [];
