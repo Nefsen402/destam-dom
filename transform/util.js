@@ -134,7 +134,7 @@ export const collectVariables = (node, seeker, cont) => {
 		let assignment = ident.assignment;
 		if (!assignment) {
 			assignment = lets.get(ident.name);
-		} else {
+		} else if (ident.name) {
 			lets.set(ident.name, assignment);
 		}
 
