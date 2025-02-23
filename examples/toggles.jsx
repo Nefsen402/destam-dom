@@ -39,10 +39,12 @@ const Toggle = ({value, tag, color}) => {
 
 const toggles = OArray([false, false, false]);
 toggles.observer.watch(delta => {
-	if (!toggles.includes(false)) {
-		let i = (indexPosition(toggles, delta.path()[0]) + 1 + Math.round(Math.random())) % toggles.length;
-		toggles[i] = false;
-	}
+	if (toggles.includes(false)) return;
+
+	const changedIndex = indexPosition(toggles, delta.path()[0]);
+	const untoggle = Array(toggles.length).fill(null).map((_, i) => i).filter(num => num !== changedIndex);
+
+	toggles[untoggle[Math.floor(Math.random() * untoggle.length)]] = false;
 });
 
 export default <div style="transform: scale(3); transform-origin: top left; padding: 10px">
