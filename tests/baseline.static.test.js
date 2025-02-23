@@ -552,3 +552,25 @@ test("static namespace", () => {
 		}],
 	});
 });
+
+test("basic hypertest nested in iife", () => {
+	const elem = document.createElement("body");
+
+	// define these two variables to prevent the static optimizer trivializing this
+	// away
+	const dyn_pre = 0;
+	const dyn = dyn_pre;
+
+	mount(elem, h('div', {}, (() => {
+		return h('div', {dyn});
+	})()));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'div', attributes: {dyn: 0}}
+			]}
+		]
+	});
+});

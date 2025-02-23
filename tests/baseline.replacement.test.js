@@ -718,3 +718,135 @@ test("swap to null attribute inverted", () => {
 		name: 'body',
 	});
 });
+
+test("hypertext in nested hypertext map", () => {
+	const elem = document.createElement("body");
+
+	const content = Observer.mutable(0);
+
+	mount(elem, h('div', {}, content.map(b => {
+		if (b === 0) {
+			return h('one');
+		} else {
+			return h('two');
+		}
+	})));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'one'}
+			]}
+		]
+	});
+
+	content.set(1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'two'}
+			]}
+		]
+	});
+});
+
+test("hypertext in nested hypertext map array lookup", () => {
+	const elem = document.createElement("body");
+
+	const content = Observer.mutable(0);
+
+	mount(elem, h('div', {}, content.map(b => {
+		return [h('one'), h('two')][b];
+	})));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'one'}
+			]}
+		]
+	});
+
+	content.set(1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'two'}
+			]}
+		]
+	});
+});
+
+test("hypertext in nested hypertext map dynamic state", () => {
+	const elem = document.createElement("body");
+
+	const content = Observer.mutable(0);
+	const dyn = Observer.mutable(0);
+
+	mount(elem, h('div', {}, content.map(b => {
+		if (b === 0) {
+			return h('one', {dyn});
+		} else {
+			return h('two', {dyn});
+		}
+	})));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'one', attributes: {dyn: 0}}
+			]}
+		]
+	});
+
+	content.set(1);
+	dyn.set(1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'two', attributes: {dyn: 1}}
+			]}
+		]
+	});
+});
+
+test("hypertext in nested hypertext map array lookup dynamic state", () => {
+	const elem = document.createElement("body");
+
+	const content = Observer.mutable(0);
+	const dyn = Observer.mutable(0);
+
+	mount(elem, h('div', {}, content.map(b => {
+		return [h('one', {dyn}), h('two', {dyn})][b];
+	})));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'one', attributes: {dyn: 0}}
+			]}
+		]
+	});
+
+	content.set(1);
+	dyn.set(1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: [
+				{name: 'two', attributes: {dyn: 1}}
+			]}
+		]
+	});
+});
