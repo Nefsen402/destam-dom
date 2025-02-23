@@ -413,7 +413,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		let f = found.find(n => n[0] === node);
 		if (f) {
 			f[1] = lets;
-			f[2] = lets.body();
+			f[2] = lets.body?.();
 			f[3] = children;
 		}
 	};
@@ -443,7 +443,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		} else if (node.type === 'CallExpression') {
 			if (node.callee.type !== 'Identifier') return;
 
-			found.push([node, lets, lets.body(), children]);
+			found.push([node, lets, lets.body?.(), children]);
 		}
 	});
 
@@ -460,7 +460,7 @@ export const transformBabelAST = (ast, options = {}) => {
 			rep.cleanup = [];
 		}
 
-		const ret = computeNode(rep, null, node, createIdent());
+		let ret = computeNode(rep, null, node, createIdent());
 
 		// reorder all variable declarations to the top
 		const decls = [];
@@ -472,6 +472,24 @@ export const transformBabelAST = (ast, options = {}) => {
 		rep.unshift(...decls);
 
 		if (ret !== node || rep.length > 0 || rep.cleanup?.length > 0) {
+			if (!body) {
+				ret = t.callExpression(t.arrowFunctionExpression([], t.blockStatement([
+					...rep,
+					t.returnStatement(ret),
+				])), []);
+			} else {
+				for (let e of rep) {
+					collectVariables(e, null, body.scope);
+				}
+
+				for (const child of children) {
+					let i = child.parent.children.indexOf(child);
+					child.parent.children.splice(i, 1);
+				}
+
+				body.placeBefore(...rep);
+			}
+
 			for (let o in node) {
 				delete node[o];
 			}
@@ -480,17 +498,7 @@ export const transformBabelAST = (ast, options = {}) => {
 				node[o] = ret[o];
 			}
 
-			for (let e of rep) {
-				collectVariables(e, null, body.scope);
-			}
-
-			for (const child of children) {
-				let i = child.parent.children.indexOf(child);
-				child.parent.children.splice(i, 1);
-			}
-
 			collectVariables(node, updateScopes, lets);
-			body.placeBefore(...rep);
 		}
 	}
 

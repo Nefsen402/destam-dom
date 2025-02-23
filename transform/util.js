@@ -188,7 +188,7 @@ export const collectVariables = (node, seeker, cont) => {
 					node[name] = t.blockStatement([child]);
 				} else if (type === 'statement') {
 					type = 'body';
-					child = t.expressionStatement(node[name]);
+					child = node[name];
 					node[name] = t.blockStatement([child]);
 				}
 
@@ -562,7 +562,7 @@ export const collectVariables = (node, seeker, cont) => {
 			}
 		} else if (node.type === 'WhileStatement' || node.type === 'DoWhileStatement') {
 			traverseExpression(node.test, lets);
-			traverse(node.body, lets);
+			traverseBody(node, 'body', lets);
 		} else if (node.type === 'ExportAllDeclaration' || node.type === 'EmptyStatement') {
 			// fallthrough
 		} else if (node.type === 'ExportDefaultDeclaration') {
