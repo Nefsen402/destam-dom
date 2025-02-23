@@ -419,12 +419,25 @@ export const transformBabelAST = (ast, options = {}) => {
 	let importer;
 
 	const found = [];
-	const updateScopes = (node, lets) => {
+	const updateScopes = (node, lets, children) => {
 		let f = found.find(n => n[0] === node);
-		if (f) f[1] = lets;
+		if (f) {
+			let body;
+			let current = lets;
+			while (current) {
+				body = current.body?.();
+				if (body) break;
+
+				current = current.parent;
+			}
+
+			f[1] = lets;
+			f[2] = body;
+			f[3] = children;
+		}
 	};
 
-	const scope = collectVariables(ast, (node, lets) => {
+	const scope = collectVariables(ast, (node, lets, children) => {
 		if (node.type === 'Program') {
 			if (!('util_import' in options)) return;
 
@@ -458,11 +471,11 @@ export const transformBabelAST = (ast, options = {}) => {
 				current = current.parent;
 			}
 
-			found.push([node, lets, body]);
+			found.push([node, lets, body, children]);
 		}
 	});
 
-	for (const [node, lets, body] of found) {
+	for (const [node, lets, body, children] of found) {
 		if (node[traversed]) continue;
 		if (!checkHImport(node.callee)) continue;
 		if (!checkImport(node.callee, options.assure_import)) continue;
@@ -496,7 +509,12 @@ export const transformBabelAST = (ast, options = {}) => {
 			}
 
 			for (let e of rep) {
-				collectVariables(e, updateScopes, body.scope);
+				collectVariables(e, null, body.scope);
+			}
+
+			for (const child of children) {
+				let i = child.parent.children.indexOf(child);
+				child.parent.children.splice(i, 1);
 			}
 
 			collectVariables(node, updateScopes, lets);
