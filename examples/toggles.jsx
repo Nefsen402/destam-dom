@@ -40,7 +40,7 @@ const Toggle = ({value, tag, color}) => {
 const toggles = OArray([false, false, false]);
 toggles.observer.watch(delta => {
 	if (!toggles.includes(false)) {
-		let i = (indexPosition(toggles, delta.path()[0]) + 2) % toggles.length;
+		let i = (indexPosition(toggles, delta.path()[0]) + 1 + Math.round(Math.random())) % toggles.length;
 		toggles[i] = false;
 	}
 });
