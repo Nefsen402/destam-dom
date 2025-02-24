@@ -393,13 +393,9 @@ const computeNode = (rep, cleanup, node, contextIdent) => {
 			])))
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
-		if (temporary) {
-			const use = createUse(temporary);
-			use[canAppend] = true;
-			return use;
-		}
-
-		return createElement(rep.importer, name, ns);
+		const use = createUse(getTemp());
+		use[canAppend] = true;
+		return use;
 	} else {
 		return t.callExpression(createUse(rep.callee), [temporary || name, props, ...children]);
 	}
