@@ -575,3 +575,59 @@ test("custom component nested cleanup", () => {
 	cleanup();
 	assert(called);
 });
+
+test("custom component around div", () => {
+	const body = document.createElement('body');
+
+	const Comp = ({}) => {
+		return h('two');
+	};
+
+	mount(body, [
+		h('div', {},
+			h('one'),
+			h(Comp),
+			h('three'),
+		),
+	]);
+
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [
+				{name: 'one'},
+				{name: 'two'},
+				{name: 'three'},
+			],
+		}],
+	});
+});
+
+test("custom component around div with attributes", () => {
+	const body = document.createElement('body');
+
+	const Comp = ({}) => {
+		return h('two');
+	};
+
+	mount(body, [
+		h('div', {},
+			h('one', {thing: 1}),
+			h(Comp),
+			h('three', {thing: 1}),
+		),
+	]);
+
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [
+				{name: 'one', attributes: {thing: 1}},
+				{name: 'two'},
+				{name: 'three', attributes: {thing: 1}},
+			],
+		}],
+	});
+});
