@@ -6,6 +6,17 @@ import {collectVariables, createIdent, createUse, assignVariables, checkImport} 
 const canAppend = Symbol();
 const traversed = Symbol();
 
+const pure = node => {
+	node.leadingComments = [
+		{
+			type: 'CommentBlock',
+			value: '@__PURE__',
+		}
+	];
+
+	return node;
+};
+
 const declare = (ident, val) => t.variableDeclaration('const', [t.variableDeclarator(ident, val)]);
 const createElement = (importer, name, ns) => {
 	let elem;
@@ -21,7 +32,7 @@ const createElement = (importer, name, ns) => {
 		elem = t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("createElement")), [name]);
 	}
 	elem[canAppend] = true;
-	return elem;
+	return pure(elem);
 };
 
 const createWatcher = (rep, val, create) => {
@@ -313,11 +324,11 @@ const computeNode = (rep, cleanup, node, contextIdent) => {
 			'NumericLiteral', 'BigIntLiteral'
 		].includes(child.type)) {
 			let temporary = createIdent();
-			rep.push(declare(temporary, t.callExpression(
+			rep.push(declare(temporary, pure(t.callExpression(
 				rep.importer?.("createTextNode") ||
 					t.memberExpression(t.identifier("document"), t.identifier("createTextNode")),
 				[child]
-			)));
+			))));
 
 			child = temporary;
 			child[canAppend] = true;
