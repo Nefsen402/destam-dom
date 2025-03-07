@@ -533,11 +533,12 @@ export const h = (e, props = {}, ...children) => {
 			return (elem, val, before, context) => {
 				const listener = shallowListener(each, () => {
 					const val = each.get();
-					assert(Array.isArray(val), "The 'each' property for a custom element must be an array");
+
+					assert(val?.[Symbol.iterator], "The 'each' property must be iterable (like arrays).");
 					return mount(val)
 				});
 
-				assert(Array.isArray(each.get()), "The 'each' property for a custom element must be an array");
+				assert(each.get()?.[Symbol.iterator], "The 'each' property must be iterable (like arrays).");
 				const mount = arrayMounter(elem, each.get(), before, context, mounter);
 
 				return arg => {
