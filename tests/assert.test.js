@@ -114,6 +114,13 @@ testAssert("assert mount nonsense to each", () => {
 
 testAssert("assert mount nonsense to each from observer", () => {
 	const Comp = () => null;
+	let obs = Observer.mutable({});
+
+	mount(document.dummy, h(Comp, {each: obs}));
+});
+
+testAssert("assert mount nonsense to each from observer mutated", () => {
+	const Comp = () => null;
 	let obs = Observer.mutable([]);
 
 	mount(document.dummy, h(Comp, {each: obs}));
