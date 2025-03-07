@@ -645,6 +645,45 @@ test("each iterator", () => {
 	const body = document.createElement('body');
 
 	const linkedList = Observer.mutable(null);
+	mount(body, linkedList.map(list => {
+		return {
+			[Symbol.iterator] () { return this },
+			next () {
+				if (!list) return {done: true};
+				let ret = {done: false, value: list.value};
+				list = list.next;
+				return ret;
+			},
+		};
+	}));
+
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+	});
+
+	linkedList.set({next: linkedList.get(), value: 1});
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: ['1'],
+	});
+
+	linkedList.set({next: linkedList.get(), value: 2});
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: ['2', '1'],
+	});
+
+	linkedList.set({next: linkedList.get(), value: 3});
+	assert.deepEqual(body.tree(), {
+		name: 'body',
+		children: ['3', '2', '1'],
+	});
+});
+
+test("each iterator custom element", () => {
+	const body = document.createElement('body');
+
+	const linkedList = Observer.mutable(null);
 
 	let calls = 0;
 	const Comp = ({each: item}) => {
@@ -691,7 +730,7 @@ test("each iterator", () => {
 	});
 });
 
-test("each iterator swap", () => {
+test("each iterator custom element swap", () => {
 	const body = document.createElement('body');
 
 	const linkedList = Observer.mutable({next: {value: 2}, value: 1});
