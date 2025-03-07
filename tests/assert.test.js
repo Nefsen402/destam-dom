@@ -105,3 +105,17 @@ testAssert("assert useless chlidren prop", () => {
 testAssert("assert mount to invalid element", () => {
 	mount({}, null);
 });
+
+testAssert("assert mount nonsense to each", () => {
+	const Comp = () => null;
+
+	mount(document.dummy, h(Comp, {each: {}}));
+});
+
+testAssert("assert mount nonsense to each from observer", () => {
+	const Comp = () => null;
+	let obs = Observer.mutable([]);
+
+	mount(document.dummy, h(Comp, {each: obs}));
+	obs.set({});
+});
