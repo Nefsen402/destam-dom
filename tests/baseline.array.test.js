@@ -295,6 +295,15 @@ test("replace empty oarray each", () => {
 	});
 });
 
+test("empty each array", () => {
+	const elem = document.createElement("body");
+	mount(elem, h(({each}) => each, {each: []}));
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("each double up", () => {
 	const elem = document.createElement("body");
 	const arr = Observer.mutable([]);
