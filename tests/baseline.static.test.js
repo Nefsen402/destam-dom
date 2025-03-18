@@ -70,6 +70,18 @@ test("mount array", () => {
 	});
 });
 
+test("mount array remove twice", () => {
+	const elem = document.createElement("body");
+
+	const rem = mount(elem, [1, 2, 3]);
+	rem();
+	rem();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("mount node", () => {
 	const elem = document.createElement("body");
 	const node = document.createElement('div');
@@ -81,6 +93,19 @@ test("mount node", () => {
 		children: [{
 			name: 'div',
 		}],
+	});
+});
+
+test("mount node remove twice", () => {
+	const elem = document.createElement("body");
+	const node = document.createElement('div');
+
+	const rem = mount(elem, h(node));
+	rem();
+	rem();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
 	});
 });
 
