@@ -32,7 +32,7 @@ const nodeMounter = (elem, e, before, context) => {
 	elem.insertBefore(e, before(getFirst));
 
 	return val => {
-		if (val === getFirst) return e;
+		if (val === getFirst || !e) return e;
 
 		if (!val) {
 			elem.removeChild(e);
