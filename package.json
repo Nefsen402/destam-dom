@@ -1,6 +1,6 @@
 {
   "name": "destam-dom",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "A dom manipulation library built on destam",
   "type": "module",
   "main": "index.js",
