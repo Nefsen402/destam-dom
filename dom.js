@@ -206,7 +206,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				mounted.func_ = mounter(
 					mountElem,
 					item,
-					() => mounted.next_.func_(getFirst),
+					arg => mounted.next_.func_(arg),
 					context,
 				);
 			} else {
@@ -446,7 +446,19 @@ const populateSignals = (signals, val, e, name, set) => {
 
 const signalMount = function (bef, context) {
 	const pbef = this.pbef_;
-	return this.remove_ = mount(this.val_, this.handler_, pbef === 0 ? noop : pbef ? () => pbef : bef, context);
+	return this.remove_ = mount(
+		this.val_,
+		this.handler_,
+		pbef === 0 ?
+			noop :
+			pbef ?
+				arg => {
+					assert(arg === getFirst);
+					return pbef;
+				} :
+				bef,
+		context
+	);
 };
 
 const populate = function (...cb) {
