@@ -74,6 +74,9 @@ global.Node = class Node {
 	}
 
 	insertBefore (node, before) {
+		if (before != null && !(before instanceof Node))
+			throw new Error("insertBefore 2nd paramater invalid");
+
 		if (!before) {
 			this.append(node);
 			return;
