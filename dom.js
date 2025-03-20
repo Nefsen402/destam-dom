@@ -179,7 +179,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	mountElem.parent_ = elem;
 
 	const destroy = orphaned => {
-		if (!orphaned && elem.firstChild === root.next_.func_(getFirst) && !root.func_()) {
+		if (!orphaned && elem.firstChild === root.next_.func_(getFirst) && !before(getFirst)) {
 			elem.textContent = '';
 			mountElem.remove_ = 1;
 		}
