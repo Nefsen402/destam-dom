@@ -194,6 +194,195 @@ test("array clear with header", () => {
 	});
 });
 
+test("array clear with header and trailer", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, [h('header'), items, h('trailer')]);
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'header'}, {name: 'trailer'}]
+	});
+});
+
+test("array clear with trailer wrapped", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, [h('div', {}, items), h('trailer')]);
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}, {name: 'trailer'}]
+	});
+});
+
+test("array clear with header wrapped", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, [h('header'), h('div', {}, items)]);
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'header'}, {name: 'div'}]
+	});
+});
+
+test("array clear with header and trailer wrapped", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, [h('header'), h('div', {}, items), h('trailer')]);
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'header'}, {name: 'div'}, {name: 'trailer'}]
+	});
+});
+
+test("array clear with trailer in div", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, h('div', {}, items, h('div')));
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{name: 'div'}],
+		}]
+	});
+});
+
+test("array clear with header in div", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, h('div', {}, h('div'), items));
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{name: 'div'}]
+		}],
+	});
+});
+
+test("array clear with header and trailer in div", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, h('div', {}, h('header'), items, h('trailer')));
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{name: 'header'}, {name: 'trailer'}]
+		}],
+	});
+});
+
+test("array clear with trailer wrapped in div", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, h('div', {}, h('div', {}, [items]), h('trailer')));
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{name: 'div'}, {name: 'trailer'}]
+		}],
+	});
+});
+
+test("array clear with header wrapped in div", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, h('div', {}, h('header'), h('div', {}, [items])));
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{name: 'header'}, {name: 'div'}]
+		}],
+	});
+});
+
+test("array clear with header and trailer wrapped in div", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, h('div', {}, h('header'), h('div', {}, [items]), h('trailer')));
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{name: 'header'}, {name: 'div'}, {name: 'trailer'}]
+		}],
+	});
+});
+
+test("array clear with reactive header and trailer wrapped in div", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	const header = Observer.mutable(h('header'));
+	const trailer = Observer.mutable(h('trailer'));
+
+	mount(elem, h('div', {}, header, h('div', {}, [items]), trailer));
+
+	items.push(1, 2);
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: [{name: 'header'}, {name: 'div'}, {name: 'trailer'}]
+		}],
+	});
+});
+
 test("array item replace", () => {
 	const elem = document.createElement("body");
 	const items = OArray();
