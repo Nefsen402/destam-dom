@@ -135,6 +135,32 @@ test("array removal", () => {
 	});
 });
 
+test("array null", () => {
+	const elem = document.createElement("body");
+	const items = OArray([1, null, 2]);
+
+	mount(elem, items);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2"],
+	});
+});
+
+test("array remove null", () => {
+	const elem = document.createElement("body");
+	const items = OArray([1, null, 2]);
+
+	mount(elem, items);
+
+	items.splice(1, 1);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["1", "2"],
+	});
+});
+
 test("array add and remove", () => {
 	const elem = document.createElement("body");
 	const items = OArray();
