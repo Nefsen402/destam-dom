@@ -206,7 +206,10 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				mounted.func_ = mounter(
 					mountElem,
 					item,
-					arg => mounted.next_.func_(arg),
+					arg => {
+						assert(arg === getFirst);
+						return mounted.next_.func_(arg);
+					},
 					context,
 				);
 			} else {
