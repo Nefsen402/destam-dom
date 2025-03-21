@@ -398,7 +398,7 @@ export const mount = (elem, item, before = noop, context) => {
 		};
 	} else {
 		update();
-		return mounted || before;
+		return mounted || (m => m === getFirst ? before(getFirst) : undefined);
 	}
 };
 
