@@ -109,6 +109,17 @@ test("mount node remove twice", () => {
 	});
 });
 
+test("mount node remove primitive twice", () => {
+	const elem = document.createElement("body");
+	const rem = mount(elem, "Hello");
+	rem();
+	rem();
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("mount null in node", () => {
 	const elem = document.createElement("body");
 
