@@ -53,7 +53,7 @@ const primitiveMounter = (elem, e, before) => {
 	elem.insertBefore(e = document.createTextNode(e), before(getFirst));
 
 	return val => {
-		if (val === getFirst) return e;
+		if (val === getFirst || !e) return e;
 
 		if (val != null) {
 			e.textContent = val;
