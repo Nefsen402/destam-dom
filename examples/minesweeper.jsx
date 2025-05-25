@@ -60,6 +60,8 @@ const openField = (board, tile) => {
 	}
 };
 
+const showMines = Observer.mutable(false);
+
 const createBoard = () => {
 	const board = createMultiArray((x, y) => {
 		const obj = OObject({
@@ -72,6 +74,11 @@ const createBoard = () => {
 
 		obj.observer.path('uncovered').watch(() => {
 			board.uncovered++;
+
+			// won the game
+			if (board.uncovered === (WIDTH * HEIGHT) - NUM_MINES) {
+				showMines.set(true);
+			}
 		});
 
 		return obj;
@@ -115,7 +122,6 @@ const createBoard = () => {
 };
 
 const wholeBoard = Observer.mutable(createBoard());
-const showMines = Observer.mutable(false);
 
 const BoardComponent = ({tile, dir}) => {
 	if (Array.isArray(tile)) {
@@ -169,11 +175,6 @@ const BoardComponent = ({tile, dir}) => {
 					tile.uncovered = true;
 				} else {
 					openField(wholeBoard.get(), tile);
-				}
-
-				// won the game
-				if (wholeBoard.get().uncovered === (WIDTH * HEIGHT) - NUM_MINES) {
-					showMines.set(true);
 				}
 			}
 		}} $oncontextmenu={event => event.preventDefault()}>
