@@ -19,6 +19,8 @@ const TILE_COLORS = [
 	'white',
 ];
 
+const offs = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
 const createMultiArray = (init, ...dims) => {
 	const create = (index, dimIndex) => {
 		if (dims.length === index) {
@@ -43,11 +45,8 @@ const openField = (board, tile) => {
 		const tile = stack.pop();
 		tile.uncovered = true;
 
-		for (let i = 0; i < 9; i++) {
-			let xOffset = i % 3 - 1;
-			let yOffset = Math.floor(i / 3) - 1;
+		for (const [xOffset, yOffset] of offs) {
 			let currentTile = board[tile.x + xOffset]?.[tile.y + yOffset];
-
 			if (!currentTile) continue;
 			if (currentTile.uncovered) continue;
 
@@ -97,10 +96,7 @@ const createBoard = () => {
 	// calculate the neighbours
 	for (const tile of choices) {
 		let neighbours = 0;
-		for (let i = 0; i < 9; i++) {
-			let xOffset = i % 3 - 1;
-			let yOffset = Math.floor(i / 3) - 1;
-
+		for (const [xOffset, yOffset] of offs) {
 			neighbours += board[tile.x + xOffset]?.[tile.y + yOffset]?.mine ? 1 : 0;
 		}
 
