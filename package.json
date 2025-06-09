@@ -29,6 +29,6 @@
     "terser": "^5.39.0"
   },
   "peerDependencies": {
-    "destam": "^0.6.0"
+    "destam": "^0.7.0"
   }
 }

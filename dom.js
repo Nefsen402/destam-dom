@@ -1,6 +1,6 @@
-import Observer, {observerGetter, shallowListener} from 'destam/Observer.js';
+import Observer, {observerGetter, shallowListener, defaultGovernor} from 'destam/Observer.js';
 import {Insert, Modify, Delete} from 'destam/Events.js';
-import {isInstance, len, push, callAll, assert, noop, isSymbol} from 'destam/util.js';
+import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
 export const getFirst = Symbol();
 
@@ -318,7 +318,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				if (not) callLinked(not);
 			}
 
-		}, isSymbol);
+		}, gov => gov === defaultGovernor);
 
 		mountAll(orphaned);
 	};
@@ -414,7 +414,7 @@ const registerSetter = (set) => {
 	};
 
 	set.dyn_ = function () {
-		this.remove_ = this.handler_.register_(handler.bind(null, this), isSymbol);
+		this.remove_ = this.handler_.register_(handler.bind(null, this), noop);
 		handler(this);
 	};
 	return set;
