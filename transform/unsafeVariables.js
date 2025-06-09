@@ -266,12 +266,34 @@ const transform = (source, options) => {
 			}
 		}
 
+		const pushParams = (params) => {
+			for (const param of params) {
+				let id = param;
+				if (param.type === "AssignmentPattern") {
+					id = param.left;
+				}
+
+				id = createUse(id);
+				id.assignment.assignments.push(id);
+				id.scope = scope;
+
+				if (param.type === "AssignmentPattern") {
+					param.left = id;
+					scope.func.params.push(param);
+				} else {
+					scope.func.params.push(id);
+				}
+
+				scope.unassigned.push(id.assignment);
+			}
+		};
+
 		// use assignment patterns here instead
 		if (isRoot) {
 			root = () => {
 				for (let c of declsCleanup) c();
 
-				scope.func.params.push(...ret.map(decl => {
+				pushParams(ret.map(decl => {
 					const assignment = decl.id.assignment;
 					if (assignment.assignments.length === 2) {
 						if (assignment.init === null) {
@@ -298,7 +320,7 @@ const transform = (source, options) => {
 				functionArgSize.get(scope.func) <= scope.func.params.length) {
 			for (let c of declsCleanup) c();
 
-			scope.func.params.push(...ret.map(decl => {
+			pushParams(ret.map(decl => {
 				if (decl.init) {
 					return t.assignmentPattern(decl.id, decl.init)
 				}
@@ -306,8 +328,8 @@ const transform = (source, options) => {
 				return decl.id;
 			}));
 		} else if (scope.func.params[scope.func.params.length - 1]?.type !== 'RestElement' &&
-				movedExpressions <= 4) {
-			scope.func.params.push(...ret.map(decl => decl.id));
+				movedExpressions <= 4 && scope.func.kind !== 'get' && scope.func.kind !== 'set') {
+			pushParams(ret.map(decl => decl.id));
 		} else {
 			for (let c of declsCleanup) c();
 			body.unshift(t.variableDeclaration('var', ret));
