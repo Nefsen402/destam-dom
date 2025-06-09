@@ -141,7 +141,8 @@ if (lib in libs) {
 
 	config = defineConfig({
 		optimizeDeps: {
-			entries: [],
+			include: [],
+			noDiscovery: true,
 		},
 		plugins: [
 			...(process.env.N_DEBUG ? [createTransform('assert-remove', assertRemove)] : []),
