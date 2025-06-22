@@ -430,7 +430,10 @@ export const collectVariables = (node, seeker, cont) => {
 			lets = context(lets);
 		}
 
-		if (seeker) seeker(node, lets);
+		const childContexts = [];
+		let startChildren = lets.children.length;
+
+		if (seeker) seeker(node, lets, childContexts);
 
 		if (node.type.includes("Function")) {
 			traverseFunction(node, lets, true);
@@ -593,6 +596,7 @@ export const collectVariables = (node, seeker, cont) => {
 			return true;
 		}
 
+		childContexts.push(...lets.children.slice(startChildren));
 		return false;
 	};
 
