@@ -850,3 +850,32 @@ test("hypertext in nested hypertext map array lookup dynamic state", () => {
 		]
 	});
 });
+
+test("multi use map", () => {
+	const elem = document.createElement('body');
+	const obs = Observer.mutable(1);
+	const map = obs.map(val => h('div', {}, val));
+
+	mount(elem, [
+		map,
+		map,
+	]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: ['1']},
+			{name: 'div', children: ['1']}
+		]
+	});
+
+	obs.set(2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [
+			{name: 'div', children: ['2']},
+			{name: 'div', children: ['2']}
+		]
+	});
+});
