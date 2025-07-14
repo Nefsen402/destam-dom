@@ -990,3 +990,141 @@ test("each iterator custom element swap", () => {
 		children: ['2', '1'],
 	});
 });
+
+test("insert while clearing", () => {
+	const elem = document.createElement('body');
+	const arr = OArray();
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			arr.push("c");
+		});
+
+		return null;
+	};
+
+	arr.push("a", h(comp), "b");
+	mount(elem, arr);
+
+	arr.splice(0, arr.length);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['c'],
+	});
+});
+
+test("insert while clearing replace", () => {
+	const elem = document.createElement('body');
+	const arr = Observer.mutable(null);
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			arr.set([...arr.get(), "c"]);
+		});
+
+		return null;
+	};
+
+	arr.set(["a", h(comp), "b"]);
+	mount(elem, arr);
+
+	arr.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['c'],
+	});
+});
+
+test("insert while clearing double", () => {
+	const elem = document.createElement('body');
+	const arr = OArray();
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			arr.push("d");
+		});
+
+		return null;
+	};
+
+	arr.push("a", h(comp), "b", h(comp), "c");
+	mount(elem, arr);
+
+	arr.splice(0, arr.length);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['d', 'd'],
+	});
+});
+
+test("insert while clearing double replace", () => {
+	const elem = document.createElement('body');
+	const arr = Observer.mutable(null);
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			arr.set([...arr.get(), "d"]);
+		});
+
+		return null;
+	};
+
+	arr.set(["a", h(comp), "b", h(comp), "c"]);
+	mount(elem, arr);
+
+	arr.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['d', 'd'],
+	});
+});
+
+test("insert while clearing double replace partial", () => {
+	const elem = document.createElement('body');
+	const arr = Observer.mutable(null);
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			arr.set([...arr.get(), "d"]);
+		});
+
+		return null;
+	};
+
+	arr.set(["a", h(comp), "b", h(comp), "c"]);
+	mount(elem, arr);
+
+	arr.set(["c"]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['c', 'd', 'd'],
+	});
+});
+
+test("insert while clearing double replace parent", () => {
+	const elem = document.createElement('body');
+	const arr = Observer.mutable(null);
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			arr.set([...arr.get(), "d"]);
+		});
+
+		return null;
+	};
+
+	arr.set(["a", h(comp), "b", h(comp), "c"]);
+	mount(elem, ["c", arr]);
+
+	arr.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['c', 'd', 'd'],
+	});
+});
