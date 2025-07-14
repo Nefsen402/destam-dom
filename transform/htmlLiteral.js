@@ -245,7 +245,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		}
 
 		if (!currentTag) {
-			return;
+			continue;
 		}
 
 		const html = htm((name, props, ...children) => {
