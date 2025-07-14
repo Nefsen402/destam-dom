@@ -174,11 +174,13 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 	const linkGetter = Symbol();
 	let link, arrayListener;
+	let removing, removeDeferred;
 
 	const mountElem = Object.create(arrayMounterElem);
 	mountElem.parent_ = elem;
 
 	const destroy = orphaned => {
+		removing = 1;
 		if (!orphaned && elem.firstChild === root.next_.func_(getFirst) && !before(getFirst)) {
 			elem.textContent = '';
 			mountElem.remove_ = 1;
@@ -189,6 +191,12 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 		}
 
 		if (!orphaned) root.next_ = root.prev_ = root;
+
+		// if the array was overwritten while we were still processing clearing it,
+		// it will defer node insertion until after the clear is done.
+		if (removeDeferred) mountList(removeDeferred);
+
+		mountElem.remove_ = removing = removeDeferred = 0;
 	};
 
 	const mountList = (val, orphaned) => {
@@ -256,7 +264,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				not = deferred = {};
 			}
 
-			mountElem.remove_ = 0;
 			for (const item of val) {
 				mounted = addMount(orphaned, item, mounted.next_);
 				if (link) {
@@ -317,7 +324,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				cleanupArrayMounts(orphaned);
 				if (not) callLinked(not);
 			}
-
 		}, gov => gov === defaultGovernor);
 
 		mountAll(orphaned);
@@ -328,16 +334,20 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	return val => {
 		if (val === getFirst) return root.next_.func_(getFirst);
 
-		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
-			delete link[linkGetter];
+		if (removing) {
+			removeDeferred = val;
+		} else {
+			for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
+				delete link[linkGetter];
+			}
+
+			arrayListener?.();
+
+			const orphaned = val && len(val) !== 0 ? new Map() : null;
+			destroy(orphaned);
+			if (val) mountList(val, orphaned);
+			cleanupArrayMounts(orphaned);
 		}
-
-		arrayListener?.();
-
-		const orphaned = val && len(val) !== 0 ? new Map() : null;
-		destroy(orphaned);
-		if (val) mountList(val, orphaned);
-		cleanupArrayMounts(orphaned);
 
 		return val;
 	};
