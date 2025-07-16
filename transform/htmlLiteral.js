@@ -343,7 +343,7 @@ export const transformBabelAST = (ast, options = {}) => {
 		const importer = name => {
 			const found = lets.search(name);
 
-			if (found && checkImport(found, options.assure_import)) {
+			if (found?.type === 'import' || checkImport(found, options.assure_import)) {
 				return found;
 			}
 
