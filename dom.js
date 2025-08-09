@@ -251,11 +251,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				"Objects passed to destam-dom must be iterable (like arrays). " +
 				"Maybe you passed in a raw object?");
 
-			let not;
-			if (!deferred) {
-				not = deferred = {};
-			}
-
 			mountElem.remove_ = 0;
 			for (const item of val) {
 				mounted = addMount(orphaned, item, mounted.next_);
@@ -264,28 +259,21 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					link = link.linkNext_;
 				}
 			}
-
-			if (not) callLinked(not);
 		};
 
 		arrayListener = observer?.register_(commit => {
-			// fast path when removing everything
-			if (len(val) === 0) {
-				destroy();
-				return;
+			let not;
+			if (!deferred) {
+				not = deferred = {};
 			}
 
-			// fast path when adding from an empty array
-			if (root.next_ === root) {
+			if (len(val) === 0) { // fast path when removing everything
+				destroy();
+			} else if (root.next_ === root) {// fast path when adding from an empty array
 				mountAll();
 			} else {
 				let orphaned = null;
 				const inserts = [];
-
-				let not;
-				if (!deferred) {
-					not = deferred = {};
-				}
 
 				for (const delta of commit) {
 					const isModify = isInstance(delta, Modify);
@@ -315,12 +303,18 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				}
 
 				cleanupArrayMounts(orphaned);
-				if (not) callLinked(not);
 			}
 
+			if (not) callDeferred(not);
 		}, gov => gov === defaultGovernor);
 
+		let not;
+		if (!deferred) {
+			not = deferred = {};
+		}
+
 		mountAll(orphaned);
+		if (not) callDeferred(not);
 	};
 
 	mountList(val);
