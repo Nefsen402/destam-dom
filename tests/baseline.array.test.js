@@ -190,6 +190,20 @@ test("array clear", () => {
 	});
 });
 
+test("array clear with nested clear", () => {
+	const elem = document.createElement("body");
+	const items = OArray();
+
+	mount(elem, items);
+
+	items.push('a', h('div', {}, ['a', 'b', 'c']), 'b');
+	items.splice(0, 3);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("array clear with trailer", () => {
 	const elem = document.createElement("body");
 	const items = OArray();
