@@ -68,7 +68,7 @@ const primitiveMounter = (elem, e, before) => {
 
 let deferred;
 let currentErrorContext;
-const callLinked = list => {
+const callDeferred = list => {
 	let callable;
 	while (callable = list.next_) {
 		if (list.prev_ === callable) {
@@ -135,7 +135,7 @@ const callLinked = list => {
 		assert((currentErrorContext = prevErrorContext) || true);
 	}
 
-	if (list === deferred) deferred = 0;
+	deferred = 0;
 };
 
 const insertMap = (map, item) => {
@@ -382,7 +382,7 @@ export const mount = (elem, item, before = noop, context) => {
 					"Mount function must return a higher order destroy callback");
 			}
 
-			if (not) callLinked(not);
+			if (not) callDeferred(not);
 		}
 	};
 
@@ -478,6 +478,22 @@ const populate = function (...cb) {
 	}
 };
 
+const appendDeferred = list => {
+	if (!list.next_) {
+		assert(!list.prev_);
+		return;
+	}
+
+	if (deferred.prev_) {
+		assert(!deferred.prev_.next_);
+		deferred.prev_.next_ = list.next_;
+	} else {
+		deferred.next_ = list.next_;
+	}
+
+	deferred.prev_ = list.prev_;
+};
+
 export const h = (e, props = {}, ...children) => {
 	assert(e != null, "Tag name cannot be null or undefined");
 
@@ -507,7 +523,7 @@ export const h = (e, props = {}, ...children) => {
 				m = 0;
 
 				remove.done_ = 1;
-				callLinked(remove);
+				(deferred ? appendDeferred : callDeferred)(remove);
 				return 0;
 			};
 
@@ -528,7 +544,7 @@ export const h = (e, props = {}, ...children) => {
 						populate.bind(mounted));
 					if (m) {
 						m = mount(elem, dom, before, context);
-						callLinked(mounted);
+						appendDeferred(mounted);
 					}
 				},
 			};
