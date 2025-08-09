@@ -23,6 +23,7 @@ const nodeRemove = (arr) => {
 	}
 };
 
+let cleared;
 const nodeMounter = (elem, e, before, context) => {
 	assert((e[getFirst] ? e.elem_ : e).parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
@@ -35,7 +36,7 @@ const nodeMounter = (elem, e, before, context) => {
 		if (val === getFirst || !e) return e;
 
 		if (!val) {
-			elem.removeChild(e);
+			if (cleared !== elem) elem.removeChild(e);
 			if (remove) nodeRemove(remove);
 		} else {
 			const old = remove;
@@ -59,7 +60,7 @@ const primitiveMounter = (elem, e, before) => {
 			e.textContent = val;
 			return 1;
 		} else {
-			elem.removeChild(e);
+			if (cleared !== elem) elem.removeChild(e);
 			e = val;
 			return 0;
 		}
@@ -155,24 +156,6 @@ const cleanupArrayMounts = mounts => {
 	}
 };
 
-const arrayMounterElem = {
-	removeChild (child) {
-		if (!this.remove_) this.parent_.removeChild(child);
-	},
-	replaceChild (newNode, oldNode) {
-		this.parent_.replaceChild(newNode, oldNode);
-	},
-	insertBefore (newNode, before) {
-		this.parent_.insertBefore(newNode, before);
-	},
-	set textContent (content) {
-		this.parent_.textContent = content;
-	},
-	get firstChild () {
-		return this.parent_.firstChild;
-	},
-};
-
 const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const root = { func_: before };
 	root.next_ = root.prev_ = root;
@@ -180,19 +163,18 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const linkGetter = Symbol();
 	let link, arrayListener;
 
-	const mountElem = Object.create(arrayMounterElem);
-	mountElem.parent_ = elem;
-
 	const destroy = orphaned => {
+		let oldClear = cleared;
 		if (!orphaned && elem.firstChild === root.next_.func_(getFirst) && !before(getFirst)) {
 			elem.textContent = '';
-			mountElem.remove_ = 1;
+			cleared = elem;
 		}
 
 		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
 			(orphaned ? insertMap : cur.func_)(orphaned, cur);
 		}
 
+		cleared = oldClear;
 		if (!orphaned) root.next_ = root.prev_ = root;
 	};
 
@@ -209,7 +191,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				};
 
 				mounted.func_ = mounter(
-					mountElem,
+					elem,
 					item,
 					arg => {
 						assert(arg === getFirst);
@@ -256,7 +238,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				"Objects passed to destam-dom must be iterable (like arrays). " +
 				"Maybe you passed in a raw object?");
 
-			mountElem.remove_ = 0;
 			for (const item of val) {
 				mounted = addMount(orphaned, item, mounted.next_);
 				if (link) {
