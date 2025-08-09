@@ -1037,6 +1037,54 @@ test("insert while clearing replace", () => {
 	});
 });
 
+test("insert nested while clearing", () => {
+	const elem = document.createElement('body');
+	const arr = Observer.mutable(null);
+	const nested = Observer.mutable(null);
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			nested.set([...nested.get(), "c"]);
+		});
+
+		return null;
+	};
+
+	nested.set([]);
+	arr.set([h(comp), nested, h(comp)]);
+	mount(elem, arr);
+
+	arr.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
+test("remove nested while clearing", () => {
+	const elem = document.createElement('body');
+	const arr = Observer.mutable(null);
+	const nested = Observer.mutable(['a', 'b']);
+
+	const comp = ({}, cleanup) => {
+		cleanup(() => {
+			nested.set([]);
+		});
+
+		return null;
+	};
+
+	nested.set([]);
+	arr.set([h(comp), nested, h(comp)]);
+	mount(elem, arr);
+
+	arr.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("insert while clearing double", () => {
 	const elem = document.createElement('body');
 	const arr = OArray();
