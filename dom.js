@@ -71,6 +71,11 @@ let currentErrorContext;
 const callLinked = list => {
 	let callable;
 	while (callable = list.next_) {
+		if (list.prev_ === callable) {
+			assert(!callable.next_);
+			list.prev_ = 0;
+		}
+
 		list.next_ = callable.next_;
 
 		const prevErrorContext = currentErrorContext;
@@ -467,6 +472,7 @@ const populate = function (...cb) {
 			c();
 		} else {
 			this.next_ = {func_: c, next_: this.next_};
+			if (!this.prev_) this.prev_ = this.next_;
 			assert(this.next_.errorContext = this.errorContext);
 		}
 	}
@@ -526,6 +532,10 @@ export const h = (e, props = {}, ...children) => {
 					}
 				},
 			};
+
+			if (!deferred.prev_) {
+				deferred.prev_ = deferred.next_;
+			}
 
 			assert(remove.errorContext = deferred.next_.errorContext = {
 				func: e,
