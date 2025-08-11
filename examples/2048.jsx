@@ -143,12 +143,12 @@ const Tile = ({each: {value, x, y, zIndex, scale}}, cleanup, mount) => {
 	});
 
 	return <Div $style={{
-		width: (size / 4 - 10) + 'px',
-		height: (size / 4 - 10) + 'px',
+		width: (size / 4 - 8) + 'px',
+		height: (size / 4 - 8) + 'px',
 		position: 'absolute',
-		top: y.map(y => (y * (size / 4)) + 'px'),
-		left: x.map(x => (x * (size / 4)) + 'px'),
-		padding: '5px',
+		top: y.map(y => (y * (size / 4) + 4) + 'px'),
+		left: x.map(x => (x * (size / 4) + 4) + 'px'),
+		padding: '4px',
 		transition: `all ${transitionDuration}ms`,
 		zIndex,
 	}}>
@@ -174,7 +174,7 @@ const Tile = ({each: {value, x, y, zIndex, scale}}, cleanup, mount) => {
 
 export default <>
 	<div style="display: flex; align-items: center; justify-content: center; inset: 0px; position: absolute;">
-		<div style={`width: ${size}px; height: ${size}px; position: relative; border-radius: 10px; background: #222; zIndex: -2`}>
+		<div style={`width: ${size}px; height: ${size}px; position: relative; border-radius: 10px; background: #222; zIndex: -2; padding: 4px`}>
 			<Tile each={tiles} />
 		</div>
 	</div>
