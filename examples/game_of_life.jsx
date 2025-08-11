@@ -61,10 +61,7 @@ setInterval(() => {
 
 const Tile = ({each: tile}) => {
 	return <div $style={{
-		display: 'flex',
-		width: TILE_SIZE + 'px',
-		height: TILE_SIZE + 'px',
-		outline: '.5px solid white',
+		flex: 1,
 
 		background: tile.observer.path('state').map(state => state ? 'white' : 'black'),
 	}} $onmousedown={e => {
@@ -77,6 +74,9 @@ const Column = ({each: tile}) => {
 		background: 'white',
 		display: 'flex',
 		flexDirection: 'column',
+		flex: 1,
+		gap: '.5px',
+		height: (TILE_SIZE * HEIGHT) + 'px',
 	}}>
 		<Tile each={tile} />
 	</div>
@@ -103,6 +103,9 @@ export default <div $style={{
 		background: 'white',
 		display: 'flex',
 		flexDirection: 'row',
+		gap: '.5px',
+		outline: '.5px solid white',
+		width: (TILE_SIZE * WIDTH) + 'px',
 	}}>
 		<Column each={board} />
 	</div>
