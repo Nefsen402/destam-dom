@@ -1,6 +1,6 @@
 import Observer, {shallowListener} from 'destam/Observer.js';
 import {isInstance, noop} from 'destam/util.js';
-export { mount, getFirst } from './dom.js';
+export { mount, getFirst, cleared } from './dom.js';
 
 export const createElement = (elem, ns) => {
 	if (ns) {
