@@ -2,7 +2,36 @@ import Observer, {observerGetter, shallowListener, defaultGovernor} from 'destam
 import {Insert, Modify, Delete} from 'destam/Events.js';
 import {isInstance, len, push, callAll, assert, noop} from 'destam/util.js';
 
+/**
+ * Flag that can be passed to a destroy function that will get the first dom
+ * node of that destam-dom element. Should only be used internally or building
+ * your own hypertext function.
+ */
 export const getFirst = Symbol();
+
+/**
+ * Current element that was cleared by an array fast-clear. A fast clear is
+ * when node.textContent = "" is invoked on an element effectively clearing the
+ * element. However, when destroying all the child nodes, those nodes will
+ * still try to remove themselves from that node. To prevent crashing, we carry
+ * a flag around to ignore removing elements from what was cleared.
+ */
+export let cleared;
+
+/**
+ * All calls to userspace are called within a deferred loop. We don't want to
+ * call userspace while running our own algorithms because userspace can further
+ * modify the state like removing or adding elements while our own algorithms
+ * are still running confusing them. Defferred is a singly-linked list that will
+ * queue up work and run it during a safe time.
+ */
+let deferred;
+
+/**
+ * The error context of the currently run deferred userspace call. Used to print
+ * better error messages in debug builds.
+ */
+let currentErrorContext;
 
 const nodeRegister = (elem, context) => {
 	const arr = elem[getFirst];
@@ -23,7 +52,6 @@ const nodeRemove = (arr) => {
 	}
 };
 
-let cleared;
 const nodeMounter = (elem, e, before, context) => {
 	assert((e[getFirst] ? e.elem_ : e).parentElement == null,
 		"Cannot mount a dom node that has already been mounted elsewhere.");
@@ -67,8 +95,6 @@ const primitiveMounter = (elem, e, before) => {
 	};
 };
 
-let deferred;
-let currentErrorContext;
 const callDeferred = list => {
 	let callable;
 	while (callable = list.next_) {
