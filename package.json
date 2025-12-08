@@ -23,7 +23,7 @@
     "@babel/traverse": "^7.23.6",
     "@babel/types": "^7.23.6",
     "@rollup/plugin-terser": "^0.4.4",
-    "vite": "^6.2.1"
+    "vite": "^7.1.12"
   },
   "overrides": {
     "terser": "^5.39.0"
