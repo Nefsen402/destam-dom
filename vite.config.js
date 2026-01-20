@@ -8,6 +8,7 @@ import fs from 'fs';
 
 const createTransform = (name, transform, jsx, options) => ({
 	name,
+	enforce: 'pre',
 	transform(code, id) {
 		if (id.endsWith('.js') || (jsx && id.endsWith('.jsx'))) {
 			const transformed = transform(code, {
