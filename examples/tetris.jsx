@@ -134,8 +134,8 @@ const moveDropping = (transform) => {
 
 		for (const drop of dropping) {
 			if (modified.has(drop.cell)) continue;
-			drop.cell.dropping = false;
 			drop.cell.active = false;
+			drop.cell.dropping = false;
 		}
 	}
 
