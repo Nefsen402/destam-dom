@@ -18,11 +18,15 @@ const createCustomNode = () => {
 		},
 		replaceChild: (newNode, oldNode) => {
 			const i = elems.indexOf(oldNode);
+			if (i === -1) throw new Error("node doesn't exist here");
+
 			elems.splice(i, 1, newNode);
 			obj.replaced = true;
 		},
 		removeChild: (node) => {
 			const i = elems.indexOf(node);
+			if (i === -1) throw new Error("node doesn't exist here");
+
 			elems.splice(i, 1);
 		},
 		set textContent (content) {
@@ -107,4 +111,30 @@ test("duck type replacement", () => {
 
 	assert.deepEqual(elem.elems, [node2]);
 	assert(elem.replaced === true);
+});
+
+test("duck type remove text element manually", () => {
+	const elem = createCustomNode();
+
+	const rem = mount(elem, "hello world");
+	elem.elems.length = 0;
+	rem();
+});
+
+test("duck type remove node manually", () => {
+	const elem = createCustomNode();
+
+	const rem = mount(elem, document.createElement('div'));
+	elem.elems.length = 0;
+	rem();
+});
+
+test("duck type remove node manually and moved", () => {
+	const elem = createCustomNode();
+	const child = Observer.mutable(document.createElement('div'))
+
+	const rem = mount(elem, child);
+	elem.elems.length = 0;
+	child.set(document.createElement('div'));
+	rem();
 });
