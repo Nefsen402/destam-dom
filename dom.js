@@ -230,8 +230,6 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				mounted.nextMap_ = 0;
 				if (mounted === next) return mounted;
 
-				assert(elem, "Cannot move mount on an empty mount");
-
 				let mountAt, term, cur;
 				if ((mountAt = next.func_(getFirst)) !== (term = mounted.next_.func_(getFirst)) &&
 						mountAt !== (cur = mounted.func_(getFirst))) {
@@ -351,7 +349,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 export const mount = (elem, item, before = noop, context) => {
 	assert(elem.insertBefore && elem.replaceChild && elem.removeChild,
-		"The first argument to mount must be a ducked type node");
+		"The first argument to mount must be a duck typed node");
 
 	let lastFunc, mounted = null;
 	const update = () => {
