@@ -64,13 +64,13 @@ const nodeMounter = (elem, e, before, context) => {
 		if (val === getFirst || !e) return e;
 
 		if (!val) {
-			if (cleared !== elem) elem.removeChild(e);
+			if (cleared !== elem) try { elem.removeChild(e); }catch{}
 			if (remove) nodeRemove(remove);
 		} else {
 			const old = remove;
 			remove = nodeRegister(val, context);
 			if (remove) val = val.elem_;
-			elem.replaceChild(val, e);
+			try { elem.replaceChild(val, e); }catch{}
 			if (old) nodeRemove(old);
 		}
 
@@ -88,7 +88,7 @@ const primitiveMounter = (elem, e, before) => {
 			e.textContent = val;
 			return 1;
 		} else {
-			if (cleared !== elem) elem.removeChild(e);
+			if (cleared !== elem) try { elem.removeChild(e); }catch{}
 			e = val;
 			return 0;
 		}
