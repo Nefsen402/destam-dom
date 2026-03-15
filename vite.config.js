@@ -6,6 +6,14 @@ import staticMount from './transform/staticMount';
 import compileHTMLLiteral from './transform/htmlLiteral';
 import fs from 'fs';
 
+import { encode } from '@jridgewell/sourcemap-codec';
+const encodeMappings = (sourceMap) => {
+	return {
+		...sourceMap,
+		mappings: encode(sourceMap.mappings),
+	}
+};
+
 const createTransform = (name, transform, jsx, options) => ({
 	name,
 	enforce: 'pre',
@@ -18,7 +26,7 @@ const createTransform = (name, transform, jsx, options) => ({
 			});
 			return {
 				code: transformed.code,
-				map: transformed.decodedMap,
+				map: encodeMappings(transformed.decodedMap),
 			};
 		}
 	}
@@ -50,7 +58,7 @@ if (lib in libs) {
 
 					return {
 						code: transformed.code,
-						map: transformed.decodedMap,
+						map: encodeMappings(transformed.decodedMap),
 					};
 				},
 			},
@@ -177,17 +185,17 @@ if (lib in libs) {
 				util_import: 'destam-dom'
 			})] : []),
 		],
-		esbuild: {
+		oxc: {
 			jsx: 'preserve',
 		},
 		build: {
-			rollupOptions: {
+			rolldownOptions: {
 				input: Object.fromEntries(getExamples().map(ex => [ex.name, ex.resolved])),
 			},
 		},
 		resolve: {
 			alias: [
-				{find: /^destam-dom($|\/)/, replacement: '/'},
+				{find: /^destam-dom($|\/)/, replacement: '../'},
 			]
 		}
 	});
