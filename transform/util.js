@@ -1,4 +1,6 @@
 import t from '@babel/types';
+import parser from '@babel/parser';
+import generate from '@babel/generator';
 
 const assignmentPrototype = {
 	rename (name) {
@@ -778,4 +780,15 @@ export const checkImport = (node, regex) => {
 	}
 
 	return regex.test(source.value);
+};
+
+export const createTransform = transformBabelAST => (source, options) => {
+	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
+
+	transformBabelAST(ast, options);
+
+	return generate.default(ast, {
+		sourceMaps: true,
+		...options,
+	}, source);
 };

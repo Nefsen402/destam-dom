@@ -1,8 +1,6 @@
-import parser from '@babel/parser';
-import generate from '@babel/generator';
 import t from '@babel/types';
 import util from 'util';
-import {collectVariables, assignVariables, createUse} from './util.js';
+import {collectVariables, assignVariables, createUse, createTransform} from './util.js';
 
 const replace = (node, replace) => {
 	for (let o in node) {
@@ -14,9 +12,7 @@ const replace = (node, replace) => {
 	}
 };
 
-const transform = (source, options) => {
-	const ast = parser.parse(source, {code: false, ast: true, sourceType: 'module'});
-
+export const transformBabelAST = ast => {
 	const decls = [];
 	const ignoreDecls = new Set();
 	const callSites = new Map();
@@ -339,11 +335,6 @@ const transform = (source, options) => {
 	traverse(scope);
 	assignVariables(scope);
 	if (root) root();
-
-	return generate.default(ast, {
-		sourceMaps: true,
-		...options,
-	}, source);
 };
 
-export default transform;
+export default createTransform(transformBabelAST);

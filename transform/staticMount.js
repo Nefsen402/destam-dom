@@ -1,7 +1,5 @@
-import parser from '@babel/parser';
 import t from '@babel/types';
-import generate from '@babel/generator';
-import {collectVariables, createIdent, createUse, assignVariables, checkImport} from './util.js';
+import {collectVariables, createIdent, createUse, assignVariables, checkImport, createTransform} from './util.js';
 
 const canAppend = Symbol();
 const traversed = Symbol();
@@ -516,15 +514,4 @@ export const transformBabelAST = (ast, options = {}) => {
 	assignVariables(scope);
 };
 
-const transform = (source, options = {}) => {
-	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
-
-	transformBabelAST(ast, options);
-
-	return generate.default(ast, {
-		sourceMaps: true,
-		...options,
-	}, source);
-};
-
-export default transform;
+export default createTransform(transformBabelAST);

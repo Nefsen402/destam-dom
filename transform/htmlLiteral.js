@@ -1,9 +1,7 @@
-import parser from '@babel/parser';
-import generate from '@babel/generator';
 import t from '@babel/types';
 import util from 'util';
 import htm, {validTags} from '../htm.js';
-import {collectVariables, createIdent, createUse, assignVariables, checkImport} from './util.js';
+import {collectVariables, createIdent, createUse, assignVariables, checkImport, createTransform} from './util.js';
 
 const traversed = Symbol();
 const spreadKeys = Symbol();
@@ -376,15 +374,4 @@ export const transformBabelAST = (ast, options = {}) => {
 	assignVariables(scope);
 };
 
-const transform = (source, options = {}) => {
-	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
-
-	transformBabelAST(ast, options);
-
-	return generate.default(ast, {
-		sourceMaps: true,
-		...options,
-	}, source);
-};
-
-export default transform;
+export default createTransform(transformBabelAST);

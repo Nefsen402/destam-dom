@@ -1,6 +1,6 @@
-import parser from '@babel/parser';
-import generate from '@babel/generator';
 import babelTraverse from '@babel/traverse';
+
+import { createTransform } from './util.js';
 
 export const transformBabelAST = (ast) => {
 	babelTraverse.default(ast, {
@@ -12,15 +12,4 @@ export const transformBabelAST = (ast) => {
 	});
 };
 
-const transform = (source, options) => {
-	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
-
-	transformBabelAST(ast);
-
-	return generate.default(ast, {
-		sourceMaps: true,
-		...options,
-	}, source);
-};
-
-export default transform;
+export default createTransform(transformBabelAST);
