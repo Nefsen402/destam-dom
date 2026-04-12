@@ -783,12 +783,20 @@ export const checkImport = (node, regex) => {
 };
 
 export const createTransform = transformBabelAST => (source, options) => {
-	const ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
+	let ast;
+	if (typeof source === 'string') {
+		ast = parser.parse(source, {sourceType: 'module', ...options, code: false, ast: true});
+	} else {
+		ast = source;
+	}
 
 	transformBabelAST(ast, options);
 
-	return generate.default(ast, {
+	const output = generate.default(ast, {
 		sourceMaps: true,
 		...options,
 	}, source);
+
+	output.ast = ast;
+	return output;
 };
