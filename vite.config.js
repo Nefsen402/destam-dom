@@ -89,26 +89,22 @@ if (lib in libs) {
 		},
 	});
 } else {
-	const getExample = (file) => {
-		if (file === '/') file = '/index.html';
-		if (!file.startsWith('/') || !file.endsWith('.html')) return null;
-
-		file = file.substring(1);
-		let i = file.lastIndexOf('.');
-		const name = file.substring(0, i);
+	const getExample = file => {
+		if (file === '/') file = '/index';
+		if (!file.startsWith('/')) return null;
+		const name = file.substring(1);
 
 		const existed = ['.js', '.jsx'].find(ex => fs.existsSync('examples/' + name + ex));
 		if (!existed) {
 			return null;
 		}
 
-		const relative = '/' + name + '.html';
 		return {
 			name,
 			file: name + existed,
-			relative,
+			relative: file,
 			location: resolve(__dirname, '/examples/' + name + existed),
-			resolved: join(__dirname, relative),
+			resolved: join(__dirname, file),
 		};
 	};
 
@@ -122,7 +118,7 @@ if (lib in libs) {
 			let i = file.lastIndexOf('.');
 			const name = file.substring(0, i);
 
-			return getExample('/' + name + '.html');
+			return getExample('/' + name);
 		});
 	};
 
@@ -138,7 +134,7 @@ if (lib in libs) {
 				</head>
 				<body>
 					<script type="module">
-						import { mount } from './index';
+						import { mount } from './index.js';
 						import example from './examples/${entry.file}';
 
 						mount(document.body, example);
@@ -161,19 +157,20 @@ if (lib in libs) {
 			{
 				name: 'examples',
 				resolveId (id) {
-					let found = getExamples().find(ex => ex.resolved === id);
+					let found = getExamples().find(ex => ex.resolved + '.html' === id);
 					if (found) {
-						return found.resolved;
+						return found.resolved + '.html';
 					}
 				},
 				load(id) {
-					let found = getExamples().find(ex => ex.resolved === id);
+					let found = getExamples().find(ex => ex.resolved + '.html' === id);
 					if (found) return generateTemplate(found);
 				},
 				configureServer(server) {
 					server.middlewares.use((req, res, next) => {
 						let found = getExample(req.originalUrl);
 						if (found) {
+							res.setHeader("Content-Type", "text/html")
 							res.end(generateTemplate(found, true));
 						} else {
 							next();
@@ -190,7 +187,7 @@ if (lib in libs) {
 		},
 		build: {
 			rolldownOptions: {
-				input: Object.fromEntries(getExamples().map(ex => [ex.name, ex.resolved])),
+				input: Object.fromEntries(getExamples().map(ex => [ex.name, ex.resolved + '.html'])),
 			},
 		},
 		resolve: {
