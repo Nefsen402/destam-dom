@@ -190,6 +190,23 @@ test("array clear", () => {
 	});
 });
 
+test("array set/get from observer", () => {
+	const elem = document.createElement("body");
+	const items = OArray([1, 2]);
+	mount(elem, items);
+
+	const obs = items.observer.path(0);
+
+	assert.equal(obs.get(), 1);
+	obs.set(3);
+	assert.equal(obs.get(), 3);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["3", "2"],
+	});
+});
+
 test("array clear with nested clear", () => {
 	const elem = document.createElement("body");
 	const items = OArray();
