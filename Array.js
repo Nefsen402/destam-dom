@@ -65,8 +65,24 @@ const OArray = createClass(init => {
 		init = [];
 	}
 
+	const setProp = reg.setProp_ = (_, prop, value) => {
+		const old = init[prop];
+		if (!isEqual(old, value)){
+			const link = indexes[prop];
+			assert(link, "Array write outside of bounds!");
+
+			let events;
+			Network.linkApply(link, events = [], Modify, old, value);
+
+			Network.relink(link, value?.[observerGetter]);
+			init[prop] = value;
+			Network.callListeners(events);
+		}
+	};
+
 	reg.init_ = init;
 	reg.indexes_ = indexes;
+	reg.getProp_ = (_, prop) => init[prop];
 
 	return createProxy(init, reg, {
 		splice: (start = 0, l = len(init), ...val) => splice(reg, start, Math.min(l, len(init) - start), val),
@@ -91,20 +107,7 @@ const OArray = createClass(init => {
 		})(), "invalid array property: " + prop);
 		/* node:coverage enable */
 
-		const num = parseInt(prop);
-		const old = init[num];
-		if (!isEqual(old, value)){
-			const link = indexes[num];
-			assert(link, "Array write outside of bounds!");
-
-			let events;
-			Network.linkApply(link, events = [], Modify, old, value);
-
-			Network.relink(link, value?.[observerGetter]);
-			init[num] = value;
-			Network.callListeners(events);
-		}
-
+		setProp(obj, parseInt(prop), value);
 		return true;
 	}, Array, OArray);
 });
