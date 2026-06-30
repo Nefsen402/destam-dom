@@ -303,7 +303,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				}
 			} else {
 				let orphaned = null;
-				const inserts = [];
+				const inserts = new Set();
 
 				for (const delta of commit) {
 					const isModify = isInstance(delta, Modify);
@@ -311,6 +311,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 					if (isModify || isInstance(delta, Delete)) {
 						insertMap(orphaned || (orphaned = new Map()), link[linkGetter]);
+						inserts.delete(link.linkPrev_);
 						link[linkGetter] = 0;
 					}
 
@@ -319,7 +320,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 						const next = link.linkNext_;
 
 						if (next[linkGetter] || !next.reg_) {
-							push(inserts, link);
+							inserts.add(link);
 						}
 					}
 				}
