@@ -170,15 +170,19 @@ const insertMap = (map, item) => {
 	map.set(item.item_, item);
 };
 
+const cleanupArrayMount = mount => {
+	while (mount) {
+		mount.prev_.next_ = mount.next_;
+		mount.next_.prev_ = mount.prev_;
+		mount.func_();
+
+		mount = mount.nextMap_;
+	}
+};
+
 const cleanupArrayMounts = mounts => {
 	if (mounts) for (let mount of mounts.values()) {
-		while (mount) {
-			mount.prev_.next_ = mount.next_;
-			mount.next_.prev_ = mount.prev_;
-			mount.func_();
-
-			mount = mount.nextMap_;
-		}
+		cleanupArrayMount(mount);
 	}
 };
 
@@ -209,7 +213,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const mountList = (val, orphaned) => {
 		const observer = val[observerGetter];
 
-		const addMount = (old, item, next, pending) => {
+		const addMount = (old, item, next) => {
 			let mounted = old?.get(item);
 
 			if (!mounted) {
@@ -281,8 +285,22 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 			if (len(val) === 0) { // fast path when removing everything
 				destroy();
-			} else if (root.next_ === root) {// fast path when adding from an empty array
+			} else if (root.next_ === root) { // fast path when adding from an empty array
 				mountAll();
+			} else if (len(commit) === 1) { // fast path for single mutation
+				const delta = commit[0];
+				const isModify = isInstance(delta, Modify);
+				const link = delta.network_.link_;
+
+				if (isModify || isInstance(delta, Delete)) {
+					cleanupArrayMount(link[linkGetter]);
+				}
+
+				if (isModify || isInstance(delta, Insert)){
+					link[linkGetter] = addMount(null, delta.value, link.linkNext_[linkGetter] || root);
+				} else {
+					link[linkGetter] = 0;
+				}
 			} else {
 				let orphaned = null;
 				const inserts = [];
