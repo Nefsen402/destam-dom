@@ -189,6 +189,8 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 	const linkGetter = Symbol();
 	let link, arrayListener;
 
+	const linkValues = new WeakMap();
+
 	const destroy = orphaned => {
 		let oldClear = cleared;
 		if (!orphaned && elem.firstChild === root.next_.func_(getFirst) && !before(getFirst)) {
@@ -295,7 +297,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 					}
 
 					if (isModify || isInstance(delta, Insert)) {
-						link.dom_val_ = delta.value;
+						linkValues.set(link, delta.value);
 						const next = link.linkNext_;
 
 						if (next[linkGetter] || !next.reg_) {
@@ -307,8 +309,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 				for (let insert of inserts) {
 					let next = insert.linkNext_[linkGetter] || root;
 					for (; insert.reg_ && !insert[linkGetter]; insert = insert.linkPrev_) {
-						next = insert[linkGetter] = addMount(orphaned, insert.dom_val_, next);
-						delete insert.dom_val_;
+						next = insert[linkGetter] = addMount(orphaned, linkValues.get(insert), next);
 					}
 				}
 
