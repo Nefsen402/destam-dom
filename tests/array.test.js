@@ -157,3 +157,36 @@ test("OArray fuzz", () => {
 		assert.strictEqual(items.observer.indexes_[i].observer_, items[i].observer);
 	}
 });
+
+test("mounting does not pollute destam link objects", () => {
+	// Mounting must not stash transient state as (string-keyed) properties on
+	// destam's link objects -- that belongs in mounter-local maps. The property
+	// names destam itself uses get mangled by the build passes, so the approved
+	// set is learned empirically at runtime from an unmounted reference array
+	// driven through the same operations. (linkGetter is a Symbol, so it sits
+	// outside string-keyed enumeration and is intentionally not counted.)
+	const exercise = (arr, visit) => {
+		visit(arr);
+		arr.push(4, 5);       visit(arr);   // insert
+		arr.unshift(0);       visit(arr);   // insert at front
+		arr.splice(2, 0, 99); visit(arr);   // insert in the middle
+		arr[1] = 42;          visit(arr);   // modify
+		arr.splice(0, 2);     visit(arr);   // delete
+	};
+
+	const allowed = new Set();
+	exercise(OArray([1, 2, 3]), arr => {
+		for (const link of arr.observer.indexes_)
+			for (const prop of Object.getOwnPropertyNames(link)) allowed.add(prop);
+	});
+
+	const elem = document.createElement("body");
+	const items = OArray([1, 2, 3]);
+	mount(elem, items);
+	exercise(items, arr => {
+		for (const link of arr.observer.indexes_)
+			for (const prop of Object.getOwnPropertyNames(link))
+				assert.ok(allowed.has(prop),
+					`link polluted with property "${prop}" after mounting`);
+	});
+});
