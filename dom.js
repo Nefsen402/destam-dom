@@ -291,7 +291,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 					if (isModify || isInstance(delta, Delete)) {
 						insertMap(orphaned || (orphaned = new Map()), link[linkGetter]);
-						delete link[linkGetter];
+						link[linkGetter] = 0;
 					}
 
 					if (isModify || isInstance(delta, Insert)) {
@@ -333,7 +333,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 		if (val === getFirst) return root.next_.func_(getFirst);
 
 		for (link = link?.linkNext_; link?.reg_; link = link.linkNext_) {
-			delete link[linkGetter];
+			link[linkGetter] = 0;
 		}
 
 		arrayListener?.();
