@@ -202,7 +202,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 			cleared = elem;
 		}
 
-		for (let cur = root.prev_; cur !== root; cur = cur.prev_) {
+		for (let cur = root.next_; cur !== root; cur = cur.next_) {
 			(orphaned ? insertMap : cur.func_)(orphaned, cur);
 		}
 
