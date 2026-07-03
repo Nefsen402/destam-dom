@@ -619,6 +619,26 @@ test("custom component around div", () => {
 	});
 });
 
+test("array clear with removed custom element and trailer", () => {
+	const elem = document.createElement("body");
+
+	const Comp = () => {
+		return "hello world";
+	};
+
+	const inner = Observer.mutable([1, 2]);
+	const items = Observer.mutable([inner, h(Comp)]);
+
+	mount(elem, [items, h('div')]);
+
+	items.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
 test("custom component around div with attributes", () => {
 	const body = document.createElement('body');
 

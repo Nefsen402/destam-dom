@@ -236,6 +236,53 @@ test("array clear with trailer", () => {
 	});
 });
 
+test("array clear with trailer observer", () => {
+	const elem = document.createElement("body");
+	const items = Observer.mutable([]);
+
+	mount(elem, [items, h('div')]);
+
+	items.set([1, 2]);
+	items.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
+test("array clear with removed primitive and trailer", () => {
+	const elem = document.createElement("body");
+
+	const inner = Observer.mutable([1, 2]);
+	const items = Observer.mutable([inner, 'text']);
+
+	mount(elem, [items, h('div')]);
+
+	items.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
+test("array clear with removed node and trailer", () => {
+	const elem = document.createElement("body");
+
+	const inner = Observer.mutable([1, 2]);
+	const items = Observer.mutable([inner, h('span')]);
+
+	mount(elem, [items, h('div')]);
+
+	items.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{name: 'div'}]
+	});
+});
+
 test("array clear with header", () => {
 	const elem = document.createElement("body");
 	const items = OArray();
