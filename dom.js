@@ -61,6 +61,8 @@ const nodeMounter = (elem, e, before, context) => {
 	elem.insertBefore(e, before(getFirst));
 
 	return val => {
+		assert(val !== getFirst || e,
+			"getFirst called on a mount that has been removed");
 		if (val === getFirst || !e) return e;
 
 		if (!val) {
@@ -82,6 +84,8 @@ const primitiveMounter = (elem, e, before) => {
 	elem.insertBefore(e = document.createTextNode(e), before(getFirst));
 
 	return val => {
+		assert(val !== getFirst || e,
+			"getFirst called on a mount that has been removed");
 		if (val === getFirst || !e) return e;
 
 		if (val != null) {
@@ -417,6 +421,8 @@ export const mount = (elem, item, before = noop, context) => {
 		update();
 
 		return arg => {
+			assert(arg !== getFirst || mode !== 2,
+				"getFirst called on a mount that has been removed");
 			if (arg === getFirst) return (mounted || before)(getFirst);
 
 			watcher();
@@ -541,6 +547,8 @@ export const h = (e, props = {}, ...children) => {
 		const mounter = (elem, item, before, context) => {
 			let m = noop;
 			const remove = arg => {
+				assert(m || arg !== getFirst,
+					"getFirst called on a mount that has been removed");
 				if (!m) return 0;
 				if (arg === getFirst) return (m === noop ? before : m)(getFirst);
 
