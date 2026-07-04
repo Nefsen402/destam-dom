@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert';
 import './document.js';
 
-import {mount, h, Observer} from '../index.js';
+import {mount, h, Observer, OArray} from '../index.js';
 
 const patchedConsole = {...console, error: () => {}};
 
@@ -664,5 +664,98 @@ test("custom component around div with attributes", () => {
 				{name: 'three', attributes: {thing: 1}},
 			],
 		}],
+	});
+});
+
+test("re-entrant mutation from cleanup during userspace remove", () => {
+	const elem = document.createElement("body");
+	const inner = Observer.mutable([]);
+
+	const Comp = ({}, cleanup) => {
+		cleanup(() => {
+			mount(elem, 'header');
+			inner.set(['zombie']);
+		});
+		return "comp";
+	};
+
+	const remove = mount(elem, [h(Comp), inner]);
+	remove();
+
+	// 'header' was mounted during cleanup and never removed, so it remains.
+	// 'zombie' was mounted into `inner` which was unmounted by the same
+	// remove() -- cleanup runs after teardown, so the set is a no-op.
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['header'],
+	});
+});
+
+test("re-entrant mutation from cleanup during commit driven remove", () => {
+	const elem = document.createElement("body");
+	const inner = Observer.mutable([]);
+
+	const Comp = ({}, cleanup) => {
+		cleanup(() => {
+			mount(elem, 'header');
+			inner.set(['zombie']);
+		});
+		return "comp";
+	};
+
+	const items = Observer.mutable([h(Comp), inner]);
+	mount(elem, items);
+
+	items.set([]);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['header'],
+	});
+});
+
+test("re-entrant mutation from cleanup during array commit", () => {
+	const elem = document.createElement("body");
+	const inner = Observer.mutable([]);
+
+	const Comp = ({}, cleanup) => {
+		cleanup(() => {
+			mount(elem, 'header');
+			inner.set(['zombie']);
+		});
+		return "comp";
+	};
+
+	const items = OArray([h(Comp), inner]);
+	mount(elem, items);
+
+	items.splice(0, 2);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['header'],
+	});
+});
+
+test("re-entrant mutation from cleanup during observer set null", () => {
+	const elem = document.createElement("body");
+	const inner = Observer.mutable([]);
+
+	const Comp = ({}, cleanup) => {
+		cleanup(() => {
+			mount(elem, 'header');
+			inner.set(['zombie']);
+		});
+		return "comp";
+	};
+
+	const content = Observer.mutable([h(Comp), inner]);
+	mount(elem, content);
+
+	content.set(null);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['header'],
 	});
 });
