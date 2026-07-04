@@ -24,6 +24,17 @@ export let cleared;
  * modify the state like removing or adding elements while our own algorithms
  * are still running confusing them. Defferred is a singly-linked list that will
  * queue up work and run it during a safe time.
+ *
+ * Invariants:
+ * - Deferred blocks are set up only where control enters from the outside:
+ *   mount's update, the array commit listener, and arrayMounter's remove.
+ *   Internal mounters assume one is already active.
+ * - Internal function pointers (func_ etc) may be called with garbage extra
+ *   arguments, and unsafeVariables turns locals into parameters in release
+ *   builds. Initialize locals (= 0) before reading them.
+ * - arrayMounter's remove sweeps linkGetter off the observable's links.
+ *   destroy() never touches them, and stale references pin dead mounts for as
+ *   long as the observable lives.
  */
 let deferred;
 
@@ -282,7 +293,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 		};
 
 		arrayListener = observer?.register_(commit => {
-			let not;
+			let not = 0;
 			if (!deferred) {
 				not = deferred = {};
 			}
@@ -342,13 +353,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 			if (not) callDeferred(not);
 		}, gov => gov === defaultGovernor);
 
-		let not;
-		if (!deferred) {
-			not = deferred = {};
-		}
-
 		mountAll(orphaned);
-		if (not) callDeferred(not);
 	};
 
 	mountList(val);
@@ -362,11 +367,17 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 		arrayListener?.();
 
+		let not = 0;
+		if (!deferred) {
+			not = deferred = {};
+		}
+
 		const orphaned = val && len(val) !== 0 ? new Map() : null;
 		destroy(orphaned);
 		if (val) mountList(val, orphaned);
 		cleanupArrayMounts(orphaned);
 
+		if (not) callDeferred(not);
 		return val;
 	};
 };
@@ -384,6 +395,11 @@ export const mount = (elem, item, before = noop, context) => {
 		assert(!isInstance(val, Observer),
 			"destam-dom does not support nested observers");
 
+		let not = 0;
+		if (!deferred) {
+			not = deferred = {};
+		}
+
 		if (val == null) {
 			mounted?.();
 			mounted = lastFunc = val;
@@ -400,19 +416,14 @@ export const mount = (elem, item, before = noop, context) => {
 				func = arrayMounter;
 			}
 
-			let not;
-			if (!deferred) {
-				not = deferred = {};
-			}
-
 			if (!mounted?.(lastFunc === func ? val : null)) {
 				mounted = (lastFunc = func)(elem, val, before, context);
 				assert(typeof mounted === 'function',
 					"Mount function must return a higher order destroy callback");
 			}
-
-			if (not) callDeferred(not);
 		}
+
+		if (not) callDeferred(not);
 	};
 
 	let mode = isInstance(item, Observer);
