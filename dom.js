@@ -142,7 +142,10 @@ const callDeferred = list => {
 				while (cur) {
 					str += '\n\t' + (cur.func.name || '<anonymous>');
 
-					const s = cur.err.stack.split('\n').slice(1).filter(e => e);
+					// runtime internals can never be a component use site, and
+					// node's are capitalized so they fool the component check
+					const s = cur.err.stack.split('\n').slice(1)
+						.filter(e => e && !e.includes('node:'));
 					for (let i = 0; i < s.length; i++) {
 						let l = s[i].trim();
 						if (l.startsWith('at ')) l = l.substring(3);
