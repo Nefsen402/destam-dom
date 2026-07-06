@@ -62,7 +62,6 @@ test("error context never blames runtime internals", () => {
 	});
 
 	const msg = errors[0].message;
-	console.log(msg);
 	assert(!msg.includes('node:'), msg);
 	assert(msg.includes('assert.test.js'), msg);
 });
