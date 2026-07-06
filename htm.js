@@ -1,4 +1,4 @@
-import {push, len, assert, isInstance} from 'destam/util.js';
+import {push, len, assert} from 'destam/util.js';
 
 export const validTags = ['BASE', 'LINK', 'META', 'STYLE', 'TITLE', 'ADDRESS', 'ARTICLE',
 	'ASIDE', 'FOOTER', 'HEADER', 'H1', 'H2', 'H3', 'HGROUP', 'MAIN',
@@ -139,6 +139,21 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 					}
 				} else {
 					assert(!Object.values(special).includes(token), "Unexpected special char near attribute name");
+
+					// only names the parser creates are validated: spread keys
+					// are userspace (or backend) data and exempt. space is
+					// allowed because the tokenizer cannot produce a bare name
+					// containing one: a spaced key proves the author quoted it
+					// deliberately, so let it through.
+					assert(typeof token !== 'string' || (name => {
+						for (let ii = 0; ii < len(name); ii++) {
+							if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-$0123456789 ".indexOf(name.charAt(ii)) == -1) {
+								return false;
+							}
+						}
+						return true;
+					})(token), "Invalid attribute name: " + token);
+
 					props[prevTag = token] = true;
 				}
 			}
@@ -146,34 +161,6 @@ export default (h, assign = Object.assign, join = arr => arr.join('')) => (segme
 			i++;
 
 			if (name) {
-				/* node:coverage disable */
-				assert((() => {
-					const strHasOnly = (chars, str) => {
-						for (let ii = 0; ii < len(str); ii++) {
-							if (chars.indexOf(str.charAt(ii)) == -1) {
-								return 0;
-							}
-						}
-						return 1;
-					};
-
-					for (const prop in props) {
-						if (!isInstance(prop, Array)) {
-							continue;
-						}
-
-						const name = prop[0];
-
-						if (typeof name === 'string' &&
-								!strHasOnly("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-$", name)) {
-							return false;
-						}
-					}
-
-					return true;
-				})(), "Invalid attribute name: " + Object.keys(props).join(", "));
-				/* node:coverage enable */
-
 				assert(typeof name !== 'string' || validTags.includes(name.toUpperCase()) || name.includes('-'),
 					"Invalid tag name: " + name);
 
