@@ -136,11 +136,11 @@ const callDeferred = list => {
 				if (cur.func.name) {
 					str = "An error occurred in the " + cur.func.name + " component";
 				} else {
-					str = "An error occurred in an annonymous component";
+					str = "An error occurred in an anonymous component";
 				}
 
 				while (cur) {
-					str += '\n\t' + (cur.func.name || '<annonymous>');
+					str += '\n\t' + (cur.func.name || '<anonymous>');
 
 					const s = cur.err.stack.split('\n').slice(1).filter(e => e);
 					for (let i = 0; i < s.length; i++) {
