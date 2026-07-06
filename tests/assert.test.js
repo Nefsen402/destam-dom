@@ -178,3 +178,26 @@ testAssert("assert mount nonsense to each from observer mutated", () => {
 	mount(document.dummy, h(Comp, {each: obs}));
 	obs.set({});
 });
+
+// These pin the intended behavior of the attribute name validator in htm.js.
+// The validator is currently dead code (its for...in loop skips every string
+// key), so the two negative tests fail until it is fixed.
+testAssert("assert invalid attribute name special char", () => {
+	html`<div my@attr="1" />`;
+});
+
+testAssert("assert invalid attribute name ampersand", () => {
+	html`<div foo&bar />`;
+});
+
+test("valid attribute names parse", () => {
+	// digits are deliberately included: data-* names with digits are legal
+	// HTML, so the fixed validator's charset must accept them.
+	assert(html`<div class="a" data-thing2 aria-label="x" $value=${1} _priv />`);
+});
+
+test("spread values with arbitrary keys don't assert", () => {
+	// spread keys are userspace data, not parser-created names: the attribute
+	// name validator must not have an opinion about them.
+	assert(html`<div =${{'weird key!': 1, 'my@key': 2, '~spread-0.5': 3}} />`);
+});
