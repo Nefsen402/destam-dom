@@ -301,7 +301,11 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 			}
 		};
 
-		arrayListener = observer?.register_(commit => {
+		const currentArrayListener = arrayListener = observer?.register_(commit => {
+			// A watcher can be called even if removed if events were queued up
+			// in an atomic transaction
+			if (arrayListener !== currentArrayListener) return;
+
 			let not = 0;
 			if (!deferred) {
 				not = deferred = {};
@@ -374,7 +378,8 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 			link[linkGetter] = 0;
 		}
 
-		arrayListener?.();
+		if (arrayListener) arrayListener();
+		arrayListener = 0;
 
 		let not = 0;
 		if (!deferred) {
