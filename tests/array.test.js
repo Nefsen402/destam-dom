@@ -68,6 +68,38 @@ test("contiguous atomic modifies preserve order", () => {
 	});
 });
 
+test("array does not resurrect a mount removed while a commit for it was still queued", () => {
+	const elem = document.createElement("body");
+
+	// A commit already queued for `inner`'s own governor when this atomic
+	// batch started isn't dispatched until the whole batch's callback
+	// returns - unregistering `inner`'s listener partway through (here, by
+	// removing it from `outer`) doesn't retract that still-queued commit.
+	// Regression test for a bug where that stale commit, arriving after
+	// `inner`'s mount had already been torn down, resurrected it (root's
+	// mount list was empty, so the commit's "adding from empty array" fast
+	// path re-mounted inner's then-current contents into the live DOM).
+	const inner = OArray([1]);
+	const Comp = () => 'comp';
+	const outer = OArray([inner, h(Comp)]);
+
+	mount(elem, outer);
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['1', 'comp'],
+	});
+
+	atomic(() => {
+		outer.splice(0, 1);
+		inner.push(2);
+	});
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['comp'],
+	});
+});
+
 test("array splice bigger array listen items", () => {
 	const obj = OArray([OObject()]);
 
