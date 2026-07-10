@@ -57,7 +57,13 @@ const nodeRegister = (elem, context) => {
 };
 
 const nodeRemove = (arr) => {
-	for (let obj of arr) {
+	// arr is populated in reverse document order (h() walks children right to
+	// left) and mounted in that same order, so a dependent signal's "before"
+	// position can point at the mount of the entry just ahead of it in arr.
+	// Removing must undo that dependency before the entry it points to, i.e.
+	// in forward document order - the reverse of arr's own order.
+	for (let i = len(arr); i-- > 0;) {
+		const obj = arr[i];
 		obj.remove_();
 		obj.remove_ = 0;
 	}

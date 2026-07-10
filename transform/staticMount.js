@@ -401,7 +401,7 @@ const computeNode = (rep, cleanup, node, contextIdent) => {
 					t.binaryExpression('!==', createUse(elem), rep.importer('cleared')),
 					t.expressionStatement(t.callExpression(t.memberExpression(createUse(elem), t.identifier('removeChild')), [createUse(ret)]))
 				),
-				...idents.map(ident => t.expressionStatement(t.callExpression(ident, [])))
+				...idents.reverse().map(ident => t.expressionStatement(t.callExpression(ident, [])))
 			])))
 		]));
 	} else if (children.length === 0 && (!props || props.properties.length === 0)) {
