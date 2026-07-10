@@ -329,7 +329,7 @@ const arrayMounter = (elem, val, before, context, mounter = mount) => {
 
 					if (isModify || isInstance(delta, Delete)) {
 						insertMap(orphaned || (orphaned = new Map()), link[linkGetter]);
-						inserts.delete(link.linkPrev_);
+						if (isModify) inserts.delete(link.linkPrev_);
 						link[linkGetter] = 0;
 					}
 
