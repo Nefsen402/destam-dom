@@ -977,6 +977,31 @@ test("splice modify then delete on adjacent links, larger array", () => {
 		children: ["0", "1", "z"],
 	});
 });
+
+test("remove static element with multiple dynamic children", () => {
+	const elem = document.createElement("body");
+
+	const left = OArray([1, 2]);
+	const right = Observer.mutable("x");
+
+	const div = h('div', {}, left, right);
+	const remove = mount(elem, div);
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: [{
+			name: 'div',
+			children: ['1', '2', 'x'],
+		}],
+	});
+
+	assert.doesNotThrow(() => remove());
+
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+	});
+});
+
 test("each iterator", () => {
 	const body = document.createElement('body');
 
