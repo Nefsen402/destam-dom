@@ -943,6 +943,40 @@ test("observer array clear then partial clear", () => {
 	});
 });
 
+test("splice modify then delete on adjacent links in one commit", () => {
+	const elem = document.createElement("body");
+	const items = OArray(['a', 'b']);
+
+	mount(elem, items);
+
+	// One commit: Modify(index 0) followed by Delete(index 1), since index 1
+	// has no counterpart in the replacement. Regression test for a bug where
+	// the Delete's cleanup dropped the preceding Modify's link from the
+	// pending-inserts set, leaving the surviving item unmounted.
+	items.splice(0, 2, 'z');
+
+	assert.deepEqual([...items], ['z']);
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ['z'],
+	});
+});
+
+test("splice modify then delete on adjacent links, larger array", () => {
+	const elem = document.createElement("body");
+	const items = OArray([0, 1, 2, 3, 4]);
+
+	mount(elem, items);
+
+	// Modify(index 2), Delete(index 3), Delete(index 4) in one commit.
+	items.splice(2, 3, 'z');
+
+	assert.deepEqual([...items], [0, 1, 'z']);
+	assert.deepEqual(elem.tree(), {
+		name: 'body',
+		children: ["0", "1", "z"],
+	});
+});
 test("each iterator", () => {
 	const body = document.createElement('body');
 
