@@ -42,6 +42,23 @@ mount(document.body, html`
 `);
 ```
 
+## Running the snippets above
+Both snippets assume the names they use are already imported:
+```js
+import { Observer, OArray, html, mount } from 'destam-dom';
+```
+
+From a CDN, use the bundled build:
+```html
+<script type="module">
+	import { OArray, html, mount } from 'https://esm.sh/destam-dom/dist/destam-dom.js';
+
+	// ... the list example, verbatim
+</script>
+```
+
+Importing the raw module from the CDN will cause it to load multiple instances of destam silently breaking things, so it's best to be avoided.
+
 ## JSX compatible
 destam-dom provides various source passes under transform/ for build systems that will take ```html`` ``` template literals and JSX and turn it into simple calls that destam-dom directly understands so that no parsing has to happen at runtime.
 
